@@ -1,0 +1,23 @@
+Package: openprom
+Type: Package
+Title: A Tool for Comparative Analysis of OPEN-PROM Data
+Version: 0.1.0
+Authors@R: c(
+    person(
+      "Michael", "Madianos",
+      email = "Michael.Madianos@ricardo.com",
+      role = c("aut", "cre")
+    ),
+    person(
+      "Anastasis", "Giannousakis",
+      email = "Anastasis.Giannousakis@ricardo.com",
+      role = c("aut")
+    )
+  )
+Description: A post-processing tool for analyzing, visualizing,
+  and testing the output data of the OPEN-PROM model.
+License: GPL-3 | file LICENSE
+Encoding: UTF-8
+LazyData: true
+Imports: gdx, madrat, magclass, dplyr, stringr, quitte
+RoxygenNote: 7.3.2
