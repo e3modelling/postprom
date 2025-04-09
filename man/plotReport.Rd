@@ -15,17 +15,17 @@ plotReport(
 )
 }
 \arguments{
-\item{magpie_obj}{A \code{magpie} object to be converted and filtered for plotting.}
+\item{magpie_obj}{A `magpie` object to be converted and filtered for plotting.}
 
 \item{variable_name}{The variable to plot, provided as an unquoted column name.}
 
-\item{an}{GDX object. The maximum value of the \code{period} to include in the plot.}
+\item{an}{GDX object. The maximum value of the `period` to include in the plot.}
 
 \item{colors_vars}{A data frame containing color mapping. Expected columns:
 \describe{
-\item{1}{Variable names.}
-\item{2}{Corresponding categories.}
-\item{3}{Colors for each category.}
+  \item{1}{Variable names.}
+  \item{2}{Corresponding categories.}
+  \item{3}{Colors for each category.}
 }}
 
 \item{plot_type}{A string specifying the type of plot to generate. Options are
@@ -40,7 +40,7 @@ If \code{NULL}, the plot is not saved.}
 A ggplot object containing the generated plot.
 }
 \description{
-This function generates a ggplot-based visualization from a \code{magpie} object,
+This function generates a ggplot-based visualization from a `magpie` object,
 using specified variables, colors, and plot types. Optionally, the plot can
 be saved to a file.
 }

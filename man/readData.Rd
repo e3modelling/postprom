@@ -16,11 +16,11 @@ An object of class "magpie", or NULL if an error occurs.
 }
 \description{
 A generic function to read data files.
-Methods are provided for \code{.gdx} and \code{.mif} file types.
+Methods are provided for `.gdx` and `.mif` file types.
 }
 \examples{
 data <- readData(system.file("extdata", "blabla.gdx", package = "openprom"), "iSet")
 }
 \seealso{
-\link[gdx:readGDX]{gdx::readGDX} which this function wraps.
+[gdx::readGDX] which this function wraps.
 }

@@ -13,9 +13,11 @@
 #' }
 #'
 #' @importFrom gdx readGDX
-#' @importFrom magclass getItems add_dimension mbind
+#' @importFrom magclass getItems add_dimension mbind as.magpie
 #' @importFrom madrat toolAggregate
+#' @importFrom quitte as.quitte
 #' @importFrom dplyr select filter mutate left_join distinct %>%
+#' @importFrom tidyr drop_na
 #' @export
 reportPrice <- function(path, regions) {
   #add model OPEN-PROM data Electricity prices
@@ -57,8 +59,12 @@ reportPrice <- function(path, regions) {
     # read GAMS set used for reporting of Final Energy different for each sector
     sets6 <- NULL
     # load current OPENPROM set configuration for each sector
-    sets6 <- readGDX(path, sector[y])
-    if (length(sets6) == 0) sets6 <- sector[y]
+    sets6 <- tryCatch({
+      readGDX(path, sector[y])
+    }, warning = function(w) {
+      message("Custom warning: Sector ", sector[y], " not found in GDX. Returning NULL.")
+      sector[y]
+    })
     sets6 <- as.data.frame(sets6)
 
     map_subsectors <- sets$SECTTECH %>% filter(SBS %in% as.character(sets6[, 1]))
@@ -91,29 +97,25 @@ reportPrice <- function(path, regions) {
     PRICE_by_EF_OPEN_PROM <- add_dimension(PRICE_by_EF_OPEN_PROM, dim = 3.2, add = "unit", nm = "KUS$2015/toe")
     magpie_object <- mbind(magpie_object, PRICE_by_EF_OPEN_PROM)
 
-    #fuel categories
-
-    # aggregate from fuels to reporting fuel categories
-    sum_open_prom <- iFuelPrice
-    sum_open_prom <- as.quitte(sum_open_prom)
-
+    # Fuel categories
     # Energy Forms Aggregations
     EFtoEFA <- readGDX(path, "EFtoEFA")
     EFtoEFA <- EFtoEFA[grep("^STE", EFtoEFA[,1]),]
     EFtoEFA[,2] <- "Heat"
     names(EFtoEFA) <- sub("EFA", "BAL", names(EFtoEFA))
-    # sets$BALEF2EFS <- rbind(sets$BALEF2EFS, EFtoEFA)
     sets$BALEF2EFS <- rbind(sets$BALEF2EFS, EFtoEFA)
-    ## add mapping
-    sum_open_prom <- left_join(sum_open_prom, sets$BALEF2EFS, by = "EF")
-    # take the mean
-    sum_open_prom <- mutate(sum_open_prom, value = mean(value, na.rm = TRUE), .by = c("model", "scenario", "region",
-                                                                                      "unit","period","BAL" ))
-    sum_open_prom <- distinct(sum_open_prom)
-    sum_open_prom <- sum_open_prom %>% select(c("model","scenario","region","unit",
-                                                "period","value","BAL"))
-    sum_open_prom <- distinct(sum_open_prom)
-    sum_open_prom <- as.magpie(as.quitte(drop_na(sum_open_prom)))
+    # aggregate from fuels to reporting fuel categories
+    sum_open_prom <- iFuelPrice %>%
+      as.quitte() %>%
+      left_join(sets$BALEF2EFS, by = "EF") %>% ## add mapping
+      mutate(value = mean(value, na.rm = TRUE), .by = c("model", "scenario", "region",
+                                                        "unit","period","BAL" )) %>%
+      distinct() %>%
+      select(c("model","scenario","region","unit", "period","value","BAL")) %>%
+      distinct() %>%
+      drop_na() %>%
+      as.quitte() %>%
+      as.magpie()
     # complete names
     getItems(sum_open_prom, 3) <- paste0("Price|Final Energy|", sector_name[y],"|", getItems(sum_open_prom, 3))
 
