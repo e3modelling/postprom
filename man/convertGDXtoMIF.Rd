@@ -4,52 +4,58 @@
 \alias{convertGDXtoMIF}
 \title{Convert GDX to MIF Format}
 \usage{
-convertGDXtoMIF(path_gdx, regions, mif_name, scenario_name)
+convertGDXtoMIF(.path, regions, mif_name, scenario_name = NULL)
 }
 \arguments{
-\item{path_gdx}{Character. Path to the input GDX file.}
+\item{.path}{Character vector. Path(s) to the input GDX file(s). If multiple paths
+are provided, results are appended to the same MIF file.}
 
 \item{regions}{Character vector. A list of regions to include in the analysis.}
 
-\item{mif_name}{Character. Name of the output MIF file to be created. If NULL the formatted content is returned}
+\item{mif_name}{Character. Name of the output MIF file to be created. If NULL,
+the function will return the formatted content instead of writing it to a file.}
 
-\item{scenario_name}{Character. Name of the scenario to associate with the generated MIF file.}
+\item{scenario_name}{Character. Name of the scenario to associate with the
+generated MIF file. If NULL, the base name of the path is used.}
 }
 \value{
-This function either creates a MIF file or implicitly returns the formatted content
+If `mif_name` is NULL, the function returns the aggregated data content.
+Otherwise, it writes the MIF file and returns NULL.
 }
 \description{
-This function processes a GDX file for specified regions and generates a MIF
-report. The output combines several metrics into a single MIF file.
+This function processes GDX files for specified regions and generates a MIF
+report. It supports both single and multiple scenario paths, with the option
+to create a comparison mif.
 }
 \details{
-This function aggregates various metrics such as final energy, emissions,
-socio-economic data, and more. The data is read from the provided GDX file
-and written to a MIF file in a format compatible with the OPEN-PROM model.
+This function reads data from GDX files and aggregates metrics such as:
+- Final Energy
+- Emissions
+- Secondary Energy (SE)
+- Primary Energy (PE)
+- Gross Domestic Product (GDP)
+- Population (POP)
+- Carbon Prices
+- Price Data
+- Electricity Capacity
 
-The generated MIF file includes the following metrics:
-\itemize{
-  \item Final Energy
-  \item Emissions
-  \item Secondary Energy (SE)
-  \item Primary Energy (PE)
-  \item Gross Domestic Product (GDP)
-  \item Population (POP)
-  \item Carbon Prices
-  \item Price Data
-  \item Electricity Capacity
-}
+These metrics are combined into a single data structure and written to a MIF file
+in a format compatible with the OPEN-PROM model.
+
+If multiple paths are provided via `.path`, results are appended to the same
+output file specified by `mif_name`.
 }
 \examples{
 \dontrun{
 convertGDXtoMIF(
-  path_gdx = "path/to/data.gdx",
+  .path = c("path/to/scenario1", "path/to/scenario2"),
   regions = c("MEA", "USA"),
   mif_name = "output.mif",
-  scenario_name = "Scenario_name"
+  scenario_name = "MyScenario"
 )
 }
+
 }
 \seealso{
-\code{\link[magclass]{write.report}}
+\code{\link[magclass]{write.report}}, \code{\link[magclass]{mbind}}
 }
