@@ -48,7 +48,7 @@
 #' @importFrom gdx readGDX
 #' @export
 convertGDXtoMIF <- function(.path, regions, mif_name,
-                            scenario_name = NULL) {
+                            scenario_name = NULL, aggregate = FALSE) {
   if (length(.path) == 1) {
     if (is.null(scenario_name)) scenario_name <- basename(.path)
     return(convertGDXtoMIF_single(
@@ -70,7 +70,16 @@ convertGDXtoMIF <- function(.path, regions, mif_name,
       append = TRUE
     )
   }, .path, scenario_name)
+
+  if (aggregate == TRUE){
+    aggregateMIF(
+      path_report = file.path(path_mif, mif_name),
+      path_save = file.path(path_mif, paste0(mif_name, "_aggregate"))
+    )
+  }
 }
+
+
 # Helper -----------------------------------------------------------------
 convertGDXtoMIF_single <- function(.path, regions, mif_name, path_mif,
                                    scenario_name = NULL, append = FALSE) {
@@ -100,8 +109,10 @@ convertGDXtoMIF_single <- function(.path, regions, mif_name, path_mif,
   print(paste0('Saved mif file in ', path_mif))
 }
 
-#' @export
+
+
 aggregateMIF <- function(path_report, path_save = NULL) {
+  print(paste0('Aggregating regions in ', path_report))
   report <- read.report(path_report)
 
   for (i in seq_along(report)) {
@@ -132,9 +143,8 @@ aggregateMIF <- function(path_report, path_save = NULL) {
     report[[i]][[1]] <- mbind(report_data, world_reg)
   }
 
-    write.report(
-      report,
-      file=path_save
-    )
+  write.report(
+    report,
+    file=path_save
+  )
 }
-

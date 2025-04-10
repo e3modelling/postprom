@@ -4,7 +4,13 @@
 \alias{convertGDXtoMIF}
 \title{Convert GDX to MIF Format}
 \usage{
-convertGDXtoMIF(.path, regions, mif_name, scenario_name = NULL)
+convertGDXtoMIF(
+  .path,
+  regions,
+  mif_name,
+  scenario_name = NULL,
+  aggregate = FALSE
+)
 }
 \arguments{
 \item{.path}{Character vector. Path(s) to the input GDX file(s). If multiple paths
