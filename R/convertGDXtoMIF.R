@@ -1,37 +1,24 @@
-#' Convert GDX to MIF Format
+#' Convert GDX Data to MIF Format
 #'
-#' This function processes GDX files for specified regions and generates a MIF
-#' report. It supports both single and multiple scenario paths, with the option
-#' to create a comparison mif.
+#' This function processes GDX files for specified regions and generates
+#' a MIF (Model Intercomparison Format) file. It supports handling multiple
+#' scenarios and includes options for appending validation data and performing
+#' regions aggregation.
 #'
-#' @param .path Character vector. Path(s) to the input GDX file(s). If multiple paths
-#'   are provided, results are appended to the same MIF file.
+#' @param .path Character vector. Paths to scenario directories.
 #' @param regions Character vector. A list of regions to include in the analysis.
-#' @param mif_name Character. Name of the output MIF file to be created. If NULL,
-#'   the function will return the formatted content instead of writing it to a file.
-#' @param scenario_name Character. Name of the scenario to associate with the
-#'   generated MIF file. If NULL, the base name of the path is used.
+#' @param mif_name Character. Name of the output MIF file to be created.
+#' @param fullValidation Logical. Whether to append validation data to the output (default: TRUE).
+#' @param scenario_name Character vector. Names of the scenarios being processed. Defaults to the basename of `.path`.
+#' @param aggregate Logical. Whether to perform region aggregation (default: TRUE).
 #'
 #' @details
-#' This function reads data from GDX files and aggregates metrics such as:
-#' - Final Energy
-#' - Emissions
-#' - Secondary Energy (SE)
-#' - Primary Energy (PE)
-#' - Gross Domestic Product (GDP)
-#' - Population (POP)
-#' - Carbon Prices
-#' - Price Data
-#' - Electricity Capacity
+#' This function processes GDX files by calling the helper function `convertGDXtoMIF_single()`
+#' for each scenario. If multiple paths are provided, results are combined into a
+#' timestamped comparison MIF file. If validation is enabled, it appends validation
+#' data using `appendValidationMIF()`.
 #'
-#' These metrics are combined into a single data structure and written to a MIF file
-#' in a format compatible with the OPEN-PROM model.
-#'
-#' If multiple paths are provided via `.path`, results are appended to the same
-#' output file specified by `mif_name`.
-#'
-#' @return If `mif_name` is NULL, the function returns the aggregated data content.
-#' Otherwise, it writes the MIF file and returns NULL.
+#' @return Generates a MIF file with the processed data. Returns NULL.
 #'
 #' @examples
 #' \dontrun{
@@ -39,27 +26,26 @@
 #'   .path = c("path/to/scenario1", "path/to/scenario2"),
 #'   regions = c("MEA", "USA"),
 #'   mif_name = "output.mif",
-#'   scenario_name = "MyScenario"
+#'   fullValidation = TRUE,
+#'   scenario_name = c("Scenario1", "Scenario2"),
+#'   aggregate = TRUE
 #' )
 #' }
 #'
 #' @seealso \code{\link[magclass]{write.report}}, \code{\link[magclass]{mbind}}
-#' @importFrom magclass mbind write.report
+#' @importFrom magclass mbind dimSums getItems getRegions write.report read.report
 #' @importFrom gdx readGDX
 #' @export
-convertGDXtoMIF <- function(.path, regions, mif_name,
+convertGDXtoMIF <- function(.path, regions, mif_name, fullValidation = TRUE,
                             scenario_name = NULL, aggregate = TRUE) {
   if (is.null(scenario_name)) scenario_name <- basename(.path)
-  if (length(.path) == 1) {
-    return(convertGDXtoMIF_single(
-      .path, regions, file.path(.path, mif_name),
-      scenario_name = scenario_name,
-      aggregate=aggregate,
-      append = FALSE
-    ))
-  }
   current_time <- format(Sys.time(), "%Y-%m-%d_%H-%M")
-  path_mif <- file.path(.path[1], "..", paste0("comparison_", current_time, mif_name))
+  append <- length(.path) > 1
+  path_mif <- file.path(
+    .path[1],
+    if (length(.path) > 1) ".." else "",
+    if (length(.path) > 1) paste0("comparison_", current_time, "_", mif_name) else mif_name
+  )
 
   mapply(function(path, scenario) {
     convertGDXtoMIF_single(
@@ -68,12 +54,14 @@ convertGDXtoMIF <- function(.path, regions, mif_name,
       path_mif = path_mif,
       scenario_name = scenario,
       aggregate = aggregate,
-      append = TRUE
+      append = append
     )
   }, .path, scenario_name)
+
+  if (fullValidation == TRUE) appendValidationMIF(.path[1], path_mif)
 }
 
-# Helper -----------------------------------------------------------------
+# Helpers -----------------------------------------------------------------
 convertGDXtoMIF_single <- function(.path, regions, path_mif, append,
                                    scenario_name = NULL, aggregate = TRUE) {
   # path is path to scenario
@@ -81,7 +69,6 @@ convertGDXtoMIF_single <- function(.path, regions, path_mif, append,
   print(paste0("Region aggregation: ", aggregate))
 
   path_gdx <- file.path(.path, "blabla.gdx")
-
 
   FE <- reportFinalEnergy(path_gdx, regions)
   EMI <- reportEmissions(path_gdx, regions)
@@ -95,6 +82,7 @@ convertGDXtoMIF_single <- function(.path, regions, path_mif, append,
 
   magpie_reporting <- mbind(FE, EMI, SE, PE, GDP, POP, PCar, Price, CapElec)
   if (aggregate == TRUE) report <- aggregateMIF(report = magpie_reporting)
+
   write.report(
     report,
     file = path_mif,
@@ -104,7 +92,6 @@ convertGDXtoMIF_single <- function(.path, regions, path_mif, append,
   )
   print(paste0("Saved mif file in ", path_mif))
 }
-
 
 aggregateMIF <- function(report) {
   report_data <- report
@@ -135,4 +122,22 @@ aggregateMIF <- function(report) {
   # Bind the new aggregated data with the original report
   report <- mbind(report_data, world_reg)
   return(report)
+}
+
+appendValidationMIF <- function(runpath, path_mif) {
+  base_dir <- dirname(runpath[1])
+  validation_path <- file.path(base_dir, "fullValidation.mif")
+
+  if (file.exists(validation_path)) {
+    reporting_fullVALIDATION <- read.report(validation_path)
+    write.report(reporting_fullVALIDATION,
+      file = path_mif,
+      append = TRUE
+    )
+  } else {
+    message(paste0(
+      "Skipping validation: 'fullValidation.mif' not found in ",
+      base_dir
+    ))
+  }
 }

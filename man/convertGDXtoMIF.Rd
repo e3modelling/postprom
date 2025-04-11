@@ -2,54 +2,44 @@
 % Please edit documentation in R/convertGDXtoMIF.R
 \name{convertGDXtoMIF}
 \alias{convertGDXtoMIF}
-\title{Convert GDX to MIF Format}
+\title{Convert GDX Data to MIF Format}
 \usage{
 convertGDXtoMIF(
   .path,
   regions,
   mif_name,
+  fullValidation = TRUE,
   scenario_name = NULL,
   aggregate = TRUE
 )
 }
 \arguments{
-\item{.path}{Character vector. Path(s) to the input GDX file(s). If multiple paths
-are provided, results are appended to the same MIF file.}
+\item{.path}{Character vector. Paths to scenario directories.}
 
 \item{regions}{Character vector. A list of regions to include in the analysis.}
 
-\item{mif_name}{Character. Name of the output MIF file to be created. If NULL,
-the function will return the formatted content instead of writing it to a file.}
+\item{mif_name}{Character. Name of the output MIF file to be created.}
 
-\item{scenario_name}{Character. Name of the scenario to associate with the
-generated MIF file. If NULL, the base name of the path is used.}
+\item{fullValidation}{Logical. Whether to append validation data to the output (default: TRUE).}
+
+\item{scenario_name}{Character vector. Names of the scenarios being processed. Defaults to the basename of `.path`.}
+
+\item{aggregate}{Logical. Whether to perform region aggregation (default: TRUE).}
 }
 \value{
-If `mif_name` is NULL, the function returns the aggregated data content.
-Otherwise, it writes the MIF file and returns NULL.
+Generates a MIF file with the processed data. Returns NULL.
 }
 \description{
-This function processes GDX files for specified regions and generates a MIF
-report. It supports both single and multiple scenario paths, with the option
-to create a comparison mif.
+This function processes GDX files for specified regions and generates
+a MIF (Model Intercomparison Format) file. It supports handling multiple
+scenarios and includes options for appending validation data and performing
+regions aggregation.
 }
 \details{
-This function reads data from GDX files and aggregates metrics such as:
-- Final Energy
-- Emissions
-- Secondary Energy (SE)
-- Primary Energy (PE)
-- Gross Domestic Product (GDP)
-- Population (POP)
-- Carbon Prices
-- Price Data
-- Electricity Capacity
-
-These metrics are combined into a single data structure and written to a MIF file
-in a format compatible with the OPEN-PROM model.
-
-If multiple paths are provided via `.path`, results are appended to the same
-output file specified by `mif_name`.
+This function processes GDX files by calling the helper function `convertGDXtoMIF_single()`
+for each scenario. If multiple paths are provided, results are combined into a
+timestamped comparison MIF file. If validation is enabled, it appends validation
+data using `appendValidationMIF()`.
 }
 \examples{
 \dontrun{
@@ -57,7 +47,9 @@ convertGDXtoMIF(
   .path = c("path/to/scenario1", "path/to/scenario2"),
   regions = c("MEA", "USA"),
   mif_name = "output.mif",
-  scenario_name = "MyScenario"
+  fullValidation = TRUE,
+  scenario_name = c("Scenario1", "Scenario2"),
+  aggregate = TRUE
 )
 }
 
