@@ -48,45 +48,40 @@
 #' @importFrom gdx readGDX
 #' @export
 convertGDXtoMIF <- function(.path, regions, mif_name,
-                            scenario_name = NULL, aggregate = FALSE) {
+                            scenario_name = NULL, aggregate = TRUE) {
+  if (is.null(scenario_name)) scenario_name <- basename(.path)
   if (length(.path) == 1) {
-    if (is.null(scenario_name)) scenario_name <- basename(.path)
     return(convertGDXtoMIF_single(
-      .path, regions, mif_name, .path,
-      scenario_name = scenario_name
+      .path, regions, file.path(.path, mif_name),
+      scenario_name = scenario_name,
+      aggregate=aggregate,
+      append = FALSE
     ))
   }
-
-  path_mif <- file.path(.path[1], "..") # save comparison mif in base dir
-  if (is.null(scenario_name)) scenario_name <- basename(.path)
+  current_time <- format(Sys.time(), "%Y-%m-%d_%H-%M")
+  path_mif <- file.path(.path[1], "..", paste0("comparison_", current_time, mif_name))
 
   mapply(function(path, scenario) {
     convertGDXtoMIF_single(
       .path = path,
       regions = regions,
-      mif_name = mif_name,
       path_mif = path_mif,
       scenario_name = scenario,
+      aggregate = aggregate,
       append = TRUE
     )
   }, .path, scenario_name)
-
-  if (aggregate == TRUE){
-    aggregateMIF(
-      path_report = file.path(path_mif, mif_name),
-      path_save = file.path(path_mif, paste0(mif_name, "_aggregate"))
-    )
-  }
 }
 
-
 # Helper -----------------------------------------------------------------
-convertGDXtoMIF_single <- function(.path, regions, mif_name, path_mif,
-                                   scenario_name = NULL, append = FALSE) {
+convertGDXtoMIF_single <- function(.path, regions, path_mif, append,
+                                   scenario_name = NULL, aggregate = TRUE) {
   # path is path to scenario
-  print(paste("Processing path:", .path))
+  print(paste0("Processing path: ", .path))
+  print(paste0("Region aggregation: ", aggregate))
+
   path_gdx <- file.path(.path, "blabla.gdx")
-  path_mif <- if (is.null(path_mif)) mif_name else file.path(path_mif, mif_name)
+
 
   FE <- reportFinalEnergy(path_gdx, regions)
   EMI <- reportEmissions(path_gdx, regions)
@@ -99,52 +94,45 @@ convertGDXtoMIF_single <- function(.path, regions, mif_name, path_mif,
   CapElec <- reportCapacityElectricity(path_gdx, regions)
 
   magpie_reporting <- mbind(FE, EMI, SE, PE, GDP, POP, PCar, Price, CapElec)
+  if (aggregate == TRUE) report <- aggregateMIF(report = magpie_reporting)
   write.report(
-    magpie_reporting,
+    report,
     file = path_mif,
     model = "OPEN-PROM",
     scenario = scenario_name,
     append = append
   )
-  print(paste0('Saved mif file in ', path_mif))
+  print(paste0("Saved mif file in ", path_mif))
 }
 
 
+aggregateMIF <- function(report) {
+  report_data <- report
+  items <- getItems(report_data, 3)
+  get_items <- items[grep("^Price", items)]
+  get_items_not <- items[!grepl("^Price", items)]
 
-aggregateMIF <- function(path_report, path_save = NULL) {
-  print(paste0('Aggregating regions in ', path_report))
-  report <- read.report(path_report)
+  # Calculate the sum for the 'not Price' items
+  add_region_GLO <- dimSums(report_data[, , get_items_not], 1, na.rm = TRUE)
+  getItems(add_region_GLO, 1) <- "World"
 
-  for (i in seq_along(report)) {
-    report_data <- report[[i]][[1]]
-    items <- getItems(report_data, 3)
-    get_items <- items[grep("^Price", items)]
-    get_items_not <- items[!grepl("^Price", items)]
+  # Extract GDP data and region map
+  gdp <- report_data[, , "GDP|PPP.billion US$2015/yr"]
+  rmap_world <- as.data.frame(getRegions(report_data))
+  names(rmap_world) <- "Region.Code"
+  rmap_world$V2 <- "World" # V2 is just a placeholder
 
-    # Calculate the sum for the 'not Price' items
-    add_region_GLO <- dimSums(report_data[,,get_items_not], 1, na.rm = TRUE)
-    getItems(add_region_GLO, 1) <- "World"
-
-    # Extract GDP data and region map
-    gdp <- report_data[, , "GDP|PPP (billion US$2015/yr)"]
-    rmap_world <- as.data.frame(getRegions(report_data))
-    names(rmap_world) <- "Region.Code"
-    rmap_world$V2 <- "World" # V2 is just a placeholder
-
-    # Aggregate the data for "Price" items using the GDP as weights
-    add_region_GLO_mean <- toolAggregate(
-      report_data[,,get_items], weight = gdp, rel = rmap_world, from = "Region.Code", to = "V2")
-    getItems(add_region_GLO_mean, 1) <- "World"
-
-    # Combine the calculated regions
-    world_reg <- mbind(add_region_GLO, add_region_GLO_mean)
-
-    # Bind the new aggregated data with the original report
-    report[[i]][[1]] <- mbind(report_data, world_reg)
-  }
-
-  write.report(
-    report,
-    file=path_save
+  # Aggregate the data for "Price" items using the GDP as weights
+  add_region_GLO_mean <- toolAggregate(
+    report_data[, , get_items],
+    weight = gdp, rel = rmap_world, from = "Region.Code", to = "V2"
   )
+  getItems(add_region_GLO_mean, 1) <- "World"
+
+  # Combine the calculated regions
+  world_reg <- mbind(add_region_GLO, add_region_GLO_mean)
+
+  # Bind the new aggregated data with the original report
+  report <- mbind(report_data, world_reg)
+  return(report)
 }

@@ -9,7 +9,7 @@ convertGDXtoMIF(
   regions,
   mif_name,
   scenario_name = NULL,
-  aggregate = FALSE
+  aggregate = TRUE
 )
 }
 \arguments{
