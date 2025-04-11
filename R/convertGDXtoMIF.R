@@ -42,10 +42,10 @@ convertGDXtoMIF <- function(.path, regions, mif_name, fullValidation = TRUE,
   current_time <- format(Sys.time(), "%Y-%m-%d_%H-%M")
   append <- length(.path) > 1
   path_mif <- file.path(
-    .path[1],
-    if (length(.path) > 1) ".." else "",
+    if (length(.path) > 1) dirname(.path[1]) else .path[1],
     if (length(.path) > 1) paste0("comparison_", current_time, "_", mif_name) else mif_name
   )
+
 
   mapply(function(path, scenario) {
     convertGDXtoMIF_single(
@@ -125,7 +125,7 @@ aggregateMIF <- function(report) {
 }
 
 appendValidationMIF <- function(runpath, path_mif) {
-  base_dir <- dirname(runpath[1])
+  base_dir <- dirname(dirname(runpath[1]))
   validation_path <- file.path(base_dir, "fullValidation.mif")
 
   if (file.exists(validation_path)) {

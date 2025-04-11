@@ -14,11 +14,31 @@
 #' }
 #'
 #' @importFrom gdx readGDX
-#' @importFrom magclass getItems dimSums add_dimension mbind
+#' @importFrom magclass getItems dimSums add_dimension mbind collapseDim
 #' @importFrom quitte as.quitte
 #' @importFrom dplyr filter left_join mutate select group_by %>%
 #' @export
 reportEmissions <- function(path, regions) {
+  fscenario <- readGDX(path, "fscenario")
+
+  Navigate_Emissions <- read.csv(file.path(path, "data", "NavigateEmissions.csv"))
+  Navigate_Emissions <- as.magpie(Navigate_Emissions)
+
+  if (fscenario == 2) {
+    Navigate_Emissions <- Navigate_Emissions[, , "SUP_2C_Default"][regions, , ]
+  } else if (fscenario == 1) {
+    Navigate_Emissions <- Navigate_Emissions[, , "SUP_1p5C_Default"][regions, , ]
+  } else if (fscenario == 0) {
+    Navigate_Emissions <- Navigate_Emissions[, , "SUP_NPi_Default"][regions, , ]
+  }
+
+  Navigate_Emissions <- collapseDim(Navigate_Emissions, 3.1)
+  Navigate_Emissions <- collapseDim(Navigate_Emissions, 3.1)
+
+  remind_AFOLU_Industrial_Processes <- Navigate_Emissions[, , c("Emissions|CO2|AFOLU", "Emissions|CO2|Industrial Processes")]
+  remind <- dimSums(remind_AFOLU_Industrial_Processes, 3, na.rm = TRUE)
+
+
   iCo2EmiFac <- readGDX(path, "iCo2EmiFac")[regions, , ]
   VConsFuel <- readGDX(path, "VConsFuel", field = 'l')[regions, , ]
   VInpTransfTherm <- readGDX(path, "VInpTransfTherm", field = 'l')[regions, , ]
@@ -92,13 +112,13 @@ reportEmissions <- function(path, regions) {
   sum7 <- iCo2EmiFac[, , SECTTECH2[, 1]] * VConsFuel[, , SECTTECH2[, 1]]
   sum7 <- dimSums(sum7, dim = 3, na.rm = TRUE)
 
-  total_CO2 <- sum1 + sum2 + sum3 + sum4 + sum5 - sum6 + sum7
+  total_CO2 <- sum1 + sum2 + sum3 + sum4 + sum5 - sum6 + sum7 + remind
 
   getItems(total_CO2, 3) <- "Emissions|CO2"
 
   magpie_object <- NULL
   total_CO2 <- add_dimension(total_CO2, dim = 3.2, add = "unit", nm = "Mt CO2/yr")
-  magpie_object <- mbind(magpie_object, total_CO2)
+  magpie_object <- mbind(magpie_object, total_CO2, Navigate_Emissions)
 
   # Extra Emissions
   # Emissions|CO2|Energy|Demand|Industry
