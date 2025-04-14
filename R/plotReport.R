@@ -38,6 +38,7 @@ plotReport <- function(magpie_obj, variable_name, an, colors_vars,
   plot <- .plotTool(data, colors_vars, {{ variable_name }}, plot_type, label)
 
   if (!is.null(save_name)) {
+    print(paste0("Saving plot to ", save_name))
     ggsave(save_name, plot, units = "in", width = 5.5, height = 4, dpi = 1200)
   }
   return(plot)

@@ -21,7 +21,7 @@
 reportEmissions <- function(path, regions) {
   fscenario <- readGDX(path, "fscenario")
 
-  Navigate_Emissions <- read.csv(file.path(path, "data", "NavigateEmissions.csv"))
+  Navigate_Emissions <- read.csv(file.path(dirname(path), "data", "NavigateEmissions.csv"))
   Navigate_Emissions <- as.magpie(Navigate_Emissions)
 
   if (fscenario == 2) {

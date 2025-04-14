@@ -46,7 +46,6 @@ convertGDXtoMIF <- function(.path, regions, mif_name, fullValidation = TRUE,
     if (length(.path) > 1) paste0("comparison_", current_time, "_", mif_name) else mif_name
   )
 
-
   mapply(function(path, scenario) {
     convertGDXtoMIF_single(
       .path = path,
