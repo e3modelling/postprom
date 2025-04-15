@@ -10,7 +10,8 @@ convertGDXtoMIF(
   mif_name,
   fullValidation = TRUE,
   scenario_name = NULL,
-  aggregate = TRUE
+  aggregate = TRUE,
+  plot_info = NULL
 )
 }
 \arguments{

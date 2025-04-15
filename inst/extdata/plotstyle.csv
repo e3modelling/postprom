@@ -1,0 +1,29 @@
+X,legend,color
+Capacity|Electricity|Solar,Solar,#ffcc00
+Capacity|Electricity|Oil,Oil,#663a00
+Capacity|Electricity|Wind,Wind,#337fff
+Capacity|Electricity|Coal,Coal,#0c0c0c
+Capacity|Electricity|Gas,Gas,#999959
+Capacity|Electricity|Nuclear,Nuclear,#ff33ff
+Capacity|Electricity|Biomass,Biomass,#005900
+Capacity|Electricity|Geothermal,Geothermal,#e51900
+Capacity|Electricity|PGADPV,PGADPV,#d4ff00
+Capacity|Electricity|PGASOL,PGASOL,#ffb400
+Capacity|Electricity|PGAWND,PGAWND,#8800ff
+Capacity|Electricity|PGAWNO,PGAWNO,#334cff
+Capacity|Electricity|PGWND,PGWND,#337fff
+Capacity|Electricity|PGSOL,PGSOL,#ffe600
+Secondary Energy|Electricity|PGAWND,PGAWND,#8800ff
+Secondary Energy|Electricity|PGAWNO,PGAWNO,#334cff
+Secondary Energy|Electricity|PGWND,PGWND,#337fff
+Secondary Energy|Electricity|PGADPV,PGADPV,#d4ff00
+Secondary Energy|Electricity|PGASOL,PGASOL,#ffb400
+Secondary Energy|Electricity|PGSOL,PGSOL,#ffe600
+Secondary Energy|Electricity|Coal,Coal,#0c0c0c
+Secondary Energy|Electricity|Gas,Gas,#999959
+Secondary Energy|Electricity|Biomass,Biomass,#005900
+Final Energy|Non Energy and Bunkers,Non Energy and Bunkers,yellow
+Final Energy|Biomass,Biomass,#00b219
+Emissions|CO2|Energy|Demand|Bunkers,Bunkers,#FDBF6F
+Emissions|CO2|Energy|Supply,Supply,#bcbc6d
+Emissions|CO2|Cumulated,Cumulated,#661a00

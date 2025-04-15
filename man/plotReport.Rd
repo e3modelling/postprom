@@ -2,45 +2,23 @@
 % Please edit documentation in R/plotReport.R
 \name{plotReport}
 \alias{plotReport}
-\title{Plot Report from a Magpie Object}
+\title{Generate and Save Plots for MAGPIE Objects}
 \usage{
-plotReport(
-  magpie_obj,
-  variable_name,
-  an,
-  colors_vars,
-  plot_type = "bar",
-  label = NULL,
-  save_name = NULL
-)
-}
-\arguments{
-\item{magpie_obj}{A `magpie` object to be converted and filtered for plotting.}
-
-\item{variable_name}{The variable to plot, provided as an unquoted column name.}
-
-\item{an}{GDX object. The maximum value of the `period` to include in the plot.}
-
-\item{colors_vars}{A data frame containing color mapping. Expected columns:
-\describe{
-  \item{1}{Variable names.}
-  \item{2}{Corresponding categories.}
-  \item{3}{Colors for each category.}
-}}
-
-\item{plot_type}{A string specifying the type of plot to generate. Options are
-\code{"bar"} (default) and \code{"area"}.}
-
-\item{label}{Optional. A string specifying a custom label for the legend.}
-
-\item{save_name}{Optional. A string specifying the file name to save the plot.
-If \code{NULL}, the plot is not saved.}
-}
-\value{
-A ggplot object containing the generated plot.
+plotReport(obj, ...)
 }
 \description{
-This function generates a ggplot-based visualization from a `magpie` object,
-using specified variables, colors, and plot types. Optionally, the plot can
-be saved to a file.
+This set of functions generates plots for MAGPIE objects or lists
+of MAGPIE objects, based on the specified parameters.
+The plots can be saved individually or combined into a PDF file.
+}
+\details{
+The generic \code{plotReport} function delegates to specific methods based on the class of \code{obj}. Supported
+methods include \code{plotReport.list} for lists of MAGPIE objects and \code{plotReport.magpie} for individual
+MAGPIE objects.
+}
+\examples{
+\dontrun{
+magpie_obj <- read.magpie("example_file.mgp")
+plotReport(magpie_obj, an = 2050, vars = c("variable1", "variable2"), plot_type = "bar")
+}
 }
