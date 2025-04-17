@@ -38,7 +38,7 @@
 #' @export
 convertGDXtoMIF <- function(.path, regions, mif_name, fullValidation = TRUE,
                             scenario_name = NULL, aggregate = TRUE,
-                            plot_info = NULL) {
+                            save = TRUE) {
   if (is.null(scenario_name)) scenario_name <- basename(.path)
   current_time <- format(Sys.time(), "%Y-%m-%d_%H-%M")
   append <- length(.path) > 1
@@ -47,59 +47,55 @@ convertGDXtoMIF <- function(.path, regions, mif_name, fullValidation = TRUE,
     if (length(.path) > 1) paste0("comparison_", current_time, "_", mif_name) else mif_name
   )
 
-  mapply(function(path, scenario) {
-    print(paste0("Processing path: ", .path))
-    path_gdx <- file.path(.path, "blabla.gdx")
-    reports <- getReports(path_gdx, regions)
-
-    if (!is.null(plot_info)) {
-      an <- readGDX(path_gdx, "an", field = "l", regions)
-      plotReport(reports, an, plot_info)
-    }
-
+  scenarios_reports <- mapply(function(path, scenario) {
     convertGDXtoMIF_single(
-      reporting = Reduce(mbind, reports),
+      .path = path,
+      regions = regions,
       path_mif = path_mif,
       scenario_name = scenario,
       aggregate = aggregate,
-      append = append
+      append = append,
+      save = save
     )
   },
-  .path, scenario_name)
+  .path, scenario_name,
+  SIMPLIFY = FALSE
+  )
 
   if (fullValidation == TRUE) appendValidationMIF(.path[1], path_mif)
+  return(scenarios_reports)
 }
-
 # Helpers -----------------------------------------------------------------
-getReports <- function(path_gdx, regions) {
-  return(
-    list(
-      "Final Energy" = reportFinalEnergy(path_gdx, regions),
-      "Emissions" = reportEmissions(path_gdx, regions),
-      "Secondary Energy" = reportSE(path_gdx, regions),
-      "Primary Energy" = reportPE(path_gdx, regions),
-      "GDP" = reportGDP(path_gdx, regions),
-      "Population" = reportPOP(path_gdx, regions),
-      "Carbon Price" = reportPriceCarbon(path_gdx, regions),
-      "Price" = reportPrice(path_gdx, regions),
-      "Capacity" = reportCapacityElectricity(path_gdx, regions)
-    )
-  )
-}
-
-convertGDXtoMIF_single <- function(reporting, path_mif, append,
-                                   scenario_name = NULL, aggregate = TRUE) {
+convertGDXtoMIF_single <- function(.path, regions, path_mif, append,
+                                   scenario_name = NULL, aggregate = TRUE,
+                                   save = TRUE) {
   print(paste0("Region aggregation: ", aggregate))
-  if (aggregate == TRUE) reporting <- aggregateMIF(report = reporting)
+  print(paste0("Processing path: ", .path))
+  path_gdx <- file.path(.path, "blabla.gdx")
 
-  write.report(
-    reporting,
-    file = path_mif,
-    model = "OPEN-PROM",
-    scenario = scenario_name,
-    append = append
-  )
-  print(paste0("Saved mif file in ", path_mif))
+  reports <- reportFinalEnergy(path_gdx, regions)
+  reports <- mbind(reports, reportEmissions(path_gdx, regions))
+  reports <- mbind(reports, reportSE(path_gdx, regions))
+  reports <- mbind(reports, reportPE(path_gdx, regions))
+  reports <- mbind(reports, reportGDP(path_gdx, regions))
+  reports <- mbind(reports, reportPOP(path_gdx, regions))
+  reports <- mbind(reports, reportPriceCarbon(path_gdx, regions))
+  reports <- mbind(reports, reportPrice(path_gdx, regions))
+  reports <- mbind(reports, reportCapacityElectricity(path_gdx, regions))
+
+  if (aggregate == TRUE) reports <- aggregateMIF(report = reports)
+
+  if(save == TRUE) {
+    write.report(
+      reports,
+      file = path_mif,
+      model = "OPEN-PROM",
+      scenario = scenario_name,
+      append = append
+    )
+    print(paste0("Saved mif file in ", path_mif))
+  }
+  return(reports)
 }
 
 aggregateMIF <- function(report) {

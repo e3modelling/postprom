@@ -11,7 +11,7 @@ convertGDXtoMIF(
   fullValidation = TRUE,
   scenario_name = NULL,
   aggregate = TRUE,
-  plot_info = NULL
+  save = TRUE
 )
 }
 \arguments{

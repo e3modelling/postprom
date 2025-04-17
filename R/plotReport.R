@@ -1,19 +1,18 @@
-#' Generate and Save Plots for MAGPIE Objects
+#' Generate Plots for MAgPIE Data
 #'
-#' @description
-#' This set of functions generates plots for MAGPIE objects or lists
-#' of MAGPIE objects, based on the specified parameters.
-#' The plots can be saved individually or combined into a PDF file.
+#' This function generates plots for MAgPIE objects based on specified variables and plot types.
 #'
-#' @details
-#' The generic \code{plotReport} function delegates to specific methods based on the class of \code{obj}. Supported
-#' methods include \code{plotReport.list} for lists of MAGPIE objects and \code{plotReport.magpie} for individual
-#' MAGPIE objects.
+#' @param magpie_obj A MAgPIE object containing the data to be plotted.
+#' @param an A numeric vector specifying the analysis years.
+#' @param vars A character vector or list of character vectors indicating the variables to plot.
+#' @param plot_type A string specifying the plot type. Options are `"bar"` or `"area"`. Default is `"bar"`.
+#' @param label An optional string to label the plot legend. Defaults to `NULL`.
+#' @param save_name An optional string specifying the file name to save the plot. Defaults to `NULL`.
 #'
+#' @return A single plot object or a list of plot objects.
 #' @examples
 #' \dontrun{
-#' magpie_obj <- read.magpie("example_file.mgp")
-#' plotReport(magpie_obj, an = 2050, vars = c("variable1", "variable2"), plot_type = "bar")
+#' plotReport(magpie_obj, an = c(2020, 2030), vars = "Capacity|Electricity", plot_type = "bar")
 #' }
 #' @importFrom ggplot2 ggplot aes geom_area geom_bar facet_wrap scale_fill_manual
 #' @importFrom ggplot2 scale_color_manual labs theme_bw theme ggsave element_text
@@ -22,57 +21,25 @@
 #' @importFrom quitte as.quitte
 #' @importFrom magclass getSets
 #' @export
-plotReport <- function(obj, ...) {
-  UseMethod("plotReport")
-}
-
-#' @export
-plotReport.list <- function(magpie_list, an, plot_info,
-                            plot_type = "bar", save_pdf = NULL) {
-  magpie_list <- magpie_list[names(magpie_list) %in% names(plot_info)]
-
-  mapply_fun <- function(name, obj) {
-    lapply(
-      plot_info[[name]],
-      function(vars) {plotReport(obj, an, vars, label=name)}
-    )
-  }
-
-  plots_list <- unlist(
-    mapply(
-      mapply_fun,
-      names(magpie_list), magpie_list,
-      SIMPLIFY = FALSE
-    ),
-    recursive = FALSE
-  )
-
-  if (!is.null(save_pdf)) {
-    pdf(save_pdf, width = 8, height = 6)
-    for (plot in plots_list) print(plot)
-    dev.off()
-  }
-}
-
-#' @export
-plotReport.magpie <- function(magpie_obj, an, vars, plot_type = "bar",
+plotReport <- function(magpie_obj, an, vars, plot_type = "bar",
                               label = NULL, save_name = NULL) {
-  colors_vars <- getColorMappings() %>%
-    filter(X %in% vars)
-  variable_name = getSets(magpie_obj)["d3.1"]
-
-  data <- as.quitte(magpie_obj) %>%
-    filter(.data[[variable_name]] %in% colors_vars[, 1], period <= max(an))
-
-  plot <- plotTool(data, colors_vars, variable_name, plot_type, label)
-
-  if (!is.null(save_name)) {
-    print(paste0("Saving plot to ", save_name))
-    ggsave(save_name, plot, units = "in", width = 5.5, height = 4, dpi = 1200)
+  if (is.character(vars)) {
+    vars <- list(vars)
   }
-  return(plot)
-}
+  else if (!is.list(vars)) {
+    stop("Argument 'vars' must be a character vector or a list of character vectors.")
+  }
 
+  plots <- lapply(vars, function(var) {
+    plotSingleVectorVar(magpie_obj, an, var, plot_type, label, save_name)
+  })
+
+  if (length(plots) == 1) {
+    return(plots[[1]])
+  }
+
+  return(plots)
+}
 # Helpers -------------------------------------------------------------
 plotTool <- function(data, colors_vars, variable, plot_type, label) {
   if (is.null(label)) {
@@ -110,6 +77,34 @@ plotTool <- function(data, colors_vars, variable, plot_type, label) {
       legend.key.size = unit(0.5, "cm"),
       legend.key.width = unit(0.5, "cm")
     )
+  return(plot)
+}
+
+plotSingleVectorVar <- function(magpie_obj, an, vars, plot_type,
+                                label, save_name) {
+  variable_name = getSets(magpie_obj)["d3.1"]
+  colors_vars <- getColorMappings() %>%
+    filter(X %in% vars)
+
+  # Throw warning if missing color mappings are found
+  missing_colors <- setdiff(vars, colors_vars$X)
+  if (length(missing_colors) > 0) {
+    warning(sprintf(
+      "No color available for the following variables: %s",
+      paste(missing_colors, collapse = ", ")
+    )
+    )
+  }
+
+  data <- as.quitte(magpie_obj) %>%
+    filter(.data[[variable_name]] %in% colors_vars[, 1], period <= max(an))
+
+  plot <- plotTool(data, colors_vars, variable_name, plot_type, label)
+
+  if (!is.null(save_name)) {
+    print(paste0("Saving plot to ", save_name))
+    ggsave(save_name, plot, units = "in", width = 5.5, height = 4, dpi = 1200)
+  }
   return(plot)
 }
 

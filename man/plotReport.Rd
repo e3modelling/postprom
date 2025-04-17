@@ -2,23 +2,38 @@
 % Please edit documentation in R/plotReport.R
 \name{plotReport}
 \alias{plotReport}
-\title{Generate and Save Plots for MAGPIE Objects}
+\title{Generate Plots for MAgPIE Data}
 \usage{
-plotReport(obj, ...)
+plotReport(
+  magpie_obj,
+  an,
+  vars,
+  plot_type = "bar",
+  label = NULL,
+  save_name = NULL
+)
+}
+\arguments{
+\item{magpie_obj}{A MAgPIE object containing the data to be plotted.}
+
+\item{an}{A numeric vector specifying the analysis years.}
+
+\item{vars}{A character vector or list of character vectors indicating the variables to plot.}
+
+\item{plot_type}{A string specifying the plot type. Options are `"bar"` or `"area"`. Default is `"bar"`.}
+
+\item{label}{An optional string to label the plot legend. Defaults to `NULL`.}
+
+\item{save_name}{An optional string specifying the file name to save the plot. Defaults to `NULL`.}
+}
+\value{
+A single plot object or a list of plot objects.
 }
 \description{
-This set of functions generates plots for MAGPIE objects or lists
-of MAGPIE objects, based on the specified parameters.
-The plots can be saved individually or combined into a PDF file.
-}
-\details{
-The generic \code{plotReport} function delegates to specific methods based on the class of \code{obj}. Supported
-methods include \code{plotReport.list} for lists of MAGPIE objects and \code{plotReport.magpie} for individual
-MAGPIE objects.
+This function generates plots for MAgPIE objects based on specified variables and plot types.
 }
 \examples{
 \dontrun{
-magpie_obj <- read.magpie("example_file.mgp")
-plotReport(magpie_obj, an = 2050, vars = c("variable1", "variable2"), plot_type = "bar")
+plotReport(magpie_obj, an = c(2020, 2030), vars = "Capacity|Electricity", plot_type = "bar")
 }
 }
