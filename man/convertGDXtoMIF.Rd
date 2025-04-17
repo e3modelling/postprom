@@ -2,12 +2,12 @@
 % Please edit documentation in R/convertGDXtoMIF.R
 \name{convertGDXtoMIF}
 \alias{convertGDXtoMIF}
-\title{Convert GDX Data to MIF Format}
+\title{Convert GDX Files to MIF Format}
 \usage{
 convertGDXtoMIF(
   .path,
-  regions,
   mif_name,
+  regions = NULL,
   fullValidation = TRUE,
   scenario_name = NULL,
   aggregate = TRUE,
@@ -15,46 +15,39 @@ convertGDXtoMIF(
 )
 }
 \arguments{
-\item{.path}{Character vector. Paths to scenario directories.}
+\item{.path}{A character vector specifying the path(s) to the GDX files.}
 
-\item{regions}{Character vector. A list of regions to include in the analysis.}
+\item{mif_name}{A string specifying the name of the MIF file to create.}
 
-\item{mif_name}{Character. Name of the output MIF file to be created.}
+\item{regions}{Optional; a character vector specifying the regions to include. Defaults to `NULL`, in which case regions are read from the GDX file.}
 
-\item{fullValidation}{Logical. Whether to append validation data to the output (default: TRUE).}
+\item{fullValidation}{Optional; a logical value indicating whether full validation should be performed. Defaults to `TRUE`.}
 
-\item{scenario_name}{Character vector. Names of the scenarios being processed. Defaults to the basename of `.path`.}
+\item{scenario_name}{Optional; a character vector specifying the scenario names. Defaults to the basename of `.path`.}
 
-\item{aggregate}{Logical. Whether to perform region aggregation (default: TRUE).}
+\item{aggregate}{Optional; a logical value indicating whether to aggregate data. Defaults to `TRUE`.}
+
+\item{save}{Optional; a logical value indicating whether to save the output. Defaults to `TRUE`.}
 }
 \value{
-Generates a MIF file with the processed data. Returns NULL.
+A list of scenario reports generated from the provided GDX files.
 }
 \description{
-This function processes GDX files for specified regions and generates
-a MIF (Model Intercomparison Format) file. It supports handling multiple
-scenarios and includes options for appending validation data and performing
-regions aggregation.
+This function processes GDX files and converts them to MIF format, with options for validation, aggregation, and saving the output.
 }
 \details{
-This function processes GDX files by calling the helper function `convertGDXtoMIF_single()`
-for each scenario. If multiple paths are provided, results are combined into a
-timestamped comparison MIF file. If validation is enabled, it appends validation
-data using `appendValidationMIF()`.
+- If `regions` is not provided, it is inferred from the GDX file using the `readGDX` function.
+- The function supports multiple paths and scenarios, and appends reports when more than one path is provided.
+- Full validation is optionally applied by calling `appendValidationMIF`.
 }
 \examples{
 \dontrun{
-convertGDXtoMIF(
-  .path = c("path/to/scenario1", "path/to/scenario2"),
-  regions = c("MEA", "USA"),
-  mif_name = "output.mif",
-  fullValidation = TRUE,
-  scenario_name = c("Scenario1", "Scenario2"),
-  aggregate = TRUE
-)
+convertGDXtoMIF(.path = c("path/to/gdx1", "path/to/gdx2"),
+                mif_name = "output.mif",
+                regions = c("runCYL", "World"),
+                fullValidation = TRUE,
+                scenario_name = c("Scenario1", "Scenario2"),
+                aggregate = TRUE,
+                save = TRUE)
 }
-
-}
-\seealso{
-\code{\link[magclass]{write.report}}, \code{\link[magclass]{mbind}}
 }

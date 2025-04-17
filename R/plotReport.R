@@ -1,18 +1,21 @@
-#' Generate Plots for MAgPIE Data
+#' Generate a Plot from a MAgPIE Object
 #'
-#' This function generates plots for MAgPIE objects based on specified variables and plot types.
+#' This function generates a plot for a MAgPIE object using specified settings. It supports both bar and area plot types and handles color mappings for variables.
 #'
 #' @param magpie_obj A MAgPIE object containing the data to be plotted.
-#' @param an A numeric vector specifying the analysis years.
-#' @param vars A character vector or list of character vectors indicating the variables to plot.
-#' @param plot_type A string specifying the plot type. Options are `"bar"` or `"area"`. Default is `"bar"`.
+#' @param plot_type A string specifying the type of plot. Options are `"bar"` or `"area"`. Defaults to `"bar"`.
 #' @param label An optional string to label the plot legend. Defaults to `NULL`.
-#' @param save_name An optional string specifying the file name to save the plot. Defaults to `NULL`.
+#' @param save_name An optional string specifying the file name to save the plot. If `NULL`, the plot is not saved. Defaults to `NULL`.
 #'
-#' @return A single plot object or a list of plot objects.
+#' @return A ggplot object representing the plot.
+#' @details
+#' - The function extracts variable names from the `magpie_obj` and matches them with color mappings.
+#' - A warning is issued if any variables do not have corresponding color mappings.
+#' - If `save_name` is provided, the plot is saved to the specified file in high resolution.
+#'
 #' @examples
 #' \dontrun{
-#' plotReport(magpie_obj, an = c(2020, 2030), vars = "Capacity|Electricity", plot_type = "bar")
+#' plotReport(magpie_obj = example_magpie, plot_type = "bar", save_name = "example_plot.png")
 #' }
 #' @importFrom ggplot2 ggplot aes geom_area geom_bar facet_wrap scale_fill_manual
 #' @importFrom ggplot2 scale_color_manual labs theme_bw theme ggsave element_text
@@ -21,24 +24,32 @@
 #' @importFrom quitte as.quitte
 #' @importFrom magclass getSets
 #' @export
-plotReport <- function(magpie_obj, an, vars, plot_type = "bar",
-                              label = NULL, save_name = NULL) {
-  if (is.character(vars)) {
-    vars <- list(vars)
-  }
-  else if (!is.list(vars)) {
-    stop("Argument 'vars' must be a character vector or a list of character vectors.")
+plotReport <- function(magpie_obj, plot_type = "bar",
+                       label = NULL, save_name = NULL) {
+  variable_name <- getSets(magpie_obj)["d3.1"]
+  vars <- getNames(magpie_obj, 3.1)[[variable_name]]
+
+  colors_vars <- getColorMappings() %>%
+    filter(X %in% vars)
+
+  # Throw warning if missing color mappings are found
+  missing_colors <- setdiff(vars, colors_vars$X)
+  if (length(missing_colors) > 0) {
+    warning(sprintf(
+      "No color available for the following variables: %s",
+      paste(missing_colors, collapse = ", ")
+    )
+    )
   }
 
-  plots <- lapply(vars, function(var) {
-    plotSingleVectorVar(magpie_obj, an, var, plot_type, label, save_name)
-  })
+  data <- as.quitte(magpie_obj)
+  plot <- plotTool(data, colors_vars, variable_name, plot_type, label)
 
-  if (length(plots) == 1) {
-    return(plots[[1]])
+  if (!is.null(save_name)) {
+    print(paste0("Saving plot to ", save_name))
+    ggsave(save_name, plot, units = "in", width = 5.5, height = 4, dpi = 1200)
   }
-
-  return(plots)
+  return(plot)
 }
 # Helpers -------------------------------------------------------------
 plotTool <- function(data, colors_vars, variable, plot_type, label) {
@@ -77,34 +88,6 @@ plotTool <- function(data, colors_vars, variable, plot_type, label) {
       legend.key.size = unit(0.5, "cm"),
       legend.key.width = unit(0.5, "cm")
     )
-  return(plot)
-}
-
-plotSingleVectorVar <- function(magpie_obj, an, vars, plot_type,
-                                label, save_name) {
-  variable_name = getSets(magpie_obj)["d3.1"]
-  colors_vars <- getColorMappings() %>%
-    filter(X %in% vars)
-
-  # Throw warning if missing color mappings are found
-  missing_colors <- setdiff(vars, colors_vars$X)
-  if (length(missing_colors) > 0) {
-    warning(sprintf(
-      "No color available for the following variables: %s",
-      paste(missing_colors, collapse = ", ")
-    )
-    )
-  }
-
-  data <- as.quitte(magpie_obj) %>%
-    filter(.data[[variable_name]] %in% colors_vars[, 1], period <= max(an))
-
-  plot <- plotTool(data, colors_vars, variable_name, plot_type, label)
-
-  if (!is.null(save_name)) {
-    print(paste0("Saving plot to ", save_name))
-    ggsave(save_name, plot, units = "in", width = 5.5, height = 4, dpi = 1200)
-  }
   return(plot)
 }
 

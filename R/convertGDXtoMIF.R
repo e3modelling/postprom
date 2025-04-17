@@ -1,44 +1,38 @@
-#' Convert GDX Data to MIF Format
+#' Convert GDX Files to MIF Format
 #'
-#' This function processes GDX files for specified regions and generates
-#' a MIF (Model Intercomparison Format) file. It supports handling multiple
-#' scenarios and includes options for appending validation data and performing
-#' regions aggregation.
+#' This function processes GDX files and converts them to MIF format, with options for validation, aggregation, and saving the output.
 #'
-#' @param .path Character vector. Paths to scenario directories.
-#' @param regions Character vector. A list of regions to include in the analysis.
-#' @param mif_name Character. Name of the output MIF file to be created.
-#' @param fullValidation Logical. Whether to append validation data to the output (default: TRUE).
-#' @param scenario_name Character vector. Names of the scenarios being processed. Defaults to the basename of `.path`.
-#' @param aggregate Logical. Whether to perform region aggregation (default: TRUE).
+#' @param .path A character vector specifying the path(s) to the GDX files.
+#' @param mif_name A string specifying the name of the MIF file to create.
+#' @param regions Optional; a character vector specifying the regions to include. Defaults to `NULL`, in which case regions are read from the GDX file.
+#' @param fullValidation Optional; a logical value indicating whether full validation should be performed. Defaults to `TRUE`.
+#' @param scenario_name Optional; a character vector specifying the scenario names. Defaults to the basename of `.path`.
+#' @param aggregate Optional; a logical value indicating whether to aggregate data. Defaults to `TRUE`.
+#' @param save Optional; a logical value indicating whether to save the output. Defaults to `TRUE`.
 #'
+#' @return A list of scenario reports generated from the provided GDX files.
 #' @details
-#' This function processes GDX files by calling the helper function `convertGDXtoMIF_single()`
-#' for each scenario. If multiple paths are provided, results are combined into a
-#' timestamped comparison MIF file. If validation is enabled, it appends validation
-#' data using `appendValidationMIF()`.
-#'
-#' @return Generates a MIF file with the processed data. Returns NULL.
+#' - If `regions` is not provided, it is inferred from the GDX file using the `readGDX` function.
+#' - The function supports multiple paths and scenarios, and appends reports when more than one path is provided.
+#' - Full validation is optionally applied by calling `appendValidationMIF`.
 #'
 #' @examples
 #' \dontrun{
-#' convertGDXtoMIF(
-#'   .path = c("path/to/scenario1", "path/to/scenario2"),
-#'   regions = c("MEA", "USA"),
-#'   mif_name = "output.mif",
-#'   fullValidation = TRUE,
-#'   scenario_name = c("Scenario1", "Scenario2"),
-#'   aggregate = TRUE
-#' )
+#' convertGDXtoMIF(.path = c("path/to/gdx1", "path/to/gdx2"),
+#'                 mif_name = "output.mif",
+#'                 regions = c("runCYL", "World"),
+#'                 fullValidation = TRUE,
+#'                 scenario_name = c("Scenario1", "Scenario2"),
+#'                 aggregate = TRUE,
+#'                 save = TRUE)
 #' }
-#'
-#' @seealso \code{\link[magclass]{write.report}}, \code{\link[magclass]{mbind}}
 #' @importFrom magclass mbind dimSums getItems getRegions write.report read.report
 #' @importFrom gdx readGDX
 #' @export
-convertGDXtoMIF <- function(.path, regions, mif_name, fullValidation = TRUE,
-                            scenario_name = NULL, aggregate = TRUE,
-                            save = TRUE) {
+convertGDXtoMIF <- function(.path, mif_name, regions = NULL,
+                            fullValidation = TRUE, scenario_name = NULL,
+                            aggregate = TRUE, save = TRUE) {
+  if (is.null(regions)) regions <- readGDX(file.path(.path, "blabla.gdx"), "runCYL")
   if (is.null(scenario_name)) scenario_name <- basename(.path)
   current_time <- format(Sys.time(), "%Y-%m-%d_%H-%M")
   append <- length(.path) > 1
