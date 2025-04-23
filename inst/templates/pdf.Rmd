@@ -1,0 +1,20 @@
+---
+title: "Automated Plot Report"
+output:
+  bookdown::pdf_document2:
+    toc: true
+    number_sections: true
+params:
+  plot_file: NULL
+fontsize: 11pt
+---
+```{r, results = 'asis', echo = FALSE, fig.width=10, fig.height=8}
+library(ggplot2)
+plot_list <- readRDS(params$plot_file)
+
+for (i in seq_along(plot_list)) {
+  section_title <- names(plot_list)[i]
+  cat(sprintf("\\newpage\n\\section{%s}\n", section_title))
+  print(plot_list[[i]])
+}
+```

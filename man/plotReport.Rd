@@ -13,18 +13,20 @@ plotReport(magpie_obj, plot_type = "bar", label = NULL, save_name = NULL)
 
 \item{label}{An optional string to label the plot legend. Defaults to `NULL`.}
 
-\item{save_name}{An optional string specifying the file name to save the plot. If `NULL`, the plot is not saved. Defaults to `NULL`.}
+\item{save_name}{An optional string specifying the file name to save the plot.
+If `NULL`, the plot is not saved. Defaults to `NULL`.}
 }
 \value{
 A ggplot object representing the plot.
 }
 \description{
-This function generates a plot for a MAgPIE object using specified settings. It supports both bar and area plot types and handles color mappings for variables.
+This function generates a plot for a MAgPIE object using specified settings.
+It supports both bar and area plot types and handles color mappings for variables.
 }
 \details{
 - The function extracts variable names from the `magpie_obj` and matches them with color mappings.
 - A warning is issued if any variables do not have corresponding color mappings.
-- If `save_name` is provided, the plot is saved to the specified file in high resolution.
+- If `save_name` is provided, the plot is saved to the specified file.
 }
 \examples{
 \dontrun{
