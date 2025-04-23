@@ -9,16 +9,14 @@
 #'
 #' @examples
 #' \dontrun{
-#' result <- reportGDP(system.file("extdata", "blabla.gdx", package = "openprom"), c("MEA"))
+#' result <- reportGDP(path_gdx, c("MEA"))
 #' }
 #' @importFrom gdx readGDX
-#' @importFrom magclass getItems add_dimension mbind
+#' @importFrom magclass getItems add_dimension
 #' @export
 reportGDP <- function(path, regions) {
   iGDP <- readGDX(path, "iGDP")[regions,,]
   getItems(iGDP, 3) <- "GDP|PPP"
   iGDP <- add_dimension(iGDP, dim = 3.2, add = "unit", nm = "billion US$2015/yr")
-
-  magpie_object <- mbind(NULL, iGDP)
-  return(magpie_object)
+  return(iGDP)
 }

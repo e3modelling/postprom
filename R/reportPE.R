@@ -48,6 +48,5 @@ reportPE <- function(path, regions) {
 
   # Add dimensions and bind to magpie object
   VProdPrimary <- add_dimension(VProdPrimary, dim = 3.2, add = "unit", nm = "Mtoe")
-  magpie_object <- mbind(NULL, VProdPrimary)
-  return(magpie_object)
+  return(VProdPrimary)
 }

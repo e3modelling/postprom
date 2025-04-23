@@ -20,6 +20,5 @@ reportPOP <- function(path, regions) {
   getItems(iPop, 3) <- "Population"
 
   iPop <- add_dimension(iPop, dim = 3.2, add = "unit", nm = "billion")
-  magpie_object <- mbind(NULL, iPop)
-  return(magpie_object)
+  return(iPop)
 }

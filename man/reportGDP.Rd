@@ -20,6 +20,6 @@ converting it to a standardized format and attaching proper units.
 }
 \examples{
 \dontrun{
-result <- reportGDP(system.file("extdata", "blabla.gdx", package = "openprom"), c("MEA"))
+result <- reportGDP(path_gdx, c("MEA"))
 }
 }

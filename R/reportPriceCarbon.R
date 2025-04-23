@@ -22,6 +22,5 @@ reportPriceCarbon <- function(path, regions) {
   getItems(VCarVal, 3) <- "Price|Carbon"
 
   VCarVal <- add_dimension(VCarVal, dim = 3.2, add = "unit", nm = "US$2015/tn CO2")
-  magpie_object <- mbind(NULL, VCarVal)
-  return(magpie_object)
+  return(VCarVal)
 }
