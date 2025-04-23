@@ -1,7 +1,7 @@
 Package: openprom
 Type: Package
 Title: A Tool for Comparative Analysis of OPEN-PROM Data
-Version: 0.5.4
+Version: 0.5.5
 Authors@R: c(
     person(
       "Michael", "Madianos",
@@ -19,7 +19,8 @@ Description: A post-processing tool for analyzing, visualizing,
 License: GPL-3 | file LICENSE
 Encoding: UTF-8
 LazyData: true
-Imports: gdx, madrat, magclass, tidyr, dplyr, stringr, quitte, ggplot2, rlang
+Imports: gdx, madrat, magclass, stringr, quitte, rlang, 
+         tidyr, dplyr, purrr, ggplot2, rmarkdown
 RoxygenNote: 7.3.2
 Suggests: 
     testthat (>= 3.0.0)
