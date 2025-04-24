@@ -22,8 +22,14 @@
 #' @importFrom gdx readGDX
 #' @export
 reportACTV <- function(path, regions) {
-  iActv <- readGDX(path, "iActv")[regions, , ]
-  iActv <- iActv[, , setdiff(getItems(iActv, 3), c("PG", "H2P", "H2INFR"))]
+  vector <- readGDX(path, c("iActv", "TRANSE"))
+  iActv <- vector$iActv[regions, , setdiff(getItems(iActv, 3), c("PG", "H2P", "H2INFR"))]
+
+  transport <- as.character(vector$TRANSE)
+  years <- paste0("y", as.character(c(2021:2100)))
+  VActv <- readGDX(path, "VActivPassTrnsp", field= "l")[regions, years, transport]
+
+  iActv[regions, years, transport] <- VActv
 
   actv_units <- list(
     IS  = "billion US$2014",
@@ -50,9 +56,8 @@ reportACTV <- function(path, regions) {
     NEN = "billion US$2014"
   )
 
-  mapped_units <- actv_units[getItems(iActv, 3.1)]
   iActv <- add_dimension(iActv, dim = 3.2, add = "unit")
-  getItems(iActv, 3.2) <- unname(mapped_units)
-  getItems(iActv, 3.1) <- paste0("Actv|", getItems(iActv, 3.1))
+  getItems(iActv, 3.2) <- unname(actv_units[getItems(iActv, 3.1)])
+  getItems(iActv, 3.1) <- paste0("Activity|", getItems(iActv, 3.1))
   return(iActv)
 }
