@@ -25,20 +25,24 @@ batchPlotReport <- function(report, save_pdf) {
     ~ plotGroups(.x$Variables, .y, report)
   ) %>% setNames(group_keys(grouped)$Name)
 
-  message(paste0("Saving pdf in ", save_pdf))
-
-  Sys.setenv(RSTUDIO_PANDOC = rmarkdown::find_pandoc()$dir)
+  message(paste0("Saving pdf in ", sub("\\.tex$", ".pdf", save_pdf)))
 
   # Save the plots list to a temporary file
   plot_rds_path <- tempfile(fileext = ".rds")
   saveRDS(plots_list, file = plot_rds_path)
+  render_env <- new.env()
+  render_env$plot_rds_path <- plot_rds_path
 
-  template_path <- system.file("templates/pdf.Rmd", package = "openprom")
-  rmarkdown::render(
+  template_path <- system.file("templates/pdf.Rnw", package = "openprom")
+
+  output_path <- dirname(save_pdf)
+  output_path <- file.path(basename(dirname(output_path)), basename(output_path))
+  opts_knit$set(base.dir = output_path)
+
+  knitr::knit2pdf(
     input = template_path,
-    output_file = basename(save_pdf),
-    output_dir = dirname(save_pdf),
-    params = list(plot_file = plot_rds_path),
+    output = file.path(save_pdf),
+    envir = render_env,
     quiet = TRUE
   )
 }

@@ -69,13 +69,11 @@ plotReport <- function(magpie_obj, plot_type = "bar",
 }
 # Helpers -------------------------------------------------------------
 plotTool <- function(data, colors_vars, variable, plot_type,
-                     label = NULL, text_size = 12,
+                     label = NULL, text_size = 24,
                      legend_key_size = 0.5, legend_key_width = 0.5,
                      x_label = "period", y_label = NULL, legend_labels = NULL) {
-  if (is.null(label)) {
-    #label <- rlang::as_label(rlang::enquo(variable))
-    label <- "Labels"
-  }
+  if (is.null(label)) label <- "Labels"
+
   if (is.null(y_label)) {
     y_label <- paste0("[", unique(data[["unit"]]), "]")
   }

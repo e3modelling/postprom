@@ -1,0 +1,30 @@
+\documentclass{article}
+\usepackage{hyperref} % Enables clickable TOC
+\usepackage{graphicx} % Handles images
+\usepackage{float} % Allows better placement of figures
+
+\title{Automated Plot Report}
+\author{OPEN-PROM}
+\date{\today}
+
+\begin{document}
+\maketitle
+\tableofcontents % Creates TOC
+
+<<setup, echo=FALSE, warning=FALSE, message=FALSE>>=
+library(ggplot2)
+plot_list <- readRDS(plot_rds_path)
+@
+
+% Generate sections for each plot dynamically
+\newpage
+
+<<generate_plots, results='asis', echo=FALSE, fig.width=20, fig.height=22>>=
+for (i in seq_along(plot_list)) {
+    section_title <- names(plot_list)[i]
+    cat(sprintf("\\section{%s}\n", section_title))
+    print(plot_list[[i]])
+}
+@
+
+\end{document}
