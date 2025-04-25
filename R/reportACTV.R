@@ -23,6 +23,7 @@
 #' @export
 reportACTV <- function(path, regions) {
   vector <- readGDX(path, c("iActv", "TRANSE"))
+  iActv <- vector$iActv
   iActv <- vector$iActv[regions, , setdiff(getItems(iActv, 3), c("PG", "H2P", "H2INFR"))]
 
   transport <- as.character(vector$TRANSE)
@@ -44,13 +45,15 @@ reportACTV <- function(path, regions) {
     OI  = "billion US$2014",
     SE  = "billion US$2014",
     AG  = "billion US$2014",
-    HOU = "km/vehicle",
-    PC  = "GPKM",
-    PT  = "million passengers carried",
-    PA  = "GTKM",
+    HOU = "billion US$2014",
+    PC  = "km/vehicle",
+    PT  = "GPKM",
+    PA  = "million passengers carried",
+    PB  = "billion pKm/yr",
+    PN  = "billion pKm/yr",
     GU  = "GTKM",
     GT  = "GTKM",
-    GN  = "billion US$2014",
+    GN  = "GTKM",
     BU  = "billion US$2014",
     PCH = "billion US$2014",
     NEN = "billion US$2014"
