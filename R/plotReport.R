@@ -49,7 +49,6 @@ plotReport <- function(magpie_obj, plot_type = "bar",
   units <- unique(getItems(magpie_obj, 3.2))
   y_label <- strsplit(items, "\\|")[[1]][1]
   y_label <- paste0(y_label," [", units, "]")
-  legend_labels <- sapply(strsplit(items, "\\|"), tail, 1)
 
   plot <- plotTool(
     data = as.quitte(magpie_obj),
@@ -57,8 +56,7 @@ plotReport <- function(magpie_obj, plot_type = "bar",
     variable = variable_name,
     plot_type = plot_type,
     label = label,
-    y_label = y_label,
-    legend_labels = legend_labels
+    y_label = y_label
   )
 
   if (!is.null(save_name)) {
@@ -69,28 +67,26 @@ plotReport <- function(magpie_obj, plot_type = "bar",
 }
 # Helpers -------------------------------------------------------------
 plotTool <- function(data, colors_vars, variable, plot_type,
-                     label = NULL, text_size = 24,
+                     label = NULL, text_size = 12,
                      legend_key_size = 0.5, legend_key_width = 0.5,
-                     x_label = "period", y_label = NULL, legend_labels = NULL) {
+                     x_label = "period", y_label = NULL) {
   if (is.null(label)) label <- "Labels"
 
   if (is.null(y_label)) {
     y_label <- paste0("[", unique(data[["unit"]]), "]")
   }
-  if (is.null(legend_labels)) {
-    legend_labels <- unique(data[[variable]])
-  }
+  colors_vars$legend <- sapply(strsplit(colors_vars$X, "\\|"), tail, 1)
 
   plot <- ggplot(data, aes(y = value, x = period, color = .data[[variable]])) +
     scale_fill_manual(
       values = as.character(colors_vars[, 3]),
       limits = as.character(colors_vars[, 1]),
-      labels = legend_labels
+      labels = as.character(colors_vars[, 2])
     ) +
     scale_color_manual(
       values = as.character(colors_vars[, 3]),
       limits = as.character(colors_vars[, 1]),
-      labels = legend_labels
+      labels = as.character(colors_vars[, 2])
     ) +
     switch(plot_type,
       "area" = geom_area(stat = "identity", aes(fill = .data[[variable]])),
@@ -108,7 +104,7 @@ plotTool <- function(data, colors_vars, variable, plot_type,
     theme(
       text = element_text(size = text_size),
       #strip.text.x = element_text(margin = margin(0.05, 0, 0.05, 0, "cm")),
-      legend.position = "top",
+      legend.position = "right",
       axis.text.x = element_text(angle = 90)
       #aspect.ratio = 1.5 / 2,
       #plot.title = element_text(size = text_size),

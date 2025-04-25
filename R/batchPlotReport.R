@@ -10,12 +10,13 @@
 #' @return None. The function saves a PDF report and prints a message.
 #' @importFrom dplyr group_by group_keys group_split %>%
 #' @importFrom purrr map2
-#' @importFrom rmarkdown render find_pandoc
+#' @importFrom knitr knit2pdf
 #' @export
 batchPlotReport <- function(report, save_pdf) {
   plot_mappings <- read.csv(
     system.file(package = "openprom", file.path("extdata", "plot_mapping.csv"))
   )
+  plot_mappings$Name <- factor(plot_mappings$Name, levels = unique(plot_mappings$Name))
 
   # for each unique plot, use filter the magpie obj and plot its vars
   grouped <- plot_mappings %>% group_by(Name)

@@ -1,4 +1,5 @@
 \documentclass{article}
+\usepackage[a4paper, margin=2cm]{geometry}
 \usepackage{hyperref} % Enables clickable TOC
 \usepackage{graphicx} % Handles images
 \usepackage{float} % Allows better placement of figures
@@ -19,7 +20,7 @@ plot_list <- readRDS(plot_rds_path)
 % Generate sections for each plot dynamically
 \newpage
 
-<<generate_plots, results='asis', echo=FALSE, fig.width=20, fig.height=22>>=
+<<generate_plots, results='asis', echo=FALSE, fig.width=10, fig.height=8>>=
 for (i in seq_along(plot_list)) {
     section_title <- names(plot_list)[i]
     cat(sprintf("\\section{%s}\n", section_title))
