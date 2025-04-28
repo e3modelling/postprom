@@ -104,6 +104,11 @@ reportEmissions <- function(path, regions) {
   var_16 <- VProdElec[, , CCS[, 1]] * 0.086 / iPlantEffByType[, , CCS[, 1]] * iCo2EmiFac[, , "PG"][, , CCS[, 2]] * iCO2CaptRate[, , CCS[, 1]]
   # CO2 captured by CCS plants in power generation
   sum6 <- dimSums(var_16, dim = 3, na.rm = TRUE)
+  
+  #BECCS
+  BECCS <- VProdElec[, , "ATHBMCCS"] * 0.086 / iPlantEffByType[, , "ATHBMCCS"] * iCo2EmiFac[, , "PG"][, , "BMSWAS"] * iCO2CaptRate[, , "ATHBMCCS"]
+  # CO2 captured by CCS plants in power generation
+  BECCS <- dimSums(BECCS, dim = 3, na.rm = TRUE)
 
   SECTTECH2 <- sets4 %>% filter(SBS %in% c("BU"))
   SECTTECH2 <- paste0(SECTTECH2[["SBS"]], ".", SECTTECH2[["EF"]])
@@ -112,7 +117,7 @@ reportEmissions <- function(path, regions) {
   sum7 <- iCo2EmiFac[, , SECTTECH2[, 1]] * VConsFuel[, , SECTTECH2[, 1]]
   sum7 <- dimSums(sum7, dim = 3, na.rm = TRUE)
 
-  total_CO2 <- sum1 + sum2 + sum3 + sum4 + sum5 - sum6 + sum7 + remind
+  total_CO2 <- sum1 + sum2 + sum3 + sum4 + sum5 - sum6 + sum7 + remind - BECCS
 
   getItems(total_CO2, 3) <- "Emissions|CO2"
 
