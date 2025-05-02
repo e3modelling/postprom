@@ -15,8 +15,8 @@
 #' @importFrom gdx readGDX
 #' @importFrom magclass getItems add_dimension mbind
 #' @export
-reportPriceCarbon <- function(path, regions) {
-  VCarVal <- readGDX(path, "VCarVal", field = "l")[regions, , ][,,"TRADE"]
+reportPriceCarbon <- function(path, regions, years) {
+  VCarVal <- readGDX(path, "VCarVal", field = "l")[regions, years, ][,,"TRADE"]
 
   # complete names
   getItems(VCarVal, 3) <- "Price|Carbon"

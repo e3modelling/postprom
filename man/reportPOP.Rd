@@ -4,7 +4,7 @@
 \alias{reportPOP}
 \title{Process and Aggregate Population Data}
 \usage{
-reportPOP(path, regions)
+reportPOP(path, regions, years)
 }
 \arguments{
 \item{path}{The file path to the GDX data file.}

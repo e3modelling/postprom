@@ -18,7 +18,7 @@
 #' @importFrom dplyr select filter arrange bind_rows %>%
 #' @importFrom stringr str_replace_all
 #' @export
-reportFinalEnergy <- function(path, regions) {
+reportFinalEnergy <- function(path, regions, years) {
   # read GAMS set used for reporting of Final Energy
 
   sets <- readGDX(path, "BALEF2EFS")
@@ -27,7 +27,7 @@ reportFinalEnergy <- function(path, regions) {
   sets[["BAL"]] <- gsub("Steam", "Heat", sets[["BAL"]])
 
   # add model OPEN-PROM data Total final energy consumnption (Mtoe)
-  VConsFinEneCountry <- readGDX(path, "VConsFinEneCountry", field = "l")[regions, , ]
+  VConsFinEneCountry <- readGDX(path, "VConsFinEneCountry", field = "l")[regions, years, ]
 
   # aggregate from PROM fuels to reporting fuel categories
   VConsFinEneCountry <- toolAggregate(VConsFinEneCountry[, , unique(sets$EF)], dim = 3, rel = sets, from = "EF", to = "BAL")
@@ -55,7 +55,7 @@ reportFinalEnergy <- function(path, regions) {
     sets6 <- readGDX(path, sector[y]) %>% as.data.frame()
     names(sets6) <- sector[y]
 
-    var_gdx <- readGDX(path, blabla_var[y], field = "l")[regions, , ]
+    var_gdx <- readGDX(path, blabla_var[y], field = "l")[regions, years, ]
     FCONS_by_sector_and_EF_open <- var_gdx[, , sets6[, 1]]
 
     map_subsectors <- sets4 %>% filter(SBS %in% as.character(sets6[, 1]))

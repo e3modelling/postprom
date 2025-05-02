@@ -4,7 +4,7 @@
 \alias{reportGDP}
 \title{Process and Aggregate GDP Data}
 \usage{
-reportGDP(path, regions)
+reportGDP(path, regions, years)
 }
 \arguments{
 \item{path}{The file path to the GDX data file.}

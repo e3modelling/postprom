@@ -17,9 +17,9 @@
 #' @importFrom madrat toolAggregate
 #' @importFrom dplyr %>%
 #' @export
-reportCapacityElectricity <- function(path, regions) {
+reportCapacityElectricity <- function(path, regions, years) {
   # add model OPEN-PROM data electricity capacity
-  VCapElec2 <- readGDX(path, "VCapElec2", field = "l")[regions, , ]
+  VCapElec2 <- readGDX(path, "VCapElec2", field = "l")[regions, years, ]
 
   PGALLtoEF <- readGDX(path, "PGALLtoEF")
   names(PGALLtoEF) <- c("PGALL", "EF")

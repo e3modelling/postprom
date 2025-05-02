@@ -18,18 +18,18 @@
 #' @importFrom quitte as.quitte
 #' @importFrom dplyr filter left_join mutate select group_by %>%
 #' @export
-reportEmissions <- function(path, regions) {
+reportEmissions <- function(path, regions, years) {
   fscenario <- readGDX(path, "fscenario")
 
   Navigate_Emissions <- read.csv(file.path(dirname(path), "data", "NavigateEmissions.csv"))
   Navigate_Emissions <- as.magpie(Navigate_Emissions)
 
   if (fscenario == 2) {
-    Navigate_Emissions <- Navigate_Emissions[, , "SUP_2C_Default"][regions, , ]
+    Navigate_Emissions <- Navigate_Emissions[, , "SUP_2C_Default"][regions, years, ]
   } else if (fscenario == 1) {
-    Navigate_Emissions <- Navigate_Emissions[, , "SUP_1p5C_Default"][regions, , ]
+    Navigate_Emissions <- Navigate_Emissions[, , "SUP_1p5C_Default"][regions, years, ]
   } else if (fscenario == 0) {
-    Navigate_Emissions <- Navigate_Emissions[, , "SUP_NPi_Default"][regions, , ]
+    Navigate_Emissions <- Navigate_Emissions[, , "SUP_NPi_Default"][regions, years, ]
   }
 
   Navigate_Emissions <- collapseDim(Navigate_Emissions, 3.1)
@@ -39,15 +39,15 @@ reportEmissions <- function(path, regions) {
   remind <- dimSums(remind_AFOLU_Industrial_Processes, 3, na.rm = TRUE)
 
 
-  iCo2EmiFac <- readGDX(path, "iCo2EmiFac")[regions, , ]
-  VConsFuel <- readGDX(path, "VConsFuel", field = 'l')[regions, , ]
-  VInpTransfTherm <- readGDX(path, "VInpTransfTherm", field = 'l')[regions, , ]
-  VTransfInputDHPlants <- readGDX(path, "VTransfInputDHPlants", field = 'l')[regions, , ]
-  VConsFiEneSec <- readGDX(path, "VConsFiEneSec", field = 'l')[regions, , ]
-  VDemFinEneTranspPerFuel <- readGDX(path, "VDemFinEneTranspPerFuel", field = 'l')[regions, , ]
-  VProdElec <- readGDX(path, "VProdElec", field = 'l')[regions, , ]
-  iPlantEffByType <- readGDX(path, "iPlantEffByType")[regions, , ]
-  iCO2CaptRate <- readGDX(path, "iCO2CaptRate")[regions, , ]
+  iCo2EmiFac <- readGDX(path, "iCo2EmiFac")[regions, years, ]
+  VConsFuel <- readGDX(path, "VConsFuel", field = 'l')[regions, years, ]
+  VInpTransfTherm <- readGDX(path, "VInpTransfTherm", field = 'l')[regions, years, ]
+  VTransfInputDHPlants <- readGDX(path, "VTransfInputDHPlants", field = 'l')[regions, years, ]
+  VConsFiEneSec <- readGDX(path, "VConsFiEneSec", field = 'l')[regions, years, ]
+  VDemFinEneTranspPerFuel <- readGDX(path, "VDemFinEneTranspPerFuel", field = 'l')[regions, years, ]
+  VProdElec <- readGDX(path, "VProdElec", field = 'l')[regions, years, ]
+  iPlantEffByType <- readGDX(path, "iPlantEffByType")[regions, years, ]
+  iCO2CaptRate <- readGDX(path, "iCO2CaptRate")[regions, years, ]
   # Link between Model Subsectors and Fuels
 
   sets4 <- readGDX(path, "SECTTECH")

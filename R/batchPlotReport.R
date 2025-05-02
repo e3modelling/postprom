@@ -33,9 +33,9 @@ batchPlotReport <- function(report, save_pdf) {
   saveRDS(plots_list, file = plot_rds_path)
   render_env <- new.env()
   render_env$plot_rds_path <- plot_rds_path
+  render_env$pdf_title <- gsub("_", "-", basename(dirname(save_pdf)))
 
   template_path <- system.file("templates/pdf.Rnw", package = "openprom")
-
   output_path <- dirname(save_pdf)
   output_path <- file.path(basename(dirname(output_path)), basename(output_path))
   opts_knit$set(base.dir = output_path)

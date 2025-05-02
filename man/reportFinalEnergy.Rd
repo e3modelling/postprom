@@ -4,7 +4,7 @@
 \alias{reportFinalEnergy}
 \title{Process and Aggregate Final Energy Data}
 \usage{
-reportFinalEnergy(path, regions)
+reportFinalEnergy(path, regions, years)
 }
 \arguments{
 \item{path}{The file path to the GDX data file.}

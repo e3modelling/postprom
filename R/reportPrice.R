@@ -19,7 +19,7 @@
 #' @importFrom dplyr select filter mutate left_join distinct %>%
 #' @importFrom tidyr drop_na
 #' @export
-reportPrice <- function(path, regions) {
+reportPrice <- function(path, regions, years) {
   #add model OPEN-PROM data Electricity prices
 
   set_names <- c(
@@ -28,7 +28,7 @@ reportPrice <- function(path, regions) {
     "SECTTECH", # Link between Model Subsectors and Fuels
     "BALEF2EFS" # GAMS set used for reporting of Final Energy
   )
-  VPriceElecIndResConsu <- readGDX(path, "VPriceElecIndResConsu", field = 'l')[regions, , ]
+  VPriceElecIndResConsu <- readGDX(path, "VPriceElecIndResConsu", field = 'l')[regions, years, ]
   sets <- readGDX(path, set_names)
 
   sets_i <- data.frame(iSet = sets$iSet)
@@ -71,7 +71,7 @@ reportPrice <- function(path, regions) {
     map_subsectors$EF = paste(map_subsectors$SBS, map_subsectors$EF, sep=".")
 
     #add model OPEN-PROM data VPriceFuelSubsecCarVal
-    iFuelPrice <- readGDX(path, "VPriceFuelSubsecCarVal", field = "l")[regions, , ][,,map_subsectors$EF]
+    iFuelPrice <- readGDX(path, "VPriceFuelSubsecCarVal", field = "l")[regions, years, ][,,map_subsectors$EF]
     PRICE_by_sector_and_EF <- iFuelPrice
     # complete names
     getItems(PRICE_by_sector_and_EF, 3.1) <- paste0("Price|Final Energy|", sector_name[y],"|", getItems(PRICE_by_sector_and_EF, 3.1))

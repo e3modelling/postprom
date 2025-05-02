@@ -8,6 +8,7 @@ convertGDXtoMIF(
   .path,
   mif_name,
   regions = NULL,
+  years = NULL,
   fullValidation = TRUE,
   scenario_name = NULL,
   aggregate = TRUE,

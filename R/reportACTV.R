@@ -21,16 +21,16 @@
 #' @importFrom magclass add_dimension getItems
 #' @importFrom gdx readGDX
 #' @export
-reportACTV <- function(path, regions) {
+reportACTV <- function(path, regions, years) {
   vector <- readGDX(path, c("iActv", "TRANSE"))
   iActv <- vector$iActv
-  iActv <- vector$iActv[regions, , setdiff(getItems(iActv, 3), c("PG", "H2P", "H2INFR"))]
+  iActv <- vector$iActv[regions, years, setdiff(getItems(iActv, 3), c("PG", "H2P", "H2INFR"))]
 
   transport <- as.character(vector$TRANSE)
-  years <- paste0("y", as.character(c(2021:2100)))
-  VActv <- readGDX(path, "VActivPassTrnsp", field= "l")[regions, years, transport]
+  pred_years <- years[years>"y2020"]
+  VActv <- readGDX(path, "VActivPassTrnsp", field= "l")[regions, pred_years, transport]
 
-  iActv[regions, years, transport] <- VActv
+  iActv[regions, pred_years, transport] <- VActv
 
   actv_units <- list(
     IS  = "billion US$2014",

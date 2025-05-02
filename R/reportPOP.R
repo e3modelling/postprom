@@ -15,8 +15,8 @@
 #' @importFrom gdx readGDX
 #' @importFrom magclass getItems add_dimension mbind
 #' @export
-reportPOP <- function(path, regions) {
-  iPop <- readGDX(path, "iPop")[regions,,]
+reportPOP <- function(path, regions, years) {
+  iPop <- readGDX(path, "iPop")[regions, years,]
   getItems(iPop, 3) <- "Population"
 
   iPop <- add_dimension(iPop, dim = 3.2, add = "unit", nm = "billion")

@@ -29,10 +29,15 @@
 #' @importFrom magclass mbind dimSums getItems getRegions write.report read.report
 #' @importFrom gdx readGDX
 #' @export
-convertGDXtoMIF <- function(.path, mif_name, regions = NULL,
+convertGDXtoMIF <- function(.path, mif_name, regions = NULL, years = NULL,
                             fullValidation = TRUE, scenario_name = NULL,
                             aggregate = TRUE, save = TRUE) {
   if (is.null(regions)) regions <- readGDX(file.path(.path, "blabla.gdx"), "runCYL")
+  if (is.null(years)) {
+    years <- as.character(c(2010:2020))
+    years <- c(years, as.character(readGDX(file.path(.path, "blabla.gdx"), "an")))
+    years <- paste0("y", years)
+  }
   if (is.null(scenario_name)) scenario_name <- basename(.path)
   current_time <- format(Sys.time(), "%Y-%m-%d_%H-%M")
   append <- length(.path) > 1
@@ -45,6 +50,7 @@ convertGDXtoMIF <- function(.path, mif_name, regions = NULL,
     convertGDXtoMIF_single(
       .path = path,
       regions = regions,
+      years = years,
       path_mif = path_mif,
       scenario_name = scenario,
       aggregate = aggregate,
@@ -60,23 +66,23 @@ convertGDXtoMIF <- function(.path, mif_name, regions = NULL,
   return(scenarios_reports)
 }
 # Helpers -----------------------------------------------------------------
-convertGDXtoMIF_single <- function(.path, regions, path_mif, append,
+convertGDXtoMIF_single <- function(.path, regions, years, path_mif, append,
                                    scenario_name = NULL, aggregate = TRUE,
                                    save = TRUE) {
   print(paste0("Region aggregation: ", aggregate))
   print(paste0("Processing path: ", .path))
   path_gdx <- file.path(.path, "blabla.gdx")
 
-  reports <- reportFinalEnergy(path_gdx, regions)
-  reports <- mbind(reports, reportEmissions(path_gdx, regions))
-  reports <- mbind(reports, reportSE(path_gdx, regions))
-  reports <- mbind(reports, reportPE(path_gdx, regions))
-  reports <- mbind(reports, reportGDP(path_gdx, regions))
-  reports <- mbind(reports, reportPOP(path_gdx, regions))
-  reports <- mbind(reports, reportPriceCarbon(path_gdx, regions))
-  reports <- mbind(reports, reportPrice(path_gdx, regions))
-  reports <- mbind(reports, reportCapacityElectricity(path_gdx, regions))
-  reports <- mbind(reports, reportACTV(path_gdx, regions))
+  reports <- reportFinalEnergy(path_gdx, regions, years)
+  reports <- mbind(reports, reportEmissions(path_gdx, regions, years))
+  reports <- mbind(reports, reportSE(path_gdx, regions, years))
+  reports <- mbind(reports, reportPE(path_gdx, regions, years))
+  reports <- mbind(reports, reportGDP(path_gdx, regions, years))
+  reports <- mbind(reports, reportPOP(path_gdx, regions, years))
+  reports <- mbind(reports, reportPriceCarbon(path_gdx, regions, years))
+  reports <- mbind(reports, reportPrice(path_gdx, regions, years))
+  reports <- mbind(reports, reportCapacityElectricity(path_gdx, regions, years))
+  reports <- mbind(reports, reportACTV(path_gdx, regions, years))
 
   if (aggregate == TRUE) reports <- aggregateMIF(report = reports)
 

@@ -14,8 +14,8 @@
 #' @importFrom gdx readGDX
 #' @importFrom magclass getItems add_dimension
 #' @export
-reportGDP <- function(path, regions) {
-  iGDP <- readGDX(path, "iGDP")[regions,,]
+reportGDP <- function(path, regions, years) {
+  iGDP <- readGDX(path, "iGDP")[regions, years,]
   getItems(iGDP, 3) <- "GDP|PPP"
   iGDP <- add_dimension(iGDP, dim = 3.2, add = "unit", nm = "billion US$2015/yr")
   return(iGDP)

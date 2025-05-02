@@ -4,7 +4,7 @@
 \alias{reportCapacityElectricity}
 \title{Process and Aggregate Electricity Capacity Data}
 \usage{
-reportCapacityElectricity(path, regions)
+reportCapacityElectricity(path, regions, years)
 }
 \arguments{
 \item{path}{The file path to the GDX data file.}

@@ -4,7 +4,7 @@
 \alias{reportPriceCarbon}
 \title{Process and Aggregate Carbon Price Data}
 \usage{
-reportPriceCarbon(path, regions)
+reportPriceCarbon(path, regions, years)
 }
 \arguments{
 \item{path}{The file path to the GDX data file.}

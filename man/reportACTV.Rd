@@ -4,7 +4,7 @@
 \alias{reportACTV}
 \title{Generate an Activity Report from GDX Data}
 \usage{
-reportACTV(path, regions)
+reportACTV(path, regions, years)
 }
 \arguments{
 \item{path}{The file path to the GDX data file.}
