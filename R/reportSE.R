@@ -18,9 +18,9 @@
 #' @importFrom dplyr mutate %>%
 #' @importFrom madrat toolAggregate
 #' @export
-reportSE <- function(path, regions) {
+reportSE <- function(path, regions, years) {
   # add model OPEN-PROM data electricity production
-  VProdElec <- readGDX(path, "VProdElec", field = "l")[regions, , ]
+  VProdElec <- readGDX(path, "VProdElec", field = "l")[regions, years, ]
   VProdElec <- as.quitte(VProdElec) %>% as.magpie()
 
   PGALLtoEF <- readGDX(path, "PGALLtoEF")
@@ -75,5 +75,11 @@ reportSE <- function(path, regions) {
   VProdElec_total <- add_dimension(VProdElec_total, dim = 3.2, add = "unit", nm = "TWh")
   magpie_object <- mbind(magpie_object, VProdElec_total)
 
+  VprodElecChp <- readGDX(path, "VprodElecChp", field = "l")[regions, years, ]
+  VProdElecChp_total <- dimSums(VprodElecChp, dim = 3, na.rm = TRUE)
+  getItems(VProdElecChp_total, 3) <- "Secondary Energy|Electricity|CHP"
+  VProdElecChp_total <- add_dimension(VProdElecChp_total, dim = 3.2, add = "unit", nm = "TWh")
+
+  magpie_object <- mbind(magpie_object, VProdElecChp_total)
   return(magpie_object)
 }

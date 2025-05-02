@@ -4,8 +4,8 @@
 \usepackage{graphicx} % Handles images
 \usepackage{float} % Allows better placement of figures
 
-\title{Automated Plot Report}
-\author{OPEN-PROM}
+\title{OPEN-PROM: Plot report}
+\author{\textrm{\Sexpr{pdf_title}}}
 \date{\today}
 
 \begin{document}

@@ -4,7 +4,7 @@
 \alias{reportSE}
 \title{Process and Aggregate Secondary Energy Data}
 \usage{
-reportSE(path, regions)
+reportSE(path, regions, years)
 }
 \arguments{
 \item{path}{The file path to the GDX data file.}

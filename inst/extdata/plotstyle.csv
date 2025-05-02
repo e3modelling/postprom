@@ -21,6 +21,9 @@ Secondary Energy|Electricity|PGASOL,PGASOL,#ffb400
 Secondary Energy|Electricity|PGSOL,PGSOL,#ffe600
 Secondary Energy|Electricity|Coal,Coal,#0c0c0c
 Secondary Energy|Electricity|Gas,Gas,#999959
+Secondary Energy|Electricity|Residual Fuel Oil,Residual Fuel Oil,#c2cacf
+Secondary Energy|Electricity|Hydro,Hydro,#07cbf2
+Secondary Energy|Electricity|CHP,CHP,#87e6a4
 Secondary Energy|Electricity|Biomass,Biomass,#005900
 Final Energy|Non Energy and Bunkers,Non Energy and Bunkers,yellow
 Final Energy|Biomass,Biomass,#00b219

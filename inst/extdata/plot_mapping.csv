@@ -23,7 +23,10 @@ Secondary Energy|Electricity|Total,Coal
 Secondary Energy|Electricity|Total,Gas
 Secondary Energy|Electricity|Total,Nuclear
 Secondary Energy|Electricity|Total,Biomass
+Secondary Energy|Electricity|Total,Residual Fuel Oil
+Secondary Energy|Electricity|Total,Hydro
 Secondary Energy|Electricity|Total,Geothermal
+Secondary Energy|Electricity|Total,CHP
 Secondary Energy|Electricity|Solar,PGADPV
 Secondary Energy|Electricity|Solar,PGASOL
 Secondary Energy|Electricity|Solar,PGSOL
