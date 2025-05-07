@@ -131,7 +131,7 @@ reportEmissions <- function(path, regions, years) {
   # Hydrogen
   Hydrogen_total <- hydrogen + hydrogen_CCS
   
-  getItems(Hydrogen_total, 3) <- "Emissions|CO2|Hydrogen"
+  getItems(Hydrogen_total, 3) <- "Emissions|CO2|Energy|Supply|Hydrogen"
   
   Hydrogen_total <- add_dimension(Hydrogen_total, dim = 3.2, add = "unit", nm = "Mt CO2/yr")
   
