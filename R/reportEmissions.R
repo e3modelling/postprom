@@ -48,6 +48,7 @@ reportEmissions <- function(path, regions, years) {
   VProdElec <- readGDX(path, "VProdElec", field = 'l')[regions, years, ]
   iPlantEffByType <- readGDX(path, "iPlantEffByType")[regions, years, ]
   iCO2CaptRate <- readGDX(path, "iCO2CaptRate")[regions, years, ]
+  VConsFuelTechH2Prod <- readGDX(path, "VConsFuelTechH2Prod", field = 'l')[regions, years, ]
   # Link between Model Subsectors and Fuels
 
   sets4 <- readGDX(path, "SECTTECH")
@@ -76,6 +77,9 @@ reportEmissions <- function(path, regions, years) {
   # input to power generation sector
   sum2 <- VInpTransfTherm[, , PGEF[, 1]] * iCo2EmiFac[, , "PG"][, , PGEF[, 1]]
   sum2 <- dimSums(sum2, 3, na.rm = TRUE)
+  # input to power hydrogen sector
+  hydrogen <- VConsFuelTechH2Prod[, , PGEF[, 1]][,,c("gsr","bgfl")] * iCo2EmiFac[, , "H2P"][, , PGEF[, 1]]
+  hydrogen <- dimSums(hydrogen, 3, na.rm = TRUE)
   # input to district heating plants
   sum3 <- VTransfInputDHPlants * iCo2EmiFac[, , "PG"][, , getItems(VTransfInputDHPlants, 3)]
   sum3 <- dimSums(sum3, 3, na.rm = TRUE)
@@ -104,6 +108,10 @@ reportEmissions <- function(path, regions, years) {
   var_16 <- VProdElec[, , CCS[, 1]] * 0.086 / iPlantEffByType[, , CCS[, 1]] * iCo2EmiFac[, , "PG"][, , CCS[, 2]] * iCO2CaptRate[, , CCS[, 1]]
   # CO2 captured by CCS plants in power generation
   sum6 <- dimSums(var_16, dim = 3, na.rm = TRUE)
+  
+  # input hydrogen_CCS
+  hydrogen_CCS <- VConsFuelTechH2Prod[, , PGEF[, 1]][,,c("gss","bgfls")] * iCo2EmiFac[, , "H2P"][, , PGEF[, 1]]
+  hydrogen_CCS <- dimSums(hydrogen_CCS, 3, na.rm = TRUE)
 
   SECTTECH2 <- sets4 %>% filter(SBS %in% c("BU"))
   SECTTECH2 <- paste0(SECTTECH2[["SBS"]], ".", SECTTECH2[["EF"]])
@@ -112,13 +120,22 @@ reportEmissions <- function(path, regions, years) {
   sum7 <- iCo2EmiFac[, , SECTTECH2[, 1]] * VConsFuel[, , SECTTECH2[, 1]]
   sum7 <- dimSums(sum7, dim = 3, na.rm = TRUE)
 
-  total_CO2 <- sum1 + sum2 + sum3 + sum4 + sum5 - sum6 + sum7 + remind
+  total_CO2 <- sum1 + sum2 + sum3 + sum4 + sum5 - sum6 + sum7 + remind + hydrogen + hydrogen_CCS
 
   getItems(total_CO2, 3) <- "Emissions|CO2"
 
   magpie_object <- NULL
   total_CO2 <- add_dimension(total_CO2, dim = 3.2, add = "unit", nm = "Mt CO2/yr")
   magpie_object <- mbind(magpie_object, total_CO2, Navigate_Emissions)
+  
+  # Hydrogen
+  Hydrogen_total <- hydrogen + hydrogen_CCS
+  
+  getItems(Hydrogen_total, 3) <- "Emissions|CO2|Energy|Supply|Hydrogen"
+  
+  Hydrogen_total <- add_dimension(Hydrogen_total, dim = 3.2, add = "unit", nm = "Mt CO2/yr")
+  
+  magpie_object <- mbind(magpie_object, Hydrogen_total)
 
   # Extra Emissions
   # Emissions|CO2|Energy|Demand|Industry
