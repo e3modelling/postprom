@@ -12,6 +12,11 @@ Authors@R: c(
       "Anastasis", "Giannousakis",
       email = "Anastasis.Giannousakis@ricardo.com",
       role = c("aut")
+    ),
+    person(
+      "Fotis", "Sioutas",
+      email = "Fotis.Sioutas@ricardo.com",
+      role = c("aut")
     )
   )
 Description: A post-processing tool for analyzing, visualizing,
