@@ -83,6 +83,7 @@ convertGDXtoMIF_single <- function(.path, regions, years, path_mif, append,
   reports <- mbind(reports, reportPrice(path_gdx, regions, years))
   reports <- mbind(reports, reportCapacityElectricity(path_gdx, regions, years))
   reports <- mbind(reports, reportACTV(path_gdx, regions, years))
+  reports <- mbind(reports, reportCapacityAdditions(path_gdx, regions, years))
 
   if (aggregate == TRUE) reports <- aggregateMIF(report = reports)
 

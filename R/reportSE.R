@@ -21,7 +21,6 @@
 reportSE <- function(path, regions, years) {
   # add model OPEN-PROM data electricity production
   VProdElec <- readGDX(path, "VProdElec", field = "l")[regions, years, ]
-  VProdElec <- as.quitte(VProdElec) %>% as.magpie()
 
   PGALLtoEF <- readGDX(path, "PGALLtoEF")
   names(PGALLtoEF) <- c("PGALL", "EF")
