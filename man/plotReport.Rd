@@ -4,17 +4,17 @@
 \alias{plotReport}
 \title{Generate a Plot from a MAgPIE Object}
 \usage{
-plotReport(magpie_obj, plot_type = "bar", label = NULL, save_name = NULL)
+plotReport(magpie_obj, plot_style = "bar", label = NULL, save_name = NULL)
 }
 \arguments{
 \item{magpie_obj}{A MAgPIE object containing the data to be plotted.}
-
-\item{plot_type}{A string specifying the type of plot. Options are `"bar"` or `"area"`. Defaults to `"bar"`.}
 
 \item{label}{An optional string to label the plot legend. Defaults to `NULL`.}
 
 \item{save_name}{An optional string specifying the file name to save the plot.
 If `NULL`, the plot is not saved. Defaults to `NULL`.}
+
+\item{plot_type}{A string specifying the type of plot. Options are `"bar"` or `"area"`. Defaults to `"bar"`.}
 }
 \value{
 A ggplot object representing the plot.

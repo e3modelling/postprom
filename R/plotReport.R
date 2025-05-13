@@ -19,14 +19,14 @@
 #' \dontrun{
 #' plotReport(magpie_obj = example_magpie, plot_type = "bar", save_name = "example_plot.png")
 #' }
-#' @importFrom ggplot2 ggplot aes geom_area geom_bar facet_wrap scale_fill_manual
+#' @importFrom ggplot2 ggplot aes geom_area geom_bar geom_line facet_wrap scale_fill_manual
 #' @importFrom ggplot2 scale_color_manual labs theme_bw theme ggsave element_text
 #' @importFrom rlang enquo as_label
-#' @importFrom dplyr filter arrange %>%
+#' @importFrom dplyr filter arrange %>% anti_join
 #' @importFrom quitte as.quitte
 #' @importFrom magclass getSets getNames getItems
 #' @export
-plotReport <- function(magpie_obj, plot_type = "bar",
+plotReport <- function(magpie_obj, plot_style = "bar",
                        label = NULL, save_name = NULL) {
   variable_name <- getSets(magpie_obj)["d3.1"]
   vars <- getNames(magpie_obj, 3.1)[[variable_name]]
@@ -54,7 +54,7 @@ plotReport <- function(magpie_obj, plot_type = "bar",
     data = as.quitte(magpie_obj),
     colors_vars = colors_vars,
     variable = variable_name,
-    plot_type = plot_type,
+    plot_style = plot_style,
     label = label,
     y_label = y_label
   )
@@ -66,12 +66,11 @@ plotReport <- function(magpie_obj, plot_type = "bar",
   return(plot)
 }
 # Helpers -------------------------------------------------------------
-plotTool <- function(data, colors_vars, variable, plot_type,
+plotTool <- function(data, colors_vars, variable, plot_style,
                      label = NULL, text_size = 12,
                      legend_key_size = 0.5, legend_key_width = 0.5,
                      x_label = "period", y_label = NULL) {
   if (is.null(label)) label <- "Labels"
-
   if (is.null(y_label)) {
     y_label <- paste0("[", unique(data[["unit"]]), "]")
   }
@@ -79,19 +78,14 @@ plotTool <- function(data, colors_vars, variable, plot_type,
 
   plot <- ggplot(data, aes(y = value, x = period, color = .data[[variable]])) +
     scale_fill_manual(
-      values = as.character(colors_vars[, 3]),
-      limits = as.character(colors_vars[, 1]),
-      labels = as.character(colors_vars[, 2])
+      values = colors_vars$color,
+      limits = colors_vars$X,
+      labels = colors_vars$legend
     ) +
     scale_color_manual(
       values = as.character(colors_vars[, 3]),
       limits = as.character(colors_vars[, 1]),
       labels = as.character(colors_vars[, 2])
-    ) +
-    switch(plot_type,
-      "area" = geom_area(stat = "identity", aes(fill = .data[[variable]])),
-      "bar" = geom_bar(stat = "identity", aes(fill = .data[[variable]])),
-      stop("Invalid plot_type.")
     ) +
     facet_wrap("region", scales = "free_y") +
     labs(
@@ -111,11 +105,27 @@ plotTool <- function(data, colors_vars, variable, plot_type,
       #legend.key.size = unit(legend_key_size, "cm"),
       #legend.key.width = unit(legend_key_width, "cm")
     )
+
+  for (style in unique(colors_vars$style)) {
+    vars_per_style <- colors_vars$X[colors_vars$style == style]
+    data_sub <- data %>% filter(.data[[variable]] %in% vars_per_style)
+    plot <- plot + switch(style,
+      "area" = geom_area(data = data_sub, stat = "identity", aes(fill = .data[[variable]])),
+      "bar" = geom_bar(data = data_sub, stat = "identity", aes(fill = .data[[variable]])),
+      "dLine" = geom_line(data = data_sub, aes(color = .data[[variable]]),
+                          linetype = "twodash"),
+      stop("Invalid plot_type.")
+    )
+  }
   return(plot)
 }
 
 getColorMappings <- function(new_mappings = NULL) {
-  extra_mappings <- read.csv(system.file(package = "openprom", file.path("extdata", "plotstyle.csv")))
+  mappings <- read.csv(system.file(package = "openprom", file.path("extdata", "plotstyle.csv")))
+  extra_mappings <- read.csv(system.file(package = "mip", file.path("extdata", "plotstyle.csv")), sep = ";") %>%
+    select(c("X", "legend", "color")) %>%
+    distinct() %>%
+    mutate(style = "bar")
 
   if (!is.null(new_mappings)) {
     extra_mappings <- new_mappings %>%
@@ -123,9 +133,8 @@ getColorMappings <- function(new_mappings = NULL) {
       bind_rows(extra_mappings)
   }
 
-  color_mappings <- read.csv(system.file(package = "mip", file.path("extdata", "plotstyle.csv")), sep = ";") %>%
-    select(c("X", "legend", "color")) %>%
-    distinct() %>%
-    bind_rows(extra_mappings)
+  color_mappings <- mappings %>%
+    # bind only non-present mappings
+    bind_rows(anti_join(extra_mappings, mappings, by = "X"))
   return(color_mappings)
 }

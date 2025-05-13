@@ -80,5 +80,11 @@ reportSE <- function(path, regions, years) {
   VProdElecChp_total <- add_dimension(VProdElecChp_total, dim = 3.2, add = "unit", nm = "TWh")
 
   magpie_object <- mbind(magpie_object, VProdElecChp_total)
+
+  VDemElecTot <- readGDX(path, "VDemElecTot", field = "l")[regions, years, ]
+  getItems(VDemElecTot, 3) <- "Secondary Energy|Electricity|Demand"
+  VDemElecTot <- add_dimension(VDemElecTot, dim = 3.2, add = "unit", nm = "TWh")
+
+  magpie_object <- mbind(magpie_object, VDemElecTot)
   return(magpie_object)
 }

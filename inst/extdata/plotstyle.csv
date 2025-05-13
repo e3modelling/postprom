@@ -1,32 +1,36 @@
-X,legend,color
-Capacity|Electricity|Solar,Solar,#ffcc00
-Capacity|Electricity|Oil,Oil,#663a00
-Capacity|Electricity|Wind,Wind,#337fff
-Capacity|Electricity|Coal,Coal,#0c0c0c
-Capacity|Electricity|Gas,Gas,#999959
-Capacity|Electricity|Nuclear,Nuclear,#ff33ff
-Capacity|Electricity|Biomass,Biomass,#005900
-Capacity|Electricity|Geothermal,Geothermal,#e51900
-Capacity|Electricity|PGADPV,PGADPV,#d4ff00
-Capacity|Electricity|PGASOL,PGASOL,#ffb400
-Capacity|Electricity|PGAWND,PGAWND,#8800ff
-Capacity|Electricity|PGAWNO,PGAWNO,#334cff
-Capacity|Electricity|PGWND,PGWND,#337fff
-Capacity|Electricity|PGSOL,PGSOL,#ffe600
-Secondary Energy|Electricity|PGAWND,PGAWND,#8800ff
-Secondary Energy|Electricity|PGAWNO,PGAWNO,#334cff
-Secondary Energy|Electricity|PGWND,PGWND,#337fff
-Secondary Energy|Electricity|PGADPV,PGADPV,#d4ff00
-Secondary Energy|Electricity|PGASOL,PGASOL,#ffb400
-Secondary Energy|Electricity|PGSOL,PGSOL,#ffe600
-Secondary Energy|Electricity|Coal,Coal,#0c0c0c
-Secondary Energy|Electricity|Gas,Gas,#999959
-Secondary Energy|Electricity|Residual Fuel Oil,Residual Fuel Oil,#c2cacf
-Secondary Energy|Electricity|Hydro,Hydro,#07cbf2
-Secondary Energy|Electricity|CHP,CHP,#87e6a4
-Secondary Energy|Electricity|Biomass,Biomass,#005900
-Final Energy|Non Energy and Bunkers,Non Energy and Bunkers,yellow
-Final Energy|Biomass,Biomass,#00b219
-Emissions|CO2|Energy|Demand|Bunkers,Bunkers,#FDBF6F
-Emissions|CO2|Energy|Supply,Supply,#bcbc6d
-Emissions|CO2|Cumulated,Cumulated,#661a00
+X,legend,color,style
+Capacity|Electricity|Solar,Solar,#ffcc00,bar
+Capacity|Electricity|Oil,Oil,#663a00,bar
+Capacity|Electricity|Wind,Wind,#337fff,bar
+Capacity|Electricity|Coal,Coal,#0c0c0c,bar
+Capacity|Electricity|Gas,Gas,#999959,bar
+Capacity|Electricity|Nuclear,Nuclear,#ff33ff,bar
+Capacity|Electricity|Biomass,Biomass,#005900,bar
+Capacity|Electricity|Geothermal,Geothermal,#e51900,bar
+Capacity|Electricity|PGADPV,PGADPV,#d4ff00,bar
+Capacity|Electricity|PGASOL,PGASOL,#ffb400,bar
+Capacity|Electricity|PGAWND,PGAWND,#8800ff,bar
+Capacity|Electricity|PGAWNO,PGAWNO,#334cff,bar
+Capacity|Electricity|PGWND,PGWND,#337fff,bar
+Capacity|Electricity|PGSOL,PGSOL,#ffe600,bar
+Capacity|Electricity|Residual Fuel Oil,Residual Fuel Oil,#c2cacf,bar
+Capacity|Electricity|Hydro,Hydro,#07cbf2,bar
+Capacity|Electricity|CHP,CHP,#87e6a4,bar
+Secondary Energy|Electricity|PGAWND,PGAWND,#8800ff,bar
+Secondary Energy|Electricity|PGAWNO,PGAWNO,#334cff,bar
+Secondary Energy|Electricity|PGWND,PGWND,#337fff,bar
+Secondary Energy|Electricity|PGADPV,PGADPV,#d4ff00,bar
+Secondary Energy|Electricity|PGASOL,PGASOL,#ffb400,bar
+Secondary Energy|Electricity|PGSOL,PGSOL,#ffe600,bar
+Secondary Energy|Electricity|Coal,Coal,#0c0c0c,bar
+Secondary Energy|Electricity|Gas,Gas,#999959,bar
+Secondary Energy|Electricity|Residual Fuel Oil,Residual Fuel Oil,#c2cacf,bar
+Secondary Energy|Electricity|Hydro,Hydro,#07cbf2,bar
+Secondary Energy|Electricity|CHP,CHP,#87e6a4,bar
+Secondary Energy|Electricity|Biomass,Biomass,#005900,bar
+Secondary Energy|Electricity|Demand,Demand,red,dLine
+Final Energy|Non Energy and Bunkers,Non Energy and Bunkers,yellow,bar
+Final Energy|Biomass,Biomass,#00b219,bar
+Emissions|CO2|Energy|Demand|Bunkers,Bunkers,#FDBF6F,bar
+Emissions|CO2|Energy|Supply,Supply,#bcbc6d,bar
+Emissions|CO2|Cumulated,Cumulated,#661a00,bar

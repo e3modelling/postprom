@@ -27,6 +27,7 @@ Secondary Energy|Electricity|Total,Residual Fuel Oil
 Secondary Energy|Electricity|Total,Hydro
 Secondary Energy|Electricity|Total,Geothermal
 Secondary Energy|Electricity|Total,CHP
+Secondary Energy|Electricity|Total,Demand
 Secondary Energy|Electricity|Solar,PGADPV
 Secondary Energy|Electricity|Solar,PGASOL
 Secondary Energy|Electricity|Solar,PGSOL
@@ -41,6 +42,9 @@ Capacity|Electricity|Total,Gas
 Capacity|Electricity|Total,Nuclear
 Capacity|Electricity|Total,Biomass
 Capacity|Electricity|Total,Geothermal
+Capacity|Electricity|Total,Residual Fuel Oil
+Capacity|Electricity|Total,Hydro
+Capacity|Electricity|Total,CHP
 Capacity|Electricity|Solar,PGADPV
 Capacity|Electricity|Solar,PGASOL
 Capacity|Electricity|Solar,PGSOL
