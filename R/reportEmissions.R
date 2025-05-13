@@ -105,9 +105,12 @@ reportEmissions <- function(path, regions, years) {
 
   CCS <- PGALLtoEF[PGALLtoEF$PGALL %in% CCS$CCS, ]
 
-  var_16 <- VProdElec[, , CCS[, 1]] * 0.086 / iPlantEffByType[, , CCS[, 1]] * iCo2EmiFac[, , "PG"][, , CCS[, 2]] * iCO2CaptRate[, , CCS[, 1]]
   # CO2 captured by CCS plants in power generation
-  sum6 <- dimSums(var_16, dim = 3, na.rm = TRUE)
+  var_16 <- VProdElec[, , CCS[, 1]] * 0.086 / iPlantEffByType[, , CCS[, 1]] * iCo2EmiFac[, , "PG"][, , CCS[, 2]] * iCO2CaptRate[, , CCS[, 1]]
+  emi_factor_ATHBMCCS <- 4.1868
+  ATHBMCCS <- VProdElec[, , "ATHBMCCS"] * 0.086 / iPlantEffByType[, ,  "ATHBMCCS"] * emi_factor_ATHBMCCS * iCO2CaptRate[, ,  "ATHBMCCS"]
+  # CO2 captured by CCS plants
+  sum6 <- dimSums(var_16, dim = 3, na.rm = TRUE) + ATHBMCCS
   
   # input hydrogen_CCS
   hydrogen_CCS <- VConsFuelTechH2Prod[, , PGEF[, 1]][,,c("gss","bgfls")] * iCo2EmiFac[, , "H2P"][, , PGEF[, 1]]
