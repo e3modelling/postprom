@@ -19,7 +19,7 @@
 #' @export
 reportCapacityElectricity <- function(path, regions, years) {
   # add model OPEN-PROM data electricity capacity
-  VCapElec2 <- readGDX(path, "VCapElecNominal", field = "l")[regions, years, ]
+  VCapElec2 <- readGDX(path, "VCapElec2", field = "l")[regions, years, ]
 
   PGALLtoEF <- readGDX(path, "PGALLtoEF")
   names(PGALLtoEF) <- c("PGALL", "EF")
