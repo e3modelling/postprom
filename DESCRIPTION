@@ -1,7 +1,7 @@
 Package: openprom
 Type: Package
 Title: A Tool for Comparative Analysis of OPEN-PROM Data
-Version: 0.6.00
+Version: 0.6.01
 Authors@R: c(
     person(
       "Michael", "Madianos",

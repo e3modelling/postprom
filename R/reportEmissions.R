@@ -20,16 +20,15 @@
 #' @export
 reportEmissions <- function(path, regions, years) {
   fscenario <- readGDX(path, "fscenario")
+  Navigate_Emissions <- read.csv(file.path(dirname(path), "data", "NavigateEmissions.csv")) %>%
+    as.magpie()
 
-  Navigate_Emissions <- read.csv(file.path(dirname(path), "data", "NavigateEmissions.csv"))
-  Navigate_Emissions <- as.magpie(Navigate_Emissions)
-
-  if (fscenario == 2) {
-    Navigate_Emissions <- Navigate_Emissions[, , "SUP_2C_Default"][regions, years, ]
-  } else if (fscenario == 1) {
-    Navigate_Emissions <- Navigate_Emissions[, , "SUP_1p5C_Default"][regions, years, ]
-  } else if (fscenario == 0) {
+  if (fscenario %in% c(0, 1)) {
     Navigate_Emissions <- Navigate_Emissions[, , "SUP_NPi_Default"][regions, years, ]
+  } else if (fscenario == 2) {
+    Navigate_Emissions <- Navigate_Emissions[, , "SUP_1p5C_Default"][regions, years, ]
+  } else if (fscenario == 3) {
+    Navigate_Emissions <- Navigate_Emissions[, , "SUP_2C_Default"][regions, years, ]
   }
 
   Navigate_Emissions <- collapseDim(Navigate_Emissions, 3.1)
@@ -37,7 +36,6 @@ reportEmissions <- function(path, regions, years) {
 
   remind_AFOLU_Industrial_Processes <- Navigate_Emissions[, , c("Emissions|CO2|AFOLU", "Emissions|CO2|Industrial Processes")]
   remind <- dimSums(remind_AFOLU_Industrial_Processes, 3, na.rm = TRUE)
-
 
   iCo2EmiFac <- readGDX(path, "iCo2EmiFac")[regions, years, ]
   VConsFuel <- readGDX(path, "VConsFuel", field = 'l')[regions, years, ]
@@ -111,7 +109,7 @@ reportEmissions <- function(path, regions, years) {
   ATHBMCCS <- VProdElec[, , "ATHBMCCS"] * 0.086 / iPlantEffByType[, ,  "ATHBMCCS"] * emi_factor_ATHBMCCS * iCO2CaptRate[, ,  "ATHBMCCS"]
   # CO2 captured by CCS plants
   sum6 <- dimSums(var_16, dim = 3, na.rm = TRUE) + ATHBMCCS
-  
+
   # input hydrogen_CCS
   hydrogen_CCS <- VConsFuelTechH2Prod[, , PGEF[, 1]][,,c("gss","bgfls")] * iCo2EmiFac[, , "H2P"][, , PGEF[, 1]]
   hydrogen_CCS <- dimSums(hydrogen_CCS, 3, na.rm = TRUE)
@@ -130,14 +128,14 @@ reportEmissions <- function(path, regions, years) {
   magpie_object <- NULL
   total_CO2 <- add_dimension(total_CO2, dim = 3.2, add = "unit", nm = "Mt CO2/yr")
   magpie_object <- mbind(magpie_object, total_CO2, Navigate_Emissions)
-  
+
   # Hydrogen
   Hydrogen_total <- hydrogen + hydrogen_CCS
-  
+
   getItems(Hydrogen_total, 3) <- "Emissions|CO2|Energy|Supply|Hydrogen"
-  
+
   Hydrogen_total <- add_dimension(Hydrogen_total, dim = 3.2, add = "unit", nm = "Mt CO2/yr")
-  
+
   magpie_object <- mbind(magpie_object, Hydrogen_total)
 
   # Extra Emissions
