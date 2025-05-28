@@ -8,7 +8,7 @@
 #' @seealso [gdx::readGDX] which this function wraps.
 #' @return An object of class "magpie", or NULL if an error occurs.
 #' @examples
-#' data <- readData(system.file("extdata", "blabla.gdx", package = "openprom"), "iSet")
+#' data <- readData(system.file("extdata", "blabla.gdx", package = "postprom"), "iSet")
 #' @importFrom gdx readGDX
 
 #' @export

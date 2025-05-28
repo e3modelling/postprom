@@ -7,7 +7,7 @@
 #'
 #' @examples
 #' \dontrun{
-#' result <- reportPE(system.file("extdata", "blabla.gdx", package = "openprom"), c("MEA"))
+#' result <- reportPE(system.file("extdata", "blabla.gdx", package = "postprom"), c("MEA"))
 #' }
 #' @importFrom gdx readGDX
 #' @importFrom madrat toolAggregate

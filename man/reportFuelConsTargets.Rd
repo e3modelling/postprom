@@ -20,7 +20,7 @@ Is including final consumption for TRANSE,NENSE,INDSE,DOMSE sectors.
 }
 \examples{
 \dontrun{
-result <- reportFuelConsTargets(system.file("extdata", "blabla.gdx", package = "openprom"), c("MEA"))
+result <- reportFuelConsTargets(system.file("extdata", "blabla.gdx", package = "postprom"), c("MEA"))
 }
 
 }

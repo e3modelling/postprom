@@ -9,7 +9,7 @@
 #'
 #' @examples
 #' \dontrun{
-#' result <- reportFuelConsTargets(system.file("extdata", "blabla.gdx", package = "openprom"), c("MEA"))
+#' result <- reportFuelConsTargets(system.file("extdata", "blabla.gdx", package = "postprom"), c("MEA"))
 #' }
 #'
 #' @importFrom gdx readGDX

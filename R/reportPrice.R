@@ -9,7 +9,7 @@
 #'
 #' @examples
 #' \dontrun{
-#' result <- reportPrice(system.file("extdata", "blabla.gdx", package = "openprom"), c("MEA"))
+#' result <- reportPrice(system.file("extdata", "blabla.gdx", package = "postprom"), c("MEA"))
 #' }
 #'
 #' @importFrom gdx readGDX
@@ -58,7 +58,7 @@ reportPrice <- function(path, regions, years) {
   for (y in seq_along(sector)) {
     # read GAMS set used for reporting of Final Energy different for each sector
     sets6 <- NULL
-    # load current OPENPROM set configuration for each sector
+    # load current postprom set configuration for each sector
     sets6 <- tryCatch({
       readGDX(path, sector[y])
     }, warning = function(w) {

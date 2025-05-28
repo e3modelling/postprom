@@ -14,7 +14,7 @@
 #' @export
 batchPlotReport <- function(report, save_pdf) {
   plot_mappings <- read.csv(
-    system.file(package = "openprom", file.path("extdata", "plot_mapping.csv"))
+    system.file(package = "postprom", file.path("extdata", "plot_mapping.csv"))
   )
   plot_mappings$Name <- factor(plot_mappings$Name, levels = unique(plot_mappings$Name))
 
@@ -35,7 +35,7 @@ batchPlotReport <- function(report, save_pdf) {
   render_env$plot_rds_path <- plot_rds_path
   render_env$pdf_title <- gsub("_", "-", basename(dirname(save_pdf)))
 
-  template_path <- system.file("templates/pdf.Rnw", package = "openprom")
+  template_path <- system.file("templates/pdf.Rnw", package = "postprom")
   output_path <- dirname(save_pdf)
   output_path <- file.path(basename(dirname(output_path)), basename(output_path))
   opts_knit$set(base.dir = output_path)

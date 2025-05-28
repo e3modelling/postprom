@@ -21,7 +21,7 @@ transportation, and carbon capture, to provide a comprehensive emissions report.
 }
 \examples{
 \dontrun{
-result <- reportEmissions(system.file("extdata", "blabla.gdx", package = "openprom"), c("MEA"))
+result <- reportEmissions(system.file("extdata", "blabla.gdx", package = "postprom"), c("MEA"))
 }
 
 }

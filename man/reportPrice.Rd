@@ -20,7 +20,7 @@ It maps energy forms to reporting categories, calculates averages, and formats t
 }
 \examples{
 \dontrun{
-result <- reportPrice(system.file("extdata", "blabla.gdx", package = "openprom"), c("MEA"))
+result <- reportPrice(system.file("extdata", "blabla.gdx", package = "postprom"), c("MEA"))
 }
 
 }

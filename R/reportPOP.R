@@ -9,7 +9,7 @@
 #'
 #' @examples
 #' \dontrun{
-#' result <- reportPOP(system.file("extdata", "blabla.gdx", package = "openprom"), c("MEA"))
+#' result <- reportPOP(system.file("extdata", "blabla.gdx", package = "postprom"), c("MEA"))
 #' }
 #'
 #' @importFrom gdx readGDX

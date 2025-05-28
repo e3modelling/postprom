@@ -19,7 +19,7 @@ A generic function to read data files.
 Methods are provided for `.gdx` and `.mif` file types.
 }
 \examples{
-data <- readData(system.file("extdata", "blabla.gdx", package = "openprom"), "iSet")
+data <- readData(system.file("extdata", "blabla.gdx", package = "postprom"), "iSet")
 }
 \seealso{
 [gdx::readGDX] which this function wraps.

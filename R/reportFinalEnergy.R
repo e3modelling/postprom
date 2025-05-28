@@ -10,7 +10,7 @@
 #'
 #' @examples
 #' \dontrun{
-#' result <- reportFinalEnergy(system.file("extdata", "blabla.gdx", package = "openprom"), c("MEA"))
+#' result <- reportFinalEnergy(system.file("extdata", "blabla.gdx", package = "postprom"), c("MEA"))
 #' }
 #' @importFrom gdx readGDX
 #' @importFrom madrat toolAggregate

@@ -1,4 +1,4 @@
-Package: openprom
+Package: postprom
 Type: Package
 Title: A Tool for Comparative Analysis of OPEN-PROM Data
 Version: 0.6.03

@@ -21,6 +21,6 @@ and formats the results into a magpie object.
 }
 \examples{
 \dontrun{
-result <- reportCapacityElectricity(system.file("extdata", "blabla.gdx", package = "openprom"), c("MEA"))
+result <- reportCapacityElectricity(system.file("extdata", "blabla.gdx", package = "postprom"), c("MEA"))
 }
 }

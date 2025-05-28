@@ -19,6 +19,6 @@ A function to process and aggregate primary energy data from a GDX file.
 }
 \examples{
 \dontrun{
-result <- reportPE(system.file("extdata", "blabla.gdx", package = "openprom"), c("MEA"))
+result <- reportPE(system.file("extdata", "blabla.gdx", package = "postprom"), c("MEA"))
 }
 }

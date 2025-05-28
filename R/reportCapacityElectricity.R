@@ -10,7 +10,7 @@
 #'
 #' @examples
 #' \dontrun{
-#' result <- reportCapacityElectricity(system.file("extdata", "blabla.gdx", package = "openprom"), c("MEA"))
+#' result <- reportCapacityElectricity(system.file("extdata", "blabla.gdx", package = "postprom"), c("MEA"))
 #' }
 #' @importFrom gdx readGDX
 #' @importFrom magclass getItems add_dimension mbind dimSums

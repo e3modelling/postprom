@@ -3,5 +3,5 @@
 .RData
 .Ruserdata
 .Rbuildignore
-openprom.Rproj
+postprom.Rproj
 *.gsp

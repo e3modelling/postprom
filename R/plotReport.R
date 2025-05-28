@@ -121,7 +121,7 @@ plotTool <- function(data, colors_vars, variable, plot_style,
 }
 
 getColorMappings <- function(new_mappings = NULL) {
-  mappings <- read.csv(system.file(package = "openprom", file.path("extdata", "plotstyle.csv")))
+  mappings <- read.csv(system.file(package = "postprom", file.path("extdata", "plotstyle.csv")))
   extra_mappings <- read.csv(system.file(package = "mip", file.path("extdata", "plotstyle.csv")), sep = ";") %>%
     select(c("X", "legend", "color")) %>%
     distinct() %>%

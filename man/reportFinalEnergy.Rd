@@ -21,6 +21,6 @@ aggregates it by subsectors and energy forms, and formats the results into a mag
 }
 \examples{
 \dontrun{
-result <- reportFinalEnergy(system.file("extdata", "blabla.gdx", package = "openprom"), c("MEA"))
+result <- reportFinalEnergy(system.file("extdata", "blabla.gdx", package = "postprom"), c("MEA"))
 }
 }
