@@ -10,7 +10,7 @@
 #' @return None. The function saves a PDF report and prints a message.
 #' @importFrom dplyr group_by group_keys group_split %>%
 #' @importFrom purrr map2
-#' @importFrom knitr knit2pdf
+#' @importFrom knitr knit2pdf opts_knit
 #' @export
 batchPlotReport <- function(report, save_pdf) {
   plot_mappings <- read.csv(
