@@ -13,6 +13,12 @@
 #' @importFrom knitr knit2pdf opts_knit
 #' @export
 batchPlotReport <- function(report, save_pdf) {
+  if (!tinytex::is_tinytex()) {
+    message("⚠️ TinyTeX (LaTeX engine) is not installed. Skipping PDF creation.")
+    message("To enable PDF output, install TinyTeX with: tinytex::install_tinytex()")
+    return(invisible(NULL))
+  }
+
   plot_mappings <- read.csv(
     system.file(package = "postprom", file.path("extdata", "plot_mapping.csv"))
   )
