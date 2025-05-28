@@ -64,4 +64,5 @@ helper <- function(variable, PGALLtoEF, title) {
 
   var_total <- add_dimension(var_total, dim = 3.2, add = "unit", nm = "GW/yr")
   magpie_object <- mbind(magpie_object, var_total)
+  return(magpie_object)
 }

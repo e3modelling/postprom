@@ -40,7 +40,7 @@ batchPlotReport <- function(report, save_pdf) {
   output_path <- file.path(basename(dirname(output_path)), basename(output_path))
   opts_knit$set(base.dir = output_path)
 
-  knitr::knit2pdf(
+  knit2pdf(
     input = template_path,
     output = file.path(save_pdf),
     envir = render_env,

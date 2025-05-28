@@ -19,7 +19,7 @@
 #' @export
 reportCapacityElectricity <- function(path, regions, years) {
   # add model OPEN-PROM data electricity capacity
-  VCapElec2 <- readGDX(path, "VCapElec2", field = "l")[regions, years, ]
+  VCapElec2 <- readGDX(path, "VcapElecNominal", field = "l")[regions, years, ]
 
   PGALLtoEF <- readGDX(path, "PGALLtoEF")
   names(PGALLtoEF) <- c("PGALL", "EF")
@@ -93,7 +93,7 @@ reportCapacityElectricity <- function(path, regions, years) {
   VcapElecChp <- readGDX(path, "VcapElecChp", field = "l")[regions, years, ]
   VcapElecChp_total <- dimSums(VcapElecChp, dim = 3, na.rm = TRUE)
   getItems(VcapElecChp_total, 3) <- "Capacity|Electricity|CHP"
-  VcapElecChp_total <- add_dimension(VcapElecChp_total, dim = 3.2, add = "unit", nm = "TWh")
+  VcapElecChp_total <- add_dimension(VcapElecChp_total, dim = 3.2, add = "unit", nm = "GW")
 
   magpie_object <- mbind(magpie_object, VcapElecChp_total)
   return(magpie_object)
