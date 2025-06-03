@@ -10,7 +10,17 @@
 
 \begin{document}
 \maketitle
-\tableofcontents % Creates TOC
+
+% Metadata Table
+\section*{Metadata}
+\begin{tabular}{|l|l|}
+\hline
+\textbf{fScenario} & \Sexpr{fScenario} \\
+\hline
+\end{tabular}
+
+% Creates TOC
+\tableofcontents
 
 <<setup, echo=FALSE, warning=FALSE, message=FALSE>>=
 library(ggplot2)

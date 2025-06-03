@@ -12,7 +12,7 @@
 #' @importFrom purrr map2
 #' @importFrom knitr knit2pdf opts_knit
 #' @export
-batchPlotReport <- function(report, save_pdf) {
+batchPlotReport <- function(report, metadata, save_pdf) {
   if (!tinytex::is_tinytex()) {
     message("⚠️ TinyTeX (LaTeX engine) is not installed. Skipping PDF creation.")
     message("To enable PDF output, install TinyTeX with: tinytex::install_tinytex()")
@@ -40,6 +40,7 @@ batchPlotReport <- function(report, save_pdf) {
   render_env <- new.env()
   render_env$plot_rds_path <- plot_rds_path
   render_env$pdf_title <- gsub("_", "-", basename(dirname(save_pdf)))
+  render_env$fScenario <- metadata
 
   template_path <- system.file("templates/pdf.Rnw", package = "postprom")
   output_path <- dirname(save_pdf)

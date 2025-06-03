@@ -4,7 +4,7 @@
 \alias{batchPlotReport}
 \title{Generate and save a batch plot report as a PDF}
 \usage{
-batchPlotReport(report, save_pdf)
+batchPlotReport(report, metadata, save_pdf)
 }
 \arguments{
 \item{report}{A data object containing report information.}
