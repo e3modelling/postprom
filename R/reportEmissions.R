@@ -121,7 +121,7 @@ reportEmissions <- function(path, regions, years) {
   sum7 <- iCo2EmiFac[, , SECTTECH2[, 1]] * VConsFuel[, , SECTTECH2[, 1]]
   sum7 <- dimSums(sum7, dim = 3, na.rm = TRUE)
 
-  total_CO2 <- sum1 + sum2 + sum3 + sum4 + sum5 - sum6 + sum7 + remind + hydrogen + hydrogen_CCS
+  total_CO2 <- sum1 + sum2 + sum3 + sum4 + sum5 - sum6 + sum7 + remind + hydrogen - hydrogen_CCS
 
   getItems(total_CO2, 3) <- "Emissions|CO2"
 
@@ -130,7 +130,7 @@ reportEmissions <- function(path, regions, years) {
   magpie_object <- mbind(magpie_object, total_CO2, Navigate_Emissions)
 
   # Hydrogen
-  Hydrogen_total <- hydrogen + hydrogen_CCS
+  Hydrogen_total <- hydrogen - hydrogen_CCS
 
   getItems(Hydrogen_total, 3) <- "Emissions|CO2|Energy|Supply|Hydrogen"
 
