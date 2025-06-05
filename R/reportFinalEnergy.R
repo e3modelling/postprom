@@ -27,7 +27,8 @@ reportFinalEnergy <- function(path, regions, years) {
   sets[["BAL"]] <- gsub("Steam", "Heat", sets[["BAL"]])
 
   # add model OPEN-PROM data Total final energy consumnption (Mtoe)
-  VConsFinEneCountry <- readGDX(path, "VConsFinEneCountry", field = "l")[regions, years, ]
+  VConsFinEneCountry <- readGDX(path, name = c("VmConsFinEneCountry", "VConsFinEneCountry"),
+                                field = "l", format = "first_found")[regions, years, ]
 
   # aggregate from PROM fuels to reporting fuel categories
   VConsFinEneCountry <- toolAggregate(VConsFinEneCountry[, , unique(sets$EF)], dim = 3, rel = sets, from = "EF", to = "BAL")
@@ -48,7 +49,7 @@ reportFinalEnergy <- function(path, regions, years) {
   sector_name <- c("Transportation", "Industry", "Residential and Commercial", "Non Energy and Bunkers")
 
   # variables of OPEN-PROM related to sectors
-  blabla_var <- c("VDemFinEneTranspPerFuel", "VConsFuel", "VConsFuel", "VConsFuel")
+  blabla_var <- c("VmDemFinEneTranspPerFuel", "VmConsFuel", "VmConsFuel", "VmConsFuel")
 
   for (y in 1:length(sector)) {
     # read GAMS set used for reporting of Final Energy different for each sector

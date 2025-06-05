@@ -22,13 +22,13 @@
 #' @importFrom gdx readGDX
 #' @export
 reportACTV <- function(path, regions, years) {
-  vector <- readGDX(path, c("iActv", "TRANSE"))
-  iActv <- vector$iActv
-  iActv <- vector$iActv[regions, years, setdiff(getItems(iActv, 3), c("PG", "H2P", "H2INFR"))]
+  vector <- readGDX(path, c("imActv", "TRANSE"))
+  iActv <- vector$imActv
+  iActv <- vector$imActv[regions, years, setdiff(getItems(iActv, 3), c("PG", "H2P", "H2INFR"))]
 
   transport <- as.character(vector$TRANSE)
   pred_years <- years[years>"y2020"]
-  VActv <- readGDX(path, "VActivPassTrnsp", field= "l")[regions, pred_years, transport]
+  VActv <- readGDX(path, "V01ActivPassTrnsp", field= "l")[regions, pred_years, transport]
 
   iActv[regions, pred_years, transport] <- VActv
 

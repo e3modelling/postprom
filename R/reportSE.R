@@ -20,7 +20,7 @@
 #' @export
 reportSE <- function(path, regions, years) {
   # add model OPEN-PROM data electricity production
-  VProdElec <- readGDX(path, "VProdElec", field = "l")[regions, years, ]
+  VProdElec <- readGDX(path, "VmProdElec", field = "l")[regions, years, ]
 
   PGALLtoEF <- readGDX(path, "PGALLtoEF")
   names(PGALLtoEF) <- c("PGALL", "EF")
@@ -74,14 +74,14 @@ reportSE <- function(path, regions, years) {
   VProdElec_total <- add_dimension(VProdElec_total, dim = 3.2, add = "unit", nm = "TWh")
   magpie_object <- mbind(magpie_object, VProdElec_total)
 
-  VprodElecChp <- readGDX(path, "VprodElecChp", field = "l")[regions, years, ]
+  VprodElecChp <- readGDX(path, "V04prodElecChp", field = "l")[regions, years, ]
   VProdElecChp_total <- dimSums(VprodElecChp, dim = 3, na.rm = TRUE)
   getItems(VProdElecChp_total, 3) <- "Secondary Energy|Electricity|CHP"
   VProdElecChp_total <- add_dimension(VProdElecChp_total, dim = 3.2, add = "unit", nm = "TWh")
 
   magpie_object <- mbind(magpie_object, VProdElecChp_total)
 
-  VDemElecTot <- readGDX(path, "VDemElecTot", field = "l")[regions, years, ]
+  VDemElecTot <- readGDX(path, "V04DemElecTot", field = "l")[regions, years, ]
   getItems(VDemElecTot, 3) <- "Secondary Energy|Electricity|Demand"
   VDemElecTot <- add_dimension(VDemElecTot, dim = 3.2, add = "unit", nm = "TWh")
 

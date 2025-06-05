@@ -14,10 +14,10 @@
 #' @importFrom magclass getItems getNames add_dimension mbind
 #' @export
 reportPE <- function(path, regions, years) {
-  vars = c("VProdPrimary", "BALEF2EFS")
+  vars = c("V03ProdPrimary", "BALEF2EFS")
   values <- readGDX(path, vars, field = 'l')
 
-  VProdPrimary <- values$VProdPrimary[regions, years, ]
+  VProdPrimary <- values$V03ProdPrimary[regions, years, ]
   sets <- values$BALEF2EFS
   names(sets) <- c("BAL", "EF")
 

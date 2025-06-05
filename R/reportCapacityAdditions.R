@@ -4,8 +4,8 @@
 #' @importFrom stringr str_replace_all
 #' @export
 reportCapacityAdditions <- function(path, regions, years) {
-  VNewCapElec <- readGDX(path, "VNewCapElec", field = "l")[regions, years, ]
-  VNetNewCapElec <- readGDX(path, "VNetNewCapElec", field = "l")[regions, years, ]
+  VNewCapElec <- readGDX(path, "V04NewCapElec", field = "l")[regions, years, ]
+  VNetNewCapElec <- readGDX(path, "V04NetNewCapElec", field = "l")[regions, years, ]
   PGALLtoEF <- readGDX(path, "PGALLtoEF")
   names(PGALLtoEF) <- c("PGALL", "EF")
 

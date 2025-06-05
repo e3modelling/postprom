@@ -37,16 +37,16 @@ reportEmissions <- function(path, regions, years) {
   remind_AFOLU_Industrial_Processes <- Navigate_Emissions[, , c("Emissions|CO2|AFOLU", "Emissions|CO2|Industrial Processes")]
   remind <- dimSums(remind_AFOLU_Industrial_Processes, 3, na.rm = TRUE)
 
-  iCo2EmiFac <- readGDX(path, "iCo2EmiFac")[regions, years, ]
-  VConsFuel <- readGDX(path, "VConsFuel", field = 'l')[regions, years, ]
-  VInpTransfTherm <- readGDX(path, "VInpTransfTherm", field = 'l')[regions, years, ]
-  VTransfInputDHPlants <- readGDX(path, "VTransfInputDHPlants", field = 'l')[regions, years, ]
-  VConsFiEneSec <- readGDX(path, "VConsFiEneSec", field = 'l')[regions, years, ]
-  VDemFinEneTranspPerFuel <- readGDX(path, "VDemFinEneTranspPerFuel", field = 'l')[regions, years, ]
-  VProdElec <- readGDX(path, "VProdElec", field = 'l')[regions, years, ]
-  iPlantEffByType <- readGDX(path, "iPlantEffByType")[regions, years, ]
-  iCO2CaptRate <- readGDX(path, "iCO2CaptRate")[regions, years, ]
-  VConsFuelTechH2Prod <- readGDX(path, "VConsFuelTechH2Prod", field = 'l')[regions, years, ]
+  iCo2EmiFac <- readGDX(path, "imCo2EmiFac")[regions, years, ]
+  VConsFuel <- readGDX(path, "VmConsFuel", field = 'l')[regions, years, ]
+  VInpTransfTherm <- readGDX(path, "VmInpTransfTherm", field = 'l')[regions, years, ]
+  VTransfInputDHPlants <- readGDX(path, "VmTransfInputDHPlants", field = 'l')[regions, years, ]
+  VConsFiEneSec <- readGDX(path, "VmConsFiEneSec", field = 'l')[regions, years, ]
+  VDemFinEneTranspPerFuel <- readGDX(path, "VmDemFinEneTranspPerFuel", field = 'l')[regions, years, ]
+  VProdElec <- readGDX(path, "VmProdElec", field = 'l')[regions, years, ]
+  iPlantEffByType <- readGDX(path, "imPlantEffByType")[regions, years, ]
+  iCO2CaptRate <- readGDX(path, "imCO2CaptRate")[regions, years, ]
+  VConsFuelTechH2Prod <- readGDX(path, "VmConsFuelTechH2Prod", field = 'l')[regions, years, ]
   # Link between Model Subsectors and Fuels
 
   sets4 <- readGDX(path, "SECTTECH")
