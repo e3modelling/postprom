@@ -8,23 +8,18 @@ Capacity|Electricity|Nuclear,Nuclear,#ff33ff,bar
 Capacity|Electricity|Biomass,Biomass,#005900,bar
 Capacity|Electricity|Geothermal,Geothermal,#e51900,bar
 Capacity|Electricity|PGADPV,PGADPV,#d4ff00,bar
-Capacity|Electricity|PGASOL,PGASOL,#ffb400,bar
+Capacity|Electricity|PGCSP,PGCSP,#ffb400,bar
 Capacity|Electricity|PGAWND,PGAWND,#8800ff,bar
 Capacity|Electricity|PGAWNO,PGAWNO,#334cff,bar
-Capacity|Electricity|PGWND,PGWND,#337fff,bar
 Capacity|Electricity|PGSOL,PGSOL,#ffe600,bar
-Capacity|Electricity|Residual Fuel Oil,Residual Fuel Oil,#c2cacf,bar
 Capacity|Electricity|Hydro,Hydro,#07cbf2,bar
 Capacity|Electricity|CHP,CHP,#87e6a4,bar
 Secondary Energy|Electricity|PGAWND,PGAWND,#8800ff,bar
 Secondary Energy|Electricity|PGAWNO,PGAWNO,#334cff,bar
-Secondary Energy|Electricity|PGWND,PGWND,#337fff,bar
-Secondary Energy|Electricity|PGADPV,PGADPV,#d4ff00,bar
-Secondary Energy|Electricity|PGASOL,PGASOL,#ffb400,bar
+Secondary Energy|Electricity|PGCSP,PGCSP,#ffb400,bar
 Secondary Energy|Electricity|PGSOL,PGSOL,#ffe600,bar
 Secondary Energy|Electricity|Coal,Coal,#0c0c0c,bar
 Secondary Energy|Electricity|Gas,Gas,#999959,bar
-Secondary Energy|Electricity|Residual Fuel Oil,Residual Fuel Oil,#c2cacf,bar
 Secondary Energy|Electricity|Hydro,Hydro,#07cbf2,bar
 Secondary Energy|Electricity|CHP,CHP,#87e6a4,bar
 Secondary Energy|Electricity|Biomass,Biomass,#005900,bar
