@@ -25,12 +25,7 @@ Secondary Energy|Electricity|Total,Nuclear
 Secondary Energy|Electricity|Total,Biomass
 Secondary Energy|Electricity|Total,Hydro
 Secondary Energy|Electricity|Total,Geothermal
-Secondary Energy|Electricity|Total,CHP
 Secondary Energy|Electricity|Total,Demand
-Secondary Energy|Electricity|Solar,PGCSP
-Secondary Energy|Electricity|Solar,PGSOL
-Secondary Energy|Electricity|Wind,PGAWND
-Secondary Energy|Electricity|Wind,PGAWNO
 Capacity|Electricity|Total,Solar
 Capacity|Electricity|Total,Oil
 Capacity|Electricity|Total,Wind
@@ -40,7 +35,4 @@ Capacity|Electricity|Total,Nuclear
 Capacity|Electricity|Total,Biomass
 Capacity|Electricity|Total,Geothermal
 Capacity|Electricity|Total,Hydro
-Capacity|Electricity|Solar,PGCSP
-Capacity|Electricity|Solar,PGSOL
-Capacity|Electricity|Wind,PGAWND
-Capacity|Electricity|Wind,PGAWNO
+Capacity|Electricity|CHP,

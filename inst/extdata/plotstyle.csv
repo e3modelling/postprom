@@ -7,7 +7,6 @@ Capacity|Electricity|Gas,Gas,#999959,bar
 Capacity|Electricity|Nuclear,Nuclear,#ff33ff,bar
 Capacity|Electricity|Biomass,Biomass,#005900,bar
 Capacity|Electricity|Geothermal,Geothermal,#e51900,bar
-Capacity|Electricity|PGADPV,PGADPV,#d4ff00,bar
 Capacity|Electricity|PGCSP,PGCSP,#ffb400,bar
 Capacity|Electricity|PGAWND,PGAWND,#8800ff,bar
 Capacity|Electricity|PGAWNO,PGAWNO,#334cff,bar
