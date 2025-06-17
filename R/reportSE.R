@@ -19,20 +19,9 @@
 #' @importFrom madrat toolAggregate
 #' @export
 reportSE <- function(path, regions, years) {
-  # add model OPEN-PROM data electricity production
-  VProdElec <- readGDX(path, "VmProdElec", field = "l")[regions, years, ]
-
-  PGALLtoEF <- readGDX(path, "PGALLtoEF")
-  names(PGALLtoEF) <- c("PGALL", "EF")
-
-  add_LGN <- as.data.frame(PGALLtoEF[which(PGALLtoEF[, 2] == "LGN"), 1])
-  add_LGN["EF"] <- "Lignite"
-  names(add_LGN) <- c("PGALL", "EF")
-
   rename_EF <- c(
-    "LGN" = "Coal",
-    "HCL" = "Coal",
-    "RFO" = "Residual Fuel Oil",
+    "LGN" = "Lignite",
+    "HCL" = "Hard coal",
     "GDO" = "Oil",
     "NGS" = "Gas",
     "BMSWAS" = "Biomass",
@@ -40,51 +29,68 @@ reportSE <- function(path, regions, years) {
     "HYD" = "Hydro",
     "WND" = "Wind",
     "SOL" = "Solar",
-    "GEO" = "Geothermal"
+    "GEO" = "Geothermal",
+    "H2F" = "Hydrogen"
   )
+  ProdNonCHP <- readGDX(path, "VmProdElec", field = "l")[regions, years, ]
+  ProdCHP <- readGDX(path, "V04ProdElecCHP", field = "l")[regions, years, ]
+  Prod <- mbind(ProdNonCHP, ProdCHP)
+
+  PGALLtoEF <- readGDX(path, "PGALLtoEF") %>%
+    rename(Tech = PGALL, EF = PGEF)
+  CHPtoEF <- readGDX(path, "CHPtoEF") %>%
+    rename(Tech = EF, EF = EF1) %>%
+    filter(EF %in% PGALLtoEF$EF)
   PGALLtoEF$EF <- str_replace_all(PGALLtoEF$EF, rename_EF)
+  CHPtoEF$EF <- str_replace_all(CHPtoEF$EF, rename_EF)
+  mapping <- bind_rows(PGALLtoEF, CHPtoEF)
+  CHPs <- filter(PGALLtoEF,!EF %in% setdiff(PGALLtoEF$EF, CHPtoEF$EF))
 
-  VProdElec_without_aggr <- VProdElec
-  getItems(VProdElec_without_aggr, 3) <- paste0("Secondary Energy|Electricity|", getItems(VProdElec_without_aggr, 3))
+  ProdNonCHP <- helperPrepareProd(ProdNonCHP[,,CHPs$Tech], CHPs, "Non-CHP")
+  ProdCHP <- helperPrepareProd(ProdCHP, CHPtoEF, "CHP")
+  Prod <- helperPrepareProd(Prod, mapping)
 
-  magpie_object <- NULL
-  VProdElec_without_aggr <- add_dimension(VProdElec_without_aggr, dim = 3.2, add = "unit", nm = "TWh")
-  magpie_object <- mbind(magpie_object, VProdElec_without_aggr)
+  Total <- dimSums(Prod, 3.1, na.rm = TRUE)
+  getItems(Total, 3.1) <- "Secondary Energy|Electricity"
 
-  VProdElec_LGN <- VProdElec
-  # aggregate to reporting fuel categories
-  VProdElec <- toolAggregate(VProdElec[, , PGALLtoEF[["PGALL"]]], dim = 3, rel = PGALLtoEF, from = "PGALL", to = "EF")
-  VProdElec_LGN <- toolAggregate(VProdElec_LGN[, , add_LGN[["PGALL"]]], dim = 3, rel = add_LGN, from = "PGALL", to = "EF")
+  TotalCHP <- dimSums(ProdCHP, 3.1, na.rm = TRUE)
+  getItems(TotalCHP, 3.1) <- "Secondary Energy|Electricity|CHP"
 
-  getItems(VProdElec_LGN, 3) <- paste0("Secondary Energy|Electricity|", getItems(VProdElec_LGN, 3))
+  TotalNonCHP <- Total - TotalCHP
+  TotalNonCHP <- collapseDim(TotalNonCHP, 3.2)
+  getItems(TotalNonCHP, 3.1) <- "Secondary Energy|Electricity|Non-CHP"
 
-  VProdElec_LGN <- add_dimension(VProdElec_LGN, dim = 3.2, add = "unit", nm = "TWh")
-  magpie_object <- mbind(magpie_object, VProdElec_LGN)
+  totalDemand <- readGDX(path, "V04DemElecTot", field = "l")[regions, years, ]
+  getItems(totalDemand, 3.1) <- "Secondary Energy|Electricity|Demand"
 
-  getItems(VProdElec, 3) <- paste0("Secondary Energy|Electricity|", getItems(VProdElec, 3))
+  ProdNonCHP <- mbind(ProdNonCHP, helperAggregateCoalProd(ProdNonCHP, name = "Non-CHP"))
+  ProdCHP <- mbind(ProdCHP, helperAggregateCoalProd(ProdCHP, name = "CHP"))
+  Prod <- mbind(Prod, helperAggregateCoalProd(Prod))
 
-  VProdElec <- add_dimension(VProdElec, dim = 3.2, add = "unit", nm = "TWh")
-  magpie_object <- mbind(magpie_object, VProdElec)
-
-  # electricity production
-  VProdElec_total <- dimSums(VProdElec, dim = 3, na.rm = TRUE)
-
-  getItems(VProdElec_total, 3) <- "Secondary Energy|Electricity"
-
-  VProdElec_total <- add_dimension(VProdElec_total, dim = 3.2, add = "unit", nm = "TWh")
-  magpie_object <- mbind(magpie_object, VProdElec_total)
-
-  VprodElecChp <- readGDX(path, "V04prodElecChp", field = "l")[regions, years, ]
-  VProdElecChp_total <- dimSums(VprodElecChp, dim = 3, na.rm = TRUE)
-  getItems(VProdElecChp_total, 3) <- "Secondary Energy|Electricity|CHP"
-  VProdElecChp_total <- add_dimension(VProdElecChp_total, dim = 3.2, add = "unit", nm = "TWh")
-
-  magpie_object <- mbind(magpie_object, VProdElecChp_total)
-
-  VDemElecTot <- readGDX(path, "V04DemElecTot", field = "l")[regions, years, ]
-  getItems(VDemElecTot, 3) <- "Secondary Energy|Electricity|Demand"
-  VDemElecTot <- add_dimension(VDemElecTot, dim = 3.2, add = "unit", nm = "TWh")
-
-  magpie_object <- mbind(magpie_object, VDemElecTot)
+  magpie_object <- mbind(Prod, ProdNonCHP, ProdCHP, Total,
+                         TotalCHP, TotalNonCHP, totalDemand)
+  magpie_object <- add_dimension(magpie_object, dim = 3.2, add = "unit",nm = "TWh")
   return(magpie_object)
 }
+
+# Helper -----------------------------------------------------------------------
+helperPrepareProd <- function(magpie, mapping, name = NULL) {
+  magpie <- toolAggregate(
+    magpie, dim = 3, rel = mapping, from = "Tech", to = "EF"
+  )
+
+  title <- paste0("Secondary Energy|Electricity|", getItems(magpie, 3))
+  title <- if (!is.null(name)) paste(title, name, sep = "|") else title
+  getItems(magpie, 3) <- title
+  return(magpie)
+}
+
+helperAggregateCoalProd <- function(magpie_object, name = NULL) {
+  temp <- magpie_object[,,c("Lignite", "Hard coal"), pmatch=TRUE]
+  temp <- dimSums(temp, 3.1, na.rm = TRUE)
+  title <- "Secondary Energy|Electricity|Coal"
+  title <- if (!is.null(name)) paste(title, name, sep = "|") else title
+  getItems(temp, 3) <- title
+  return(temp)
+}
+
