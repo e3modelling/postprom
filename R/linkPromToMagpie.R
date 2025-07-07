@@ -22,7 +22,8 @@
 #'
 #' @importFrom quitte as.quitte interpolate_missing_periods
 #' @importFrom dplyr %>% select filter rename mutate inner_join
-#' @importFrom magclass as.magpie collapseDim add_dimension
+#' @importFrom magclass as.magpie collapseDim add_dimension read.report
+#' @importFrom gdx readGDX
 #'
 #' @examples
 #' \dontrun{
@@ -117,4 +118,116 @@ OPEN2MAgPIE <- function(path, pathPollutantPrices, pathBioenergyDemand) {
   final["woodfuel"][final$var == "const2020", ] <- temp
 
   write.csv(final, "result_f60_1stgen_bioenergy_dem.cs3", quote = FALSE, row.names = FALSE)
-  }
+}
+
+
+MAgPIE2OPEN <- function(path, pathReport, pathSave) {
+  message("[MAgPIE2OPEN] Extracting outputs from MAgPIE report...")
+  magpie <- read.report(pathReport)[[1]][[1]]
+  vars <- c("Prices|Bioenergy (US$2017/GJ)", "Emissions|CO2|Land (Mt CO2/yr)",
+            "Emissions|BC|AFOLU|Land|Fires (Mt BC/yr)","Emissions|CH4|Land (Mt CH4/yr)",
+            "Emissions|CO|AFOLU|Land|Fires (Mt CO/yr)","Emissions|N2O|Land (Mt N2O/yr)",
+            "Emissions|NH3|Land (Mt NH3/yr)","Emissions|NO2|Land (Mt NO2/yr)",
+            "Emissions|NO3-|Land (Mt NO3-/yr)","Emissions|OC|AFOLU|Land|Fires (Mt OC/yr)",
+            "Emissions|SO2|AFOLU|Land|Fires (Mt SO2/yr)","Emissions|VOC|AFOLU|Land|Fires (Mt VOC/yr)")
+  magpie <- magpie[, , vars]
+  MtoeToPJ <- 41.868
+  magpie[,, "Prices|Bioenergy (US$2017/GJ)"] <- magpie[,,"Prices|Bioenergy (US$2017/GJ)"]*100/103.42*MtoeToPJ/1000 # to USD2015 & 1/toe
+  
+  getItems(magpie, 3)[getItems(magpie, 3)=="Prices|Bioenergy (US$2017/GJ)"] <- "Prices|Bioenergy (US$2015/Mtoe)"
+  
+  Globiom <- readSource("GLOBIOMEU", convert = FALSE)
+  
+  regionOP <- toolGetMapping(name = "regionmappingOPDEV3.csv",
+                             type = "regional",
+                             where = "mrprom")
+  
+  regionMag <- toolGetMapping(name = "h12.csv",
+                              type = "regional",
+                              where = "mrprom")
+  
+  EU27 <- setdiff(getRegions(Globiom), "EU27")
+  ELL <- regionOP[which(regionOP[,3]=="ELL"),2]
+  dif <- setdiff(regionOP[,3],regionMag[,3])
+  inc <- intersect(regionOP[,3],regionMag[,3])
+  in_of_ELL <- intersect(EU27, ELL)
+  rest_of_ELL <- ELL[!(ELL %in% in_of_ELL)]
+  
+  Globiom <- Globiom[EU27,,]
+  Globiom <- as.quitte(Globiom) %>% mutate(value = mean(value, na.rm = TRUE), .by = c("region"))
+  Globiom[["period"]] <- NA
+  Globiom <- distinct(Globiom)
+  Globiom <- as.quitte(Globiom)
+  Globiom <- as.magpie(Globiom)
+  Globiom_OP <- Globiom[intersect(getRegions(Globiom),regionOP[,3]),,]
+  Globiom_ELL <- mean(Globiom[in_of_ELL,,])
+  eur_map_op_prom <- add_columns(Globiom_OP, addnm = c("ELL"), dim = 1, fill = Globiom_ELL)
+  
+  OPEN_PROM_biom1 <- magpie[inc,,setdiff(getItems(magpie,3),"Prices|Bioenergy (US$2015/Mtoe)")]
+  Emi_GBR <- readSource("UN_GBR_LULUCF")
+  Emi_GBR <- mean(Emi_GBR)
+  eur_map_op_prom <- add_columns(eur_map_op_prom, addnm = c("GBR"), dim = 1, fill = Emi_GBR)
+  
+  rmap <- data.frame(EUR_24 = rep("EUR", 25),
+                     EUR_24_OP = getRegions(eur_map_op_prom))
+  
+  OPEN_PROM_biom2 <- toolAggregate(magpie["EUR",,setdiff(getItems(magpie,3),"Prices|Bioenergy (US$2015/Mtoe)")], rel = rmap, weight = eur_map_op_prom)
+  
+  OPEN_PROM_biom <- mbind(OPEN_PROM_biom1,OPEN_PROM_biom2)
+  
+  OPEN_PROM_price1 <- magpie[inc,,"Prices|Bioenergy (US$2015/Mtoe)"]
+  
+  OPEN_PROM_price3 <-  toolAggregate(magpie["EUR",,"Prices|Bioenergy (US$2015/Mtoe)"], rel = rmap,weight = NULL)
+  
+  OPEN_PROM_price <- mbind(OPEN_PROM_price1,OPEN_PROM_price3)
+  
+  OPEN_PROM <- mbind(OPEN_PROM_price,OPEN_PROM_biom)
+  
+  OPEN_PROM <- as.quitte(OPEN_PROM) %>%
+    interpolate_missing_periods(period = min(getYears(OPEN_PROM,as.integer = TRUE)) : max(getYears(OPEN_PROM,as.integer = TRUE)), expand.values = TRUE)
+  OPEN_PROM <- as.magpie(OPEN_PROM)
+  OPEN_PROM <- OPEN_PROM[,2010 : 2100,]
+  
+  OPEN_PROM_pri <- OPEN_PROM[,,"Prices|Bioenergy.US$2015/Mtoe"]
+  
+  SBS <- readGDX(path, c("SBS"), field = "l")
+  
+  OPEN_PROM_pri <- as.quitte(OPEN_PROM_pri)
+  
+  df <- expand(OPEN_PROM_pri, nesting(region,variable,unit,period), variable2 = SBS)
+  
+  df2 <- left_join(df, OPEN_PROM_pri, by = c("region","variable","unit","period"))
+  
+  df2 <- select(df2,-variable)
+  
+  names(df2) <- sub("variable2", "variable", names(df2))
+  
+  df2 <- as.quitte(df2)
+  
+  xq <- as.quitte(OPEN_PROM[,,setdiff(getItems(OPEN_PROM,3.1),"Prices|Bioenergy")]) %>%
+    select(c("region","period", "variable", "value")) %>%
+    pivot_wider(names_from = "period")
+  fheader <- paste("dummy,dummy", paste(colnames(xq)[3 : length(colnames(xq))], collapse = ","), sep = ",")
+  writeLines(fheader, con = "iEmissions_magpie.csv")
+  write.table(xq,
+              quote = FALSE,
+              row.names = FALSE,
+              file = file.path(pathSave,"iEmissions_magpie.csv"),
+              sep = ",",
+              col.names = FALSE,
+              append = TRUE)
+  
+  xq <- as.quitte(df2) %>%
+    select(c("region","period" , "variable", "value")) %>%
+    pivot_wider(names_from = "period")
+  fheader <- paste("dummy,dummy", paste(colnames(xq)[3 : length(colnames(xq))], collapse = ","), sep = ",")
+  writeLines(fheader, con = "iPrices_magpie.csv")
+  write.table(xq,
+              quote = FALSE,
+              row.names = FALSE,
+              file = file.path(pathSave,"iPrices_magpie.csv"),
+              sep = ",",
+              col.names = FALSE,
+              append = TRUE)
+  
+}
