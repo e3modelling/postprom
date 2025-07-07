@@ -12,6 +12,7 @@ convertGDXtoMIF(
   fullValidation = TRUE,
   scenario_name = NULL,
   aggregate = TRUE,
+  emissions = TRUE,
   save = TRUE
 )
 }
@@ -27,6 +28,8 @@ convertGDXtoMIF(
 \item{scenario_name}{Optional; a character vector specifying the scenario names. Defaults to the basename of `.path`.}
 
 \item{aggregate}{Optional; a logical value indicating whether to aggregate data. Defaults to `TRUE`.}
+
+\item{emissions}{Optional; a logical value indicating whether to generate a separate emissions csv file for running climate assessment. Defaults to `TRUE`.}
 
 \item{save}{Optional; a logical value indicating whether to save the output. Defaults to `TRUE`.}
 }
@@ -49,6 +52,7 @@ convertGDXtoMIF(.path = c("path/to/gdx1", "path/to/gdx2"),
                 fullValidation = TRUE,
                 scenario_name = c("Scenario1", "Scenario2"),
                 aggregate = TRUE,
+                emissions = TRUE,
                 save = TRUE)
 }
 }

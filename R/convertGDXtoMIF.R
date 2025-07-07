@@ -8,7 +8,6 @@
 #' @param fullValidation Optional; a logical value indicating whether full validation should be performed. Defaults to `TRUE`.
 #' @param scenario_name Optional; a character vector specifying the scenario names. Defaults to the basename of `.path`.
 #' @param aggregate Optional; a logical value indicating whether to aggregate data. Defaults to `TRUE`.
-#' @param aggregate Optional; a logical value indicating whether to export emissions data for running the climate model. Defaults to `TRUE`.
 #' @param save Optional; a logical value indicating whether to save the output. Defaults to `TRUE`.
 #' @param emissions Optional; a logical value indicating whether to generate a separate emissions csv file for running climate assessment. Defaults to `TRUE`.
 #'
@@ -26,6 +25,7 @@
 #'                 fullValidation = TRUE,
 #'                 scenario_name = c("Scenario1", "Scenario2"),
 #'                 aggregate = TRUE,
+#'                 emissions = TRUE,
 #'                 save = TRUE)
 #' }
 #' @importFrom magclass mbind dimSums getItems getRegions write.report read.report
@@ -74,11 +74,7 @@ convertGDXtoMIF_single <- function(.path, regions, years, path_mif, append,
   print(paste0("Region aggregation: ", aggregate))
   print(paste0("Processing path: ", .path))
   path_gdx <- file.path(.path, "blabla.gdx")
-  
-  path_gdx = "C:/Users/at39/2-Models/postprom/blabla.gdx"
-  regions="USA"
-  years=2025
-  
+
   reports <- reportFinalEnergy(path_gdx, regions, years)
   reports <- mbind(reports, reportEmissions(path_gdx, regions, years))
   reports <- mbind(reports, reportSE(path_gdx, regions, years))
@@ -94,7 +90,7 @@ convertGDXtoMIF_single <- function(.path, regions, years, path_mif, append,
 
   if (aggregate == TRUE) reports <- aggregateMIF(report = reports)
 
-  if (emissions == TRUE) generateEmissions(reports, regions, years)
+  if (emissions == TRUE) generateEmissionsFile(.path, reports, years, scenario_name)
 
   if(save == TRUE) {
     write.report(
