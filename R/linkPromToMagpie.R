@@ -31,10 +31,10 @@
 #' }
 #' @export
 linkPromToMagpie <- function(path, pathPollutantPrices,
-                             pathBioenergyDemand, forward = TRUE) {
+                             pathBioenergyDemand,pathReport=NULL,pathSave=NULL, forward = TRUE) {
   message("[✓] Starting soft-linking routine...")
   if (forward == TRUE) OPEN2MAgPIE(path, pathPollutantPrices, pathBioenergyDemand)
-  else if (forward == FALSE) MAgPIE2OPEN()
+  else if (forward == FALSE) MAgPIE2OPEN(path, pathReport, pathSave)
   else message("Wrong forward input")
 
 }

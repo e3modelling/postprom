@@ -8,6 +8,8 @@ linkPromToMagpie(
   path,
   pathPollutantPrices,
   pathBioenergyDemand,
+  pathReport = NULL,
+  pathSave = NULL,
   forward = TRUE
 )
 }
