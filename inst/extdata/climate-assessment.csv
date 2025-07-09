@@ -1,0 +1,22 @@
+Variable,Unit
+Emissions|BC,Mt BC/yr
+Emissions|CH4,Mt CH4/yr
+Emissions|CO,Mt CO/yr
+Emissions|CO2|AFOLU,Mt CO2/yr
+Emissions|CO2|Energy and Industrial Processes,Mt CO2/yr
+Emissions|HFC|HFC125,kt HFC125/yr
+Emissions|HFC|HFC134a,kt HFC134a/yr
+Emissions|HFC|HFC143a,kt HFC143a/yr
+Emissions|HFC|HFC23,kt HFC23/yr
+Emissions|HFC|HFC32,kt HFC32/yr
+Emissions|HFC|HFC43-10,kt HFC43-10/yr
+Emissions|N2O,kt N2O/yr
+Emissions|NH3,Mt NH3/yr
+Emissions|NOx,Mt NO2/yr
+Emissions|OC,Mt OC/yr
+Emissions|PFC|C2F6,kt C2F6/yr
+Emissions|PFC|C6F14,kt C6F14/yr
+Emissions|PFC|CF4,kt CF4/yr
+Emissions|SF6,kt SF6/yr
+Emissions|Sulfur,Mt SO2/yr
+Emissions|VOC,Mt VOC/yr
