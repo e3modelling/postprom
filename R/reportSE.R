@@ -33,7 +33,7 @@ reportSE <- function(path, regions, years) {
     "H2F" = "Hydrogen"
   )
   ProdNonCHP <- readGDX(path, "VmProdElec", field = "l")[regions, years, ]
-  ProdCHP <- readGDX(path, "V04ProdElecCHP", field = "l")[regions, years, ]
+  ProdCHP <- readGDX(path, c("V04ProdElecEstCHP", "V04ProdElecCHP"), field = "l", format = "first_found")[regions, years, ]
   Prod <- mbind(ProdNonCHP, ProdCHP)
 
   PGALLtoEF <- readGDX(path, "PGALLtoEF") %>%
