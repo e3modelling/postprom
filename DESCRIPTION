@@ -1,7 +1,7 @@
 Package: postprom
 Type: Package
 Title: A Tool for Comparative Analysis of OPEN-PROM Data
-Version: 0.8.0
+Version: 0.8.2
 Authors@R: c(
     person(
       "Michael", "Madianos",
@@ -25,7 +25,7 @@ License: GPL-3 | file LICENSE
 Encoding: UTF-8
 LazyData: true
 Imports: gdx, madrat, magclass, stringr, quitte, rlang, 
-         tidyr, dplyr, purrr, ggplot2, rmarkdown, knitr
+         tidyr, dplyr, purrr, ggplot2, rmarkdown, knitr, mip
 RoxygenNote: 7.3.2
 Suggests: 
     testthat (>= 3.0.0),

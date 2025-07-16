@@ -122,6 +122,13 @@ plotTool <- function(data, colors_vars, variable, plot_style,
 
 getColorMappings <- function(new_mappings = NULL) {
   mappings <- read.csv(system.file(package = "postprom", file.path("extdata", "plotstyle.csv")))
+
+  if (!requireNamespace("mip", quietly = TRUE)) {
+    message("⚠️ The 'mip' package is not installed.")
+    message("To use mip features (plotstyle.csv)), install it with: install.packages('mip')")
+    return(invisible(NULL))
+  }
+
   extra_mappings <- read.csv(system.file(package = "mip", file.path("extdata", "plotstyle.csv")), sep = ";") %>%
     select(c("X", "legend", "color")) %>%
     distinct() %>%
