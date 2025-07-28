@@ -106,8 +106,6 @@ helperPrepareProd <- function(magpie, mapping, name = NULL) {
 
 helperAggregateCoalProd <- function(magpie_object, name = NULL) {
   temp <- magpie_object[,,c("Lignite", "Hard coal"), pmatch = TRUE]
-  print(getItems(temp, 3.1))
-  print(temp[,"y2021",])
   temp <- dimSums(temp, 3.1, na.rm = TRUE)
   title <- "Secondary Energy|Electricity|Coal"
   title <- if (!is.null(name)) paste(title, name, sep = "|") else title
