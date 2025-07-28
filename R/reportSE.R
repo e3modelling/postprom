@@ -32,23 +32,37 @@ reportSE <- function(path, regions, years) {
     "GEO" = "Geothermal",
     "H2F" = "Hydrogen"
   )
-  ProdNonCHP <- readGDX(path, "VmProdElec", field = "l")[regions, years, ]
-  ProdCHP <- readGDX(path, c("V04ProdElecEstCHP", "V04ProdElecCHP"), field = "l", format = "first_found")[regions, years, ]
-  Prod <- mbind(ProdNonCHP, ProdCHP)
+  mapCCS <- readGDX("blabla.gdx", "CCS_NOCCS") %>% as.data.frame() %>%
+    rename(CCS = PGALL, NOCCS = PGALL1)
 
   PGALLtoEF <- readGDX(path, "PGALLtoEF") %>%
     rename(Tech = PGALL, EF = PGEF)
+  CCStoEF <- PGALLtoEF %>%
+    filter(Tech %in% mapCCS$CCS)
+  PGALLtoEF <- PGALLtoEF %>%
+    anti_join(mapCCS, by = c("Tech" = "CCS"))
   CHPtoEF <- readGDX(path, "CHPtoEF") %>%
     rename(Tech = EF, EF = EF1) %>%
     filter(EF %in% PGALLtoEF$EF)
+
   PGALLtoEF$EF <- str_replace_all(PGALLtoEF$EF, rename_EF)
   CHPtoEF$EF <- str_replace_all(CHPtoEF$EF, rename_EF)
-  mapping <- bind_rows(PGALLtoEF, CHPtoEF)
+  CCStoEF$EF <- str_replace_all(CCStoEF$EF, rename_EF)
+  mapping <- bind_rows(PGALLtoEF, CHPtoEF, CCStoEF)
   CHPs <- filter(PGALLtoEF,!EF %in% setdiff(PGALLtoEF$EF, CHPtoEF$EF))
+  CCSs <- filter(PGALLtoEF,!EF %in% setdiff(PGALLtoEF$EF, CCStoEF$EF))
 
-  ProdNonCHP <- helperPrepareProd(ProdNonCHP[,,CHPs$Tech], CHPs, "Non-CHP")
-  ProdCHP <- helperPrepareProd(ProdCHP, CHPtoEF, "CHP")
+  tempProdNonCHP <- readGDX(path, "VmProdElec", field = "l")[regions, years, ]
+  ProdCHP <- readGDX(path, c("V04ProdElecEstCHP", "V04ProdElecCHP"), field = "l", format = "first_found")[regions, years, ]
+  ProdCCS <- tempProdNonCHP[,,mapCCS$CCS]
+  Prod <- mbind(tempProdNonCHP, ProdCHP)
   Prod <- helperPrepareProd(Prod, mapping)
+
+  ProdNonCHP <- helperPrepareProd(tempProdNonCHP[,,CHPs$Tech], CHPs, "Non-CHP")
+  ProdNonCHP <- mbind(ProdNonCHP, helperPrepareProd(tempProdNonCHP[,,CCSs$Tech], CCSs, "Non-CHP|Non-CCS"))
+
+  ProdCHP <- helperPrepareProd(ProdCHP, CHPtoEF, "CHP")
+  ProdCCS <- helperPrepareProd(ProdCCS, CCStoEF, "Non-CHP|CCS")
 
   Total <- dimSums(Prod, 3.1, na.rm = TRUE)
   getItems(Total, 3.1) <- "Secondary Energy|Electricity"
@@ -64,10 +78,16 @@ reportSE <- function(path, regions, years) {
   getItems(totalDemand, 3.1) <- "Secondary Energy|Electricity|Demand"
 
   ProdNonCHP <- mbind(ProdNonCHP, helperAggregateCoalProd(ProdNonCHP, name = "Non-CHP"))
+  #ProdNonCCS <- mbind(ProdNonCCS, helperAggregateCoalProd(ProdNonCCS, name = "Non-CCS"))
   ProdCHP <- mbind(ProdCHP, helperAggregateCoalProd(ProdCHP, name = "CHP"))
+  #ProdCCS <- mbind(ProdCCS, helperAggregateCoalProd(ProdCCS, name = "CCS"))
+
+
+  Total <- dimSums(Prod, 3.1, na.rm = TRUE)
+  getItems(Total, 3.1) <- "Secondary Energy|Electricity"
   Prod <- mbind(Prod, helperAggregateCoalProd(Prod))
 
-  magpie_object <- mbind(Prod, ProdNonCHP, ProdCHP, Total,
+  magpie_object <- mbind(Prod, ProdNonCHP, ProdCHP, ProdCCS, Total,
                          TotalCHP, TotalNonCHP, totalDemand)
   magpie_object <- add_dimension(magpie_object, dim = 3.2, add = "unit",nm = "TWh")
   return(magpie_object)
@@ -86,11 +106,10 @@ helperPrepareProd <- function(magpie, mapping, name = NULL) {
 }
 
 helperAggregateCoalProd <- function(magpie_object, name = NULL) {
-  temp <- magpie_object[,,c("Lignite", "Hard coal"), pmatch=TRUE]
+  temp <- magpie_object[,,c("Lignite", "Hard coal"), pmatch = TRUE]
   temp <- dimSums(temp, 3.1, na.rm = TRUE)
   title <- "Secondary Energy|Electricity|Coal"
   title <- if (!is.null(name)) paste(title, name, sep = "|") else title
   getItems(temp, 3) <- title
   return(temp)
 }
-
