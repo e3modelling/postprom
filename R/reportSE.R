@@ -32,7 +32,7 @@ reportSE <- function(path, regions, years) {
     "GEO" = "Geothermal",
     "H2F" = "Hydrogen"
   )
-  mapCCS <- readGDX("blabla.gdx", "CCS_NOCCS") %>% as.data.frame() %>%
+  mapCCS <- readGDX(path, "CCS_NOCCS") %>% as.data.frame() %>%
     rename(CCS = PGALL, NOCCS = PGALL1)
 
   PGALLtoEF <- readGDX(path, "PGALLtoEF") %>%
@@ -59,10 +59,10 @@ reportSE <- function(path, regions, years) {
   Prod <- helperPrepareProd(Prod, mapping)
 
   ProdNonCHP <- helperPrepareProd(tempProdNonCHP[,,CHPs$Tech], CHPs, "Non-CHP")
-  ProdNonCHP <- mbind(ProdNonCHP, helperPrepareProd(tempProdNonCHP[,,CCSs$Tech], CCSs, "Non-CHP|Non-CCS"))
+  ProdNonCHP <- mbind(ProdNonCHP, helperPrepareProd(tempProdNonCHP[,,CCSs$Tech], CCSs, "Non-CHP|w/o CCS"))
 
   ProdCHP <- helperPrepareProd(ProdCHP, CHPtoEF, "CHP")
-  ProdCCS <- helperPrepareProd(ProdCCS, CCStoEF, "Non-CHP|CCS")
+  ProdCCS <- helperPrepareProd(ProdCCS, CCStoEF, "Non-CHP|w/ CCS")
 
   Total <- dimSums(Prod, 3.1, na.rm = TRUE)
   getItems(Total, 3.1) <- "Secondary Energy|Electricity"

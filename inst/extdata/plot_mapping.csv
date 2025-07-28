@@ -26,6 +26,14 @@ Secondary Energy|Electricity|Total,Biomass
 Secondary Energy|Electricity|Total,Hydro
 Secondary Energy|Electricity|Total,Geothermal
 Secondary Energy|Electricity|Total,Demand
+Secondary Energy|Electricity|CCS,Biomass|Non-CHP|w/ CCS
+Secondary Energy|Electricity|CCS,Biomass|Non-CHP|w/o CCS
+Secondary Energy|Electricity|CHP,Biomass|Non-CHP
+Secondary Energy|Electricity|CHP,Biomass|CHP
+Secondary Energy|Electricity|CHP,Coal|Non-CHP
+Secondary Energy|Electricity|CHP,Coal|CHP
+Secondary Energy|Electricity|CHP,Gas|Non-CHP
+Secondary Energy|Electricity|CHP,Gas|CHP
 Capacity|Electricity|Total,Solar
 Capacity|Electricity|Total,Oil
 Capacity|Electricity|Total,Wind

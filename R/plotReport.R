@@ -74,7 +74,7 @@ plotTool <- function(data, colors_vars, variable, plot_style,
   if (is.null(y_label)) {
     y_label <- paste0("[", unique(data[["unit"]]), "]")
   }
-  colors_vars$legend <- sapply(strsplit(colors_vars$X, "\\|"), tail, 1)
+  #colors_vars$legend <- sapply(strsplit(colors_vars$X, "\\|"), tail, 1)
 
   plot <- ggplot(data, aes(y = value, x = period, color = .data[[variable]])) +
     scale_fill_manual(
