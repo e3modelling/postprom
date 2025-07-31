@@ -33,19 +33,19 @@ reportACTV <- function(path, regions, years) {
   iActv[regions, pred_years, transport] <- VActv
 
   actv_units <- list(
-    IS  = "billion US$2014",
-    NF  = "billion US$2014",
-    CH  = "billion US$2014",
-    BM  = "billion US$2014",
-    PP  = "billion US$2014",
-    FD  = "billion US$2014",
-    EN  = "billion US$2014",
-    TX  = "billion US$2014",
-    OE  = "billion US$2014",
-    OI  = "billion US$2014",
-    SE  = "billion US$2014",
-    AG  = "billion US$2014",
-    HOU = "billion US$2014",
+    IS  = "()",
+    NF  = "()",
+    CH  = "()",
+    BM  = "()",
+    PP  = "()",
+    FD  = "()",
+    EN  = "()",
+    TX  = "()",
+    OE  = "()",
+    OI  = "()",
+    SE  = "()",
+    AG  = "()",
+    HOU = "()",
     PC  = "km/vehicle",
     PT  = "GPKM",
     PA  = "million passengers carried",
@@ -54,9 +54,9 @@ reportACTV <- function(path, regions, years) {
     GU  = "GTKM",
     GT  = "GTKM",
     GN  = "GTKM",
-    BU  = "billion US$2014",
-    PCH = "billion US$2014",
-    NEN = "billion US$2014"
+    BU  = "()",
+    PCH = "()",
+    NEN = "()"
   )
 
   iActv <- add_dimension(iActv, dim = 3.2, add = "unit")
