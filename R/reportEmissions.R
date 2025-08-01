@@ -19,6 +19,48 @@
 #' @importFrom dplyr filter left_join mutate select group_by %>%
 #' @export
 reportEmissions <- function(path, regions, years) {
+  
+  magpie_object <- NULL
+  
+  ########## SBS
+  desc_map <- c(
+    IS = "Iron and Steel",
+    NF = "Non Ferrous Metals",
+    CH = "Chemicals",
+    BM = "Non Metallic Minerals",
+    PP = "Paper and Pulp",
+    FD = "Food Drink and Tobacco",
+    EN = "Engineering",
+    TX = "Textiles",
+    OE = "Ore Extraction",
+    OI = "Other Industrial sectors",
+    SE = "Services and Trade",
+    AG = "Agriculture, Fishing, Forestry etc.",
+    HOU = "Households",
+    PC = "Passenger Transport - Cars",
+    PB = "Passenger Transport - Busses",
+    PT = "Passenger Transport - Rail",
+    PN = "Passenger Transport - Inland Navigation",
+    PA = "Passenger Transport - Aviation",
+    GU = "Goods Transport - Trucks",
+    GT = "Goods Transport - Rail",
+    GN = "Goods Transport - Inland Navigation",
+    BU = "Bunkers",
+    PCH = "Petrochemicals Industry",
+    NEN = "Other Non Energy Uses",
+    PG = "Power and Steam Generation",
+    H2P = "Hydrogen Production",
+    H2INFR = "Hydrogen storage and delivery"
+  )
+  
+  # Convert to a data frame
+  df_SBS <- data.frame(
+    Code = names(desc_map),
+    Description = unname(desc_map),
+    stringsAsFactors = FALSE
+  )
+  #################
+  
   fscenario <- readGDX(path, "fscenario")
   Navigate_Emissions <- read.csv(file.path(dirname(path), "data", "NavigateEmissions.csv")) %>%
     as.magpie()
@@ -92,6 +134,19 @@ reportEmissions <- function(path, regions, years) {
   map_TRANSECTOR <- as.data.frame(map_TRANSECTOR)
 
   sum5 <- VDemFinEneTranspPerFuel[, , map_TRANSECTOR[, 1]] * iCo2EmiFac[, , map_TRANSECTOR[, 1]]
+  
+  ############## transport by sector
+  TRANSE_by_sector <- dimSums(sum5, 3.2, na.rm = TRUE)
+  
+  items_TRANSE <- df_SBS[df_SBS[,"Code"] %in% getItems(TRANSE_by_sector, 3),]
+  TRANSE_by_sector <- toolAggregate(TRANSE_by_sector[,,items_TRANSE[,"Code"]], dim = 3, rel = items_TRANSE, from = "Code", to = "Description")
+  
+  getItems(TRANSE_by_sector, 3) <- paste0("Emissions|CO2|Energy|Demand|Transportation|",getItems(TRANSE_by_sector, 3))
+  
+  TRANSE_by_sector <- add_dimension(TRANSE_by_sector, dim = 3.2, add = "unit", nm = "Mt CO2/yr")
+  magpie_object <- mbind(magpie_object, TRANSE_by_sector)
+  ##############
+  
   # transport
   sum5 <- dimSums(sum5, 3, na.rm = TRUE)
 
@@ -110,6 +165,52 @@ reportEmissions <- function(path, regions, years) {
   # CO2 captured by CCS plants
   sum6 <- dimSums(var_16, dim = 3, na.rm = TRUE) + ATHBMSCCS
 
+  ###################### SUPPLY  BY FUEL       #######################
+  SUPPLY2 <- VInpTransfTherm[, , PGEF[, 1]] * iCo2EmiFac[, , "PG"][, , PGEF[, 1]]
+  SUPPLY2 <- dimSums(SUPPLY2, dim = 3.2, na.rm = TRUE)
+  SUPPLY3 <- VTransfInputDHPlants * iCo2EmiFac[, , "PG"][, , getItems(VTransfInputDHPlants, 3)]
+  SUPPLY3 <- dimSums(SUPPLY3, dim = 3.2, na.rm = TRUE)
+  SUPPLY4 <- VConsFiEneSec * iCo2EmiFac[, , "PG"][, , getItems(VConsFiEneSec, 3)]
+  SUPPLY4 <- dimSums(SUPPLY4, dim = 3.2, na.rm = TRUE)
+  SUPPLYa <- dimSums(var_16, dim = 3.1, na.rm = TRUE)
+  SUPPLYa <- dimSums(SUPPLYa, dim = 3.1, na.rm = TRUE)
+  SUPPLYa <- SUPPLYa * (- 1)
+  SUPPLY_ATHBMSCCS <- ATHBMSCCS * (- 1)
+  
+  dn <- dimnames(SUPPLYa)
+  names(dn)[names(dn) == "EF"] <- "EFS"
+  dimnames(SUPPLYa) <- dn
+  
+  dn <- dimnames(SUPPLY_ATHBMSCCS)
+  names(dn)[names(dn) == "PGALL"] <- "EFS"
+  dimnames(SUPPLY_ATHBMSCCS) <- dn
+  getItems(SUPPLY_ATHBMSCCS,3) <- "BMSWAS"
+  
+  SUPPLY_by_fuel <- mbind(SUPPLY2,SUPPLY3,SUPPLY4,SUPPLYa,SUPPLY_ATHBMSCCS)
+  
+  all_fuels <- getItems(SUPPLY_by_fuel, dim = 3)
+  
+  # Identify unique fuels
+  unique_fuels <- unique(all_fuels)
+  
+  # For each unique fuel, find matching slices and sum them
+  fuel_sums <- lapply(unique_fuels, function(fuel) {
+    idx <- which(all_fuels == fuel)
+    summed <- dimSums(SUPPLY_by_fuel[,,idx], dim = 3)
+    getItems(summed, dim = 3) <- fuel
+    return(summed)
+  })
+  
+  # Combine all summed fuels into a single magpie object
+  SUPPLY_by_fuel_summed <- do.call(mbind, fuel_sums)
+  
+  getItems(SUPPLY_by_fuel_summed, 3) <- paste0("Emissions|CO2|Energy|Supply|",getItems(SUPPLY_by_fuel_summed, 3))
+  
+  SUPPLY_by_fuel_summed <- add_dimension(SUPPLY_by_fuel_summed, dim = 3.2, add = "unit", nm = "Mt CO2/yr")
+  
+  magpie_object <- mbind(magpie_object, SUPPLY_by_fuel_summed)
+   ###########################
+  
   # input hydrogen_CCS
   hydrogen_CCS <- VConsFuelTechH2Prod[, , PGEF[, 1]][,,c("gss","bgfls")] * iCo2EmiFac[, , "H2P"][, , PGEF[, 1]]
   hydrogen_CCS <- dimSums(hydrogen_CCS, 3, na.rm = TRUE)
@@ -119,13 +220,25 @@ reportEmissions <- function(path, regions, years) {
   SECTTECH2 <- as.data.frame(SECTTECH2)
   # Bunkers
   sum7 <- iCo2EmiFac[, , SECTTECH2[, 1]] * VConsFuel[, , SECTTECH2[, 1]]
+  
+  ############## Bunkers by sector
+  Bunkers_by_sector <- dimSums(sum7, 3.2, na.rm = TRUE)
+  
+  items_Bunkers <- df_SBS[df_SBS[,"Code"] %in% getItems(Bunkers_by_sector, 3),]
+  Bunkers_by_sector <- toolAggregate(Bunkers_by_sector[,,items_Bunkers[,"Code"]], dim = 3, rel = items_Bunkers, from = "Code", to = "Description")
+  
+  getItems(Bunkers_by_sector, 3) <- paste0("Emissions|CO2|Energy|Demand|Bunkers|",getItems(Bunkers_by_sector, 3))
+  
+  Bunkers_by_sector <- add_dimension(Bunkers_by_sector, dim = 3.2, add = "unit", nm = "Mt CO2/yr")
+  magpie_object <- mbind(magpie_object, Bunkers_by_sector)
+  ##############
+  
   sum7 <- dimSums(sum7, dim = 3, na.rm = TRUE)
 
   total_CO2 <- sum1 + sum2 + sum3 + sum4 + sum5 - sum6 + sum7 + remind + hydrogen - hydrogen_CCS
 
   getItems(total_CO2, 3) <- "Emissions|CO2"
 
-  magpie_object <- NULL
   total_CO2 <- add_dimension(total_CO2, dim = 3.2, add = "unit", nm = "Mt CO2/yr")
   magpie_object <- mbind(magpie_object, total_CO2, Navigate_Emissions)
 
@@ -157,6 +270,19 @@ reportEmissions <- function(path, regions, years) {
 
   # final consumption
   sum_INDSE <- iCo2EmiFac[, , INDSE[, 1]] * VConsFuel[, , INDSE[, 1]]
+  
+  ############## Industry by sector
+  INDSE_by_sector <- dimSums(sum_INDSE, 3.2, na.rm = TRUE)
+  
+  items_INDSE <- df_SBS[df_SBS[,"Code"] %in% getItems(INDSE_by_sector, 3),]
+  INDSE_by_sector <- toolAggregate(INDSE_by_sector[,,items_INDSE[,"Code"]], dim = 3, rel = items_INDSE, from = "Code", to = "Description")
+  
+  getItems(INDSE_by_sector, 3) <- paste0("Emissions|CO2|Energy|Demand|Industry|",getItems(INDSE_by_sector, 3))
+  
+  INDSE_by_sector <- add_dimension(INDSE_by_sector, dim = 3.2, add = "unit", nm = "Mt CO2/yr")
+  magpie_object <- mbind(magpie_object, INDSE_by_sector)
+  ##############
+  
   sum_INDSE <- dimSums(sum_INDSE, 3, na.rm = TRUE)
 
   getItems(sum_INDSE, 3) <- "Emissions|CO2|Energy|Demand|Industry"
@@ -182,6 +308,19 @@ reportEmissions <- function(path, regions, years) {
 
   # final consumption
   sum_DOMSE <- iCo2EmiFac[, , DOMSE[, 1]] * VConsFuel[, , DOMSE[, 1]]
+  
+  ############## DOMSE by sector
+  DOMSE_by_sector <- dimSums(sum_DOMSE, 3.2, na.rm = TRUE)
+  
+  items_DOMSE <- df_SBS[df_SBS[,"Code"] %in% getItems(DOMSE_by_sector, 3),]
+  DOMSE_by_sector <- toolAggregate(DOMSE_by_sector[,,items_DOMSE[,"Code"]], dim = 3, rel = items_DOMSE, from = "Code", to = "Description")
+  
+  getItems(DOMSE_by_sector, 3) <- paste0("Emissions|CO2|Energy|Demand|Residential and Commercial|",getItems(DOMSE_by_sector, 3))
+  
+  DOMSE_by_sector <- add_dimension(DOMSE_by_sector, dim = 3.2, add = "unit", nm = "Mt CO2/yr")
+  magpie_object <- mbind(magpie_object, DOMSE_by_sector)
+  ##############
+  
   sum_DOMSE <- dimSums(sum_DOMSE, 3, na.rm = TRUE)
 
   getItems(sum_DOMSE, 3) <- "Emissions|CO2|Energy|Demand|Residential and Commercial"
