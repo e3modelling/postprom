@@ -108,8 +108,8 @@ convertGDXtoMIF_single <- function(.path, regions, years, path_mif, append,
 aggregateMIF <- function(report) {
   report_data <- report
   items <- getItems(report_data, 3)
-  get_items <- items[grep("^Price", items)]
-  get_items_not <- items[!grepl("^Price", items)]
+  get_items <- items[grep("^Price|^Activity growth rate", items)]
+  get_items_not <- items[!grepl("^Price|^Activity growth rate", items)]
 
   # Calculate the sum for the 'not Price' items
   add_region_GLO <- dimSums(report_data[, , get_items_not], 1, na.rm = TRUE)
