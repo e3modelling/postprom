@@ -12,11 +12,12 @@
 #' \dontrun{
 #' result <- reportEmissions(system.file("extdata", "blabla.gdx", package = "postprom"), c("MEA"))
 #' }
-#'
+#' 
 #' @importFrom gdx readGDX
 #' @importFrom magclass getItems dimSums add_dimension mbind collapseDim
 #' @importFrom quitte as.quitte
 #' @importFrom dplyr filter left_join mutate select group_by %>%
+
 #' @export
 reportEmissions <- function(path, regions, years) {
   
@@ -62,9 +63,9 @@ reportEmissions <- function(path, regions, years) {
   #################
   
   fscenario <- readGDX(path, "fscenario")
-  Navigate_Emissions <- read.csv(file.path(dirname(path), "data", "NavigateEmissions.csv")) %>%
-    as.magpie()
-
+  # Get supplementary emissions from NAVIGATE through mrprom
+  Navigate_Emissions <- calcOutput("NavigateEmissions", aggregate = TRUE, regionmapping = "regionmappingOPDEV3.csv")
+  
   if (fscenario %in% c(0, 1)) {
     Navigate_Emissions <- Navigate_Emissions[, , "SUP_NPi_Default"][regions, years, ]
   } else if (fscenario == 2) {

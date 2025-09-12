@@ -24,6 +24,8 @@ Description: A post-processing tool for analyzing, visualizing,
 License: GPL-3 | file LICENSE
 Encoding: UTF-8
 LazyData: true
+Depends:
+    mrprom
 Imports: gdx, madrat, magclass, stringr, quitte, rlang, 
          tidyr, dplyr, purrr, ggplot2, rmarkdown, knitr, mip
 RoxygenNote: 7.3.2
