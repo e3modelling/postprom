@@ -42,7 +42,7 @@ reportFinalEnergy <- function(path, regions, years) {
   magpie_object <- mbind(NULL, VConsFinEneCountry)
 
   # Link between Model Subsectors and Fuels
-  sets4 <- readGDX(path, "SECTTECH")
+  sets4 <- readGDX(path, "SECtoEF")
 
   # OPEN-PROM sectors
   sector <- c("TRANSE", "INDSE", "DOMSE", "NENSE")

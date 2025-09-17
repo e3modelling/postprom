@@ -25,7 +25,7 @@ reportPrice <- function(path, regions, years) {
   set_names <- c(
     "iSet",
     "rSet",
-    "SECTTECH", # Link between Model Subsectors and Fuels
+    "SECtoEF", # Link between Model Subsectors and Fuels
     "BALEF2EFS" # GAMS set used for reporting of Final Energy
   )
   VPriceElecIndResConsu <- readGDX(path, "VmPriceElecIndResConsu", field = 'l')[regions, years, ]
@@ -67,7 +67,7 @@ reportPrice <- function(path, regions, years) {
     })
     sets6 <- as.data.frame(sets6)
 
-    map_subsectors <- sets$SECTTECH %>% filter(SBS %in% as.character(sets6[, 1]))
+    map_subsectors <- sets$SECtoEF %>% filter(SBS %in% as.character(sets6[, 1]))
     map_subsectors$EF = paste(map_subsectors$SBS, map_subsectors$EF, sep=".")
 
     #add model OPEN-PROM data VPriceFuelSubsecCarVal

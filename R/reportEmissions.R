@@ -91,7 +91,7 @@ reportEmissions <- function(path, regions, years) {
   VConsFuelTechH2Prod <- readGDX(path, "VmConsFuelTechH2Prod", field = 'l')[regions, years, ]
   # Link between Model Subsectors and Fuels
 
-  sets4 <- readGDX(path, "SECTTECH")
+  sets4 <- readGDX(path, "SECtoEF")
 
   EFtoEFS <- readGDX(path, "EFtoEFS")
 
@@ -104,9 +104,9 @@ reportEmissions <- function(path, regions, years) {
     left_join(EFtoEFS, by = "EF") %>%
     select(-c("EF")) %>%
     unique()
-  names(qINDDOM) <- sub("EFS", "SECTTECH", names(qINDDOM))
+  names(qINDDOM) <- sub("EFS", "SECtoEF", names(qINDDOM))
 
-  qINDDOM <- paste0(qINDDOM[["SBS"]], ".", qINDDOM[["SECTTECH"]])
+  qINDDOM <- paste0(qINDDOM[["SBS"]], ".", qINDDOM[["SECtoEF"]])
   INDDOM <- as.data.frame(qINDDOM)
 
   PGEF <- readGDX(path, "PGEF") %>% as.data.frame()
@@ -263,9 +263,9 @@ reportEmissions <- function(path, regions, years) {
     left_join(EFtoEFS, by = "EF") %>%
     select(-c("EF")) %>%
     unique()
-  names(qINDSE) <- sub("EFS", "SECTTECH", names(qINDSE))
+  names(qINDSE) <- sub("EFS", "SECtoEF", names(qINDSE))
 
-  qINDSE <- paste0(qINDSE[["SBS"]], ".", qINDSE[["SECTTECH"]])
+  qINDSE <- paste0(qINDSE[["SBS"]], ".", qINDSE[["SECtoEF"]])
   INDSE <- as.data.frame(qINDSE)
 
   # final consumption
@@ -301,9 +301,9 @@ reportEmissions <- function(path, regions, years) {
     left_join(EFtoEFS, by = "EF") %>%
     select(-c("EF")) %>%
     unique()
-  names(qDOMSE) <- sub("EFS", "SECTTECH", names(qDOMSE))
+  names(qDOMSE) <- sub("EFS", "SECtoEF", names(qDOMSE))
 
-  qDOMSE <- paste0(qDOMSE[["SBS"]], ".", qDOMSE[["SECTTECH"]])
+  qDOMSE <- paste0(qDOMSE[["SBS"]], ".", qDOMSE[["SECtoEF"]])
   DOMSE <- as.data.frame(qDOMSE)
 
   # final consumption
