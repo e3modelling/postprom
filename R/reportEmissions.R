@@ -117,8 +117,9 @@ reportEmissions <- function(path, regions, years) {
   # input to power generation sector
   sum2 <- VInpTransfTherm[, , PGEF[, 1]] * iCo2EmiFac[, , "PG"][, , PGEF[, 1]]
   sum2 <- dimSums(sum2, 3, na.rm = TRUE)
-  # input to power hydrogen sector
-  hydrogen <- VConsFuelTechH2Prod[, , PGEF[, 1]][,,c("gsr","bgfl")] * iCo2EmiFac[, , "H2P"][, , PGEF[, 1]]
+  # hydrogen sector
+  H2TECHEFtoEF <- readGDX(path, "H2TECHEFtoEF")
+  hydrogen <- VConsFuelTechH2Prod[, , paste(H2TECHEFtoEF[[1]],H2TECHEFtoEF[[2]],sep=".")] * iCo2EmiFac[, , "H2P"][, , unique(H2TECHEFtoEF$EF)]
   hydrogen <- dimSums(hydrogen, 3, na.rm = TRUE)
   # input to district heating plants
   sum3 <- VTransfInputDHPlants * iCo2EmiFac[, , "PG"][, , getItems(VTransfInputDHPlants, 3)]
@@ -212,7 +213,10 @@ reportEmissions <- function(path, regions, years) {
    ###########################
   
   # input hydrogen_CCS
-  hydrogen_CCS <- VConsFuelTechH2Prod[, , PGEF[, 1]][,,c("gss","bgfls")] * iCo2EmiFac[, , "H2P"][, , PGEF[, 1]]
+  H2CCS <- readGDX(path, "H2CCS")
+  iCo2EmiFac[, , "H2P"][, , "BMSWAS"] <- emi_factor_ATHBMSCCS
+  hydrogen_CCS <- VConsFuelTechH2Prod[, , PGEF[, 1]][,,H2CCS] * iCo2EmiFac[, , "H2P"][, , PGEF[, 1]]
+  iCo2EmiFac[, , "H2P"][, , "BMSWAS"] <- 0
   hydrogen_CCS <- dimSums(hydrogen_CCS, 3, na.rm = TRUE)
 
   SECTTECH2 <- sets4 %>% filter(SBS %in% c("BU"))
