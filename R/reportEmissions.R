@@ -378,7 +378,7 @@ reportEmissions <- function(path, regions, years) {
   
   Emissions_Supply_Electricity <- sum2 + sum4 - sum6
   
-  getItems(Emissions_Supply_Electricity, 3) <- "Emissions|CO2|Energy|Supply|Electricity"
+  getItems(Emissions_Supply_Electricity, 3) <- "Gross Emissions|CO2|Energy|Supply|Electricity"
   
   Emissions_Supply_Electricity <- add_dimension(Emissions_Supply_Electricity, dim = 3.2, add = "unit", nm = "Mt CO2/yr")
   magpie_object <- mbind(magpie_object, Emissions_Supply_Electricity)
