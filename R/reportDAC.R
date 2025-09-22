@@ -21,7 +21,7 @@
 #' @importFrom gdx readGDX
 #' @export
 reportDAC <- function(path, regions, years) {
-    VCapDAC <- readGDX(path, c("V06CapDAC"), field = "l")
+    VCapDAC <- readGDX(path, c("V06CapDAC"), field = "l")[regions, years, ]
     magpie <- dimSums(VCapDAC, dim = 3)
     getItems(magpie, 3) <- "Direct Air Capture"
 
