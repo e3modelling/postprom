@@ -239,13 +239,48 @@ reportEmissions <- function(path, regions, years) {
   ##############
   
   sum7 <- dimSums(sum7, dim = 3, na.rm = TRUE)
+  
+  #########       DAC     #################
+  
+  DAC <- NULL
+  VCapDAC <- readGDX(path, c("V06CapDAC"), field = "l")[regions, years, ]
+  VCapDAC_total <- dimSums(VCapDAC, dim = 3)
+  getItems(VCapDAC_total, 3) <- "Carbon Capture"
+  
+  Enhanced_Weathering <- VCapDAC[,,"EWDAC"]
+  getItems(Enhanced_Weathering, 3) <- paste0("Carbon Capture|Enhanced Weathering")
+  
+  LTDAC <- VCapDAC[,,"LTDAC"]
+  getItems(LTDAC, 3) <- paste0("Carbon Capture|Direct Air Capture|LTDAC")
+  
+  HTDAC <- VCapDAC[,,"HTDAC"]
+  getItems(HTDAC, 3) <- paste0("Carbon Capture|Direct Air Capture|HTDAC")
+  
+  Direct_Air_Capture <- VCapDAC[,,c("HTDAC", "LTDAC")]
+  Direct_Air_Capture <- dimSums(Direct_Air_Capture, dim = 3)
+  getItems(Direct_Air_Capture, 3) <- paste0("Carbon Capture|Direct Air Capture")
+  
+  DAC <- mbind(VCapDAC_total, Enhanced_Weathering, LTDAC, HTDAC, Direct_Air_Capture)
+  
+  DAC <- DAC / 10^6
+  
+  DAC <- add_dimension(DAC, dim = 3.2, add = "unit", nm = "Mt CO2/yr")
+  magpie_object <- mbind(magpie_object, DAC)
+  
+  #######################################
+  
+  ############## TOTAL  ##############
+  
+  getItems(VCapDAC_total, 3) <- NULL
 
-  total_CO2 <- sum1 + sum2 + sum3 + sum4 + sum5 - sum6 + sum7 + remind + hydrogen - hydrogen_CCS
+  total_CO2 <- sum1 + sum2 + sum3 + sum4 + sum5 - sum6 + sum7 + remind + hydrogen - hydrogen_CCS - (VCapDAC_total / 10^6)
 
   getItems(total_CO2, 3) <- "Emissions|CO2"
 
   total_CO2 <- add_dimension(total_CO2, dim = 3.2, add = "unit", nm = "Mt CO2/yr")
   magpie_object <- mbind(magpie_object, total_CO2, Navigate_Emissions)
+  
+  ####################################
 
   # Hydrogen
   Hydrogen_total <- hydrogen - hydrogen_CCS
@@ -427,8 +462,6 @@ reportEmissions <- function(path, regions, years) {
 
   sum_Energy <- add_dimension(sum_Energy, dim = 3.2, add = "unit", nm = "Mt CO2/yr")
   magpie_object <- mbind(magpie_object, sum_Energy)
-  
-  
 
   # Emissions|CO2|Cumulated
 

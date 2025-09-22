@@ -87,8 +87,6 @@ convertGDXtoMIF_single <- function(.path, regions, years, path_mif, append,
   reports <- mbind(reports, reportACTV(path_gdx, regions, years))
   reports <- mbind(reports, reportCapacityAdditions(path_gdx, regions, years))
   reports <- mbind(reports, reportFuelConsTargets(path_gdx, regions, years))
-  reports <- mbind(reports, reportDAC(path_gdx, regions, years))
-
 
   if (aggregate == TRUE) reports <- aggregateMIF(report = reports)
 
