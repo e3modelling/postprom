@@ -378,10 +378,44 @@ reportEmissions <- function(path, regions, years) {
   
   Emissions_Supply_Electricity <- sum2 + sum4 - sum6
   
-  getItems(Emissions_Supply_Electricity, 3) <- "Gross Emissions|CO2|Energy|Supply|Electricity"
+  getItems(Emissions_Supply_Electricity, 3) <- "Emissions|CO2|Energy|Supply|Electricity"
   
   Emissions_Supply_Electricity <- add_dimension(Emissions_Supply_Electricity, dim = 3.2, add = "unit", nm = "Mt CO2/yr")
   magpie_object <- mbind(magpie_object, Emissions_Supply_Electricity)
+  
+  # Combine all summed fuels into a single magpie object for supply category
+  supply_category <- do.call(mbind, fuel_sums)
+  
+  BALEF2EFS <- readGDX(path, "BALEF2EFS")
+  names(BALEF2EFS) <- c("BAL", "EF")
+  BALEF2EFS[["BAL"]] <- gsub("Gas fuels", "Gases", BALEF2EFS[["BAL"]])
+  BALEF2EFS[["BAL"]] <- gsub("Steam", "Heat", BALEF2EFS[["BAL"]])
+  
+  Liquids <- BALEF2EFS[BALEF2EFS[["BAL"]] == "Liquids", ]
+  Solids <- BALEF2EFS[BALEF2EFS[["BAL"]] == "Solids", ]
+  Gases <- BALEF2EFS[BALEF2EFS[["BAL"]] == "Gases", ]
+  Heat <- BALEF2EFS[BALEF2EFS[["BAL"]] == "Heat", ]
+  
+  supply_Liquids <- supply_category[,,Liquids[["EF"]]]
+  supply_Solids <- supply_category[,,Solids[["EF"]]]
+  supply_Gases <- supply_category[,,Gases[["EF"]]]
+  supply_Heat <- supply_category[,,Heat[["EF"]]]
+  
+  supply_Liquids <- dimSums(supply_Liquids, 3, na.rm = TRUE)
+  supply_Solids <- dimSums(supply_Solids, 3, na.rm = TRUE)
+  supply_Gases <- dimSums(supply_Gases, 3, na.rm = TRUE)
+  supply_Heat <- dimSums(supply_Heat, 3, na.rm = TRUE)
+  
+  getItems(supply_Liquids, 3) <- paste0("Emissions|CO2|Energy|Supply|Liquids")
+  getItems(supply_Solids, 3) <- paste0("Emissions|CO2|Energy|Supply|Solids")
+  getItems(supply_Gases, 3) <- paste0("Emissions|CO2|Energy|Supply|Gases")
+  getItems(supply_Heat, 3) <- paste0("Emissions|CO2|Energy|Supply|Heat")
+  
+  supply_per_category <- mbind(supply_Liquids, supply_Solids, supply_Gases, supply_Heat)
+  
+  supply_per_category <- add_dimension(supply_per_category, dim = 3.2, add = "unit", nm = "Mt CO2/yr")
+  
+  magpie_object <- mbind(magpie_object, supply_per_category)
 
   # Emissions|CO2|Energy
   # Emissions|CO2|Energy|Demand, sum_Demand
@@ -393,6 +427,8 @@ reportEmissions <- function(path, regions, years) {
 
   sum_Energy <- add_dimension(sum_Energy, dim = 3.2, add = "unit", nm = "Mt CO2/yr")
   magpie_object <- mbind(magpie_object, sum_Energy)
+  
+  
 
   # Emissions|CO2|Cumulated
 
