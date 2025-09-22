@@ -169,9 +169,7 @@ reportFinalEnergy <- function(path, regions, years) {
                Direct_Air_Capture_HTDAC, Direct_Air_Capture_LTDAC, Direct_Air_Capture_HTDAC_ELC,
                Direct_Air_Capture_HTDAC_NGS, Direct_Air_Capture_LTDAC_ELC)
   
-  DAC <- DAC / 10^6
-  
-  DAC <- add_dimension(DAC, dim = 3.2, add = "unit", nm = "Mt CO2/yr")
+  DAC <- add_dimension(DAC, dim = 3.2, add = "unit", nm = "Mtoe")
   magpie_object <- mbind(magpie_object, DAC)
   
   #######################################
