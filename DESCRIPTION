@@ -1,7 +1,7 @@
 Package: postprom
 Type: Package
 Title: A Tool for Comparative Analysis of OPEN-PROM Data
-Version: 0.8.7
+Version: 0.9.0
 Authors@R: c(
     person(
       "Michael", "Madianos",
