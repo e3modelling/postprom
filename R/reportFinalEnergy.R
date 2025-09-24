@@ -141,36 +141,47 @@ reportFinalEnergy <- function(path, regions, years) {
   
   #########       DAC     #################
   
-  VmConsFuelTechDACProd <- readGDX(path, c("VmConsFuelTechDACProd"), field = "l")[regions, years, ]
+  VmConsFuelTechDACProd <- readGDX(path, "VmConsFuelTechDACProd", field = "l")[regions, years, ]
   
-  VmConsFuelTechDACProd_EWDAC <- dimSums(VmConsFuelTechDACProd[,,"EWDAC"][,,"ELC"], dim = 3.1)
-  getItems(VmConsFuelTechDACProd_EWDAC, 3) <- paste0("Final Energy|Enhanced Weathering")
-  VmConsFuelTechDACProd_EWDAC2 <- VmConsFuelTechDACProd_EWDAC
-  getItems(VmConsFuelTechDACProd_EWDAC2, 3) <- paste0("Final Energy|Enhanced Weathering|Electricity")
-  
-  Direct_Air_Capture <- dimSums(VmConsFuelTechDACProd[,,c("HTDAC","LTDAC")], dim = 3)
-  getItems(Direct_Air_Capture, 3) <- paste0("Final Energy|Direct Air Capture")
-  
-  Direct_Air_Capture_HTDAC <- dimSums(VmConsFuelTechDACProd[,,c("HTDAC")], dim = 3)
-  getItems(Direct_Air_Capture_HTDAC, 3) <- paste0("Final Energy|Direct Air Capture|HTDAC")
-  
-  Direct_Air_Capture_LTDAC <- dimSums(VmConsFuelTechDACProd[,,c("LTDAC")], dim = 3)
-  getItems(Direct_Air_Capture_LTDAC, 3) <- paste0("Final Energy|Direct Air Capture|LTDAC")
-  
-  Direct_Air_Capture_HTDAC_ELC <- dimSums(VmConsFuelTechDACProd[,,c("HTDAC")][,,"ELC"], dim = 3)
-  getItems(Direct_Air_Capture_HTDAC_ELC, 3) <- paste0("Final Energy|Direct Air Capture|HTDAC|ELC")
-  Direct_Air_Capture_HTDAC_NGS <- dimSums(VmConsFuelTechDACProd[,,c("HTDAC")][,,"NGS"], dim = 3)
-  getItems(Direct_Air_Capture_HTDAC_NGS, 3) <- paste0("Final Energy|Direct Air Capture|HTDAC|NGS")
-  
-  Direct_Air_Capture_LTDAC_ELC <- dimSums(VmConsFuelTechDACProd[,,c("LTDAC")][,,"ELC"], dim = 3)
-  getItems(Direct_Air_Capture_LTDAC_ELC, 3) <- paste0("Final Energy|Direct Air Capture|LTDAC|ELC")
-  
-  DAC <- mbind(VmConsFuelTechDACProd_EWDAC, VmConsFuelTechDACProd_EWDAC2, Direct_Air_Capture,
-               Direct_Air_Capture_HTDAC, Direct_Air_Capture_LTDAC, Direct_Air_Capture_HTDAC_ELC,
-               Direct_Air_Capture_HTDAC_NGS, Direct_Air_Capture_LTDAC_ELC)
-  
-  DAC <- add_dimension(DAC, dim = 3.2, add = "unit", nm = "Mtoe")
-  magpie_object <- mbind(magpie_object, DAC)
+  if (!is.null(VmConsFuelTechDACProd)) {
+    
+    VmConsFuelTechDACProd <- VmConsFuelTechDACProd[regions, years, ]
+    
+    VmConsFuelTechDACProd_EWDAC <- dimSums(VmConsFuelTechDACProd[,,"EWDAC"][,,"ELC"], dim = 3.1)
+    getItems(VmConsFuelTechDACProd_EWDAC, 3) <- "Final Energy|Enhanced Weathering"
+    VmConsFuelTechDACProd_EWDAC2 <- VmConsFuelTechDACProd_EWDAC
+    getItems(VmConsFuelTechDACProd_EWDAC2, 3) <- "Final Energy|Enhanced Weathering|Electricity"
+    
+    Direct_Air_Capture <- dimSums(VmConsFuelTechDACProd[,,c("HTDAC","LTDAC")], dim = 3)
+    getItems(Direct_Air_Capture, 3) <- "Final Energy|Direct Air Capture"
+    
+    Direct_Air_Capture_HTDAC <- dimSums(VmConsFuelTechDACProd[,,c("HTDAC")], dim = 3)
+    getItems(Direct_Air_Capture_HTDAC, 3) <- "Final Energy|Direct Air Capture|HTDAC"
+    
+    Direct_Air_Capture_LTDAC <- dimSums(VmConsFuelTechDACProd[,,c("LTDAC")], dim = 3)
+    getItems(Direct_Air_Capture_LTDAC, 3) <- "Final Energy|Direct Air Capture|LTDAC"
+    
+    Direct_Air_Capture_HTDAC_ELC <- dimSums(VmConsFuelTechDACProd[,,c("HTDAC")][,,"ELC"], dim = 3)
+    getItems(Direct_Air_Capture_HTDAC_ELC, 3) <- "Final Energy|Direct Air Capture|HTDAC|ELC"
+    
+    Direct_Air_Capture_HTDAC_NGS <- dimSums(VmConsFuelTechDACProd[,,c("HTDAC")][,,"NGS"], dim = 3)
+    getItems(Direct_Air_Capture_HTDAC_NGS, 3) <- "Final Energy|Direct Air Capture|HTDAC|NGS"
+    
+    Direct_Air_Capture_LTDAC_ELC <- dimSums(VmConsFuelTechDACProd[,,c("LTDAC")][,,"ELC"], dim = 3)
+    getItems(Direct_Air_Capture_LTDAC_ELC, 3) <- "Final Energy|Direct Air Capture|LTDAC|ELC"
+    
+    DAC <- mbind(
+      VmConsFuelTechDACProd_EWDAC, VmConsFuelTechDACProd_EWDAC2,
+      Direct_Air_Capture, Direct_Air_Capture_HTDAC, Direct_Air_Capture_LTDAC,
+      Direct_Air_Capture_HTDAC_ELC, Direct_Air_Capture_HTDAC_NGS, Direct_Air_Capture_LTDAC_ELC
+    )
+    
+    DAC <- add_dimension(DAC, dim = 3.2, add = "unit", nm = "Mtoe")
+    magpie_object <- mbind(magpie_object, DAC)
+    
+  } else {
+    message("VmConsFuelTechDACProd not found in GDX – skipping DAC block")
+  }
   
   #######################################
   
