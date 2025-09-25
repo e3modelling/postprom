@@ -239,13 +239,64 @@ reportEmissions <- function(path, regions, years) {
   ##############
   
   sum7 <- dimSums(sum7, dim = 3, na.rm = TRUE)
+  
+  #########       DAC     #################
+  
+  DAC <- NULL
+  VCapDAC <- readGDX(path, "V06CapDAC", field = "l")[regions, years, ]
+  
+  if (is.null(VCapDAC)) {
+    message("V06CapDAC not found – creating empty DAC placeholder")
+    
+    # Zero placeholder for Carbon Capture
+    VCapDAC_total     <- new.magpie(regions, years, "Carbon Capture", fill = 0)
+    Enhanced_Weathering <- new.magpie(regions, years, "Carbon Capture|Enhanced Weathering", fill = 0)
+    LTDAC             <- new.magpie(regions, years, "Carbon Capture|Direct Air Capture|LTDAC", fill = 0)
+    HTDAC             <- new.magpie(regions, years, "Carbon Capture|Direct Air Capture|HTDAC", fill = 0)
+    Direct_Air_Capture<- new.magpie(regions, years, "Carbon Capture|Direct Air Capture", fill = 0)
+    
+    DAC <- mbind(VCapDAC_total, Enhanced_Weathering, LTDAC, HTDAC, Direct_Air_Capture)
+    DAC <- add_dimension(DAC, dim = 3.2, add = "unit", nm = "Mt CO2/yr")
+    
+  } else {
+    VCapDAC <- VCapDAC[regions, years, ]
+    
+    VCapDAC_total <- dimSums(VCapDAC, dim = 3)
+    getItems(VCapDAC_total, 3) <- "Carbon Capture"
+    
+    Enhanced_Weathering <- VCapDAC[,,"EWDAC"]
+    getItems(Enhanced_Weathering, 3) <- "Carbon Capture|Enhanced Weathering"
+    
+    LTDAC <- VCapDAC[,,"LTDAC"]
+    getItems(LTDAC, 3) <- "Carbon Capture|Direct Air Capture|LTDAC"
+    
+    HTDAC <- VCapDAC[,,"HTDAC"]
+    getItems(HTDAC, 3) <- "Carbon Capture|Direct Air Capture|HTDAC"
+    
+    Direct_Air_Capture <- dimSums(VCapDAC[,,c("HTDAC","LTDAC")], dim = 3)
+    getItems(Direct_Air_Capture, 3) <- "Carbon Capture|Direct Air Capture"
+    
+    DAC <- mbind(VCapDAC_total, Enhanced_Weathering, LTDAC, HTDAC, Direct_Air_Capture)
+    DAC <- DAC / 1e6
+    DAC <- add_dimension(DAC, dim = 3.2, add = "unit", nm = "Mt CO2/yr")
+  }
+  
+  magpie_object <- mbind(magpie_object, DAC)
+  
+  getItems(VCapDAC_total, 3) <- NULL
+  
+  #######################################
+  
+  ############## TOTAL  ##############
 
-  total_CO2 <- sum1 + sum2 + sum3 + sum4 + sum5 - sum6 + sum7 + remind + hydrogen - hydrogen_CCS
+  total_CO2 <- sum1 + sum2 + sum3 + sum4 + sum5 - sum6 + sum7 + remind + hydrogen - hydrogen_CCS - (VCapDAC_total / 10^6)
 
   getItems(total_CO2, 3) <- "Emissions|CO2"
 
   total_CO2 <- add_dimension(total_CO2, dim = 3.2, add = "unit", nm = "Mt CO2/yr")
   magpie_object <- mbind(magpie_object, total_CO2, Navigate_Emissions)
+  
+  ####################################
 
   # Hydrogen
   Hydrogen_total <- hydrogen - hydrogen_CCS
@@ -378,10 +429,44 @@ reportEmissions <- function(path, regions, years) {
   
   Emissions_Supply_Electricity <- sum2 + sum4 - sum6
   
-  getItems(Emissions_Supply_Electricity, 3) <- "Gross Emissions|CO2|Energy|Supply|Electricity"
+  getItems(Emissions_Supply_Electricity, 3) <- "Emissions|CO2|Energy|Supply|Electricity"
   
   Emissions_Supply_Electricity <- add_dimension(Emissions_Supply_Electricity, dim = 3.2, add = "unit", nm = "Mt CO2/yr")
   magpie_object <- mbind(magpie_object, Emissions_Supply_Electricity)
+  
+  # Combine all summed fuels into a single magpie object for supply category
+  supply_category <- do.call(mbind, fuel_sums)
+  
+  BALEF2EFS <- readGDX(path, "BALEF2EFS")
+  names(BALEF2EFS) <- c("BAL", "EF")
+  BALEF2EFS[["BAL"]] <- gsub("Gas fuels", "Gases", BALEF2EFS[["BAL"]])
+  BALEF2EFS[["BAL"]] <- gsub("Steam", "Heat", BALEF2EFS[["BAL"]])
+  
+  Liquids <- BALEF2EFS[BALEF2EFS[["BAL"]] == "Liquids", ]
+  Solids <- BALEF2EFS[BALEF2EFS[["BAL"]] == "Solids", ]
+  Gases <- BALEF2EFS[BALEF2EFS[["BAL"]] == "Gases", ]
+  Heat <- BALEF2EFS[BALEF2EFS[["BAL"]] == "Heat", ]
+  
+  supply_Liquids <- supply_category[,,Liquids[["EF"]]]
+  supply_Solids <- supply_category[,,Solids[["EF"]]]
+  supply_Gases <- supply_category[,,Gases[["EF"]]]
+  supply_Heat <- supply_category[,,Heat[["EF"]]]
+  
+  supply_Liquids <- dimSums(supply_Liquids, 3, na.rm = TRUE)
+  supply_Solids <- dimSums(supply_Solids, 3, na.rm = TRUE)
+  supply_Gases <- dimSums(supply_Gases, 3, na.rm = TRUE)
+  supply_Heat <- dimSums(supply_Heat, 3, na.rm = TRUE)
+  
+  getItems(supply_Liquids, 3) <- paste0("Emissions|CO2|Energy|Supply|Liquids")
+  getItems(supply_Solids, 3) <- paste0("Emissions|CO2|Energy|Supply|Solids")
+  getItems(supply_Gases, 3) <- paste0("Emissions|CO2|Energy|Supply|Gases")
+  getItems(supply_Heat, 3) <- paste0("Emissions|CO2|Energy|Supply|Heat")
+  
+  supply_per_category <- mbind(supply_Liquids, supply_Solids, supply_Gases, supply_Heat)
+  
+  supply_per_category <- add_dimension(supply_per_category, dim = 3.2, add = "unit", nm = "Mt CO2/yr")
+  
+  magpie_object <- mbind(magpie_object, supply_per_category)
 
   # Emissions|CO2|Energy
   # Emissions|CO2|Energy|Demand, sum_Demand
