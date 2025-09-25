@@ -297,6 +297,14 @@ reportEmissions <- function(path, regions, years) {
   magpie_object <- mbind(magpie_object, total_CO2, Navigate_Emissions)
   
   ####################################
+  
+  ########for plotting total co2
+  
+  plotting_total_co2 <- total_CO2
+  getItems(plotting_total_co2, 3.1) <- "Emissions|CO2|"
+  magpie_object <- mbind(magpie_object, plotting_total_co2)
+  
+  ########################
 
   # Hydrogen
   Hydrogen_total <- hydrogen - hydrogen_CCS

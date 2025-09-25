@@ -4,6 +4,7 @@ Emissions|CO2|Total,Energy|Demand|Industry
 Emissions|CO2|Total,Energy|Demand|Residential and Commercial
 Emissions|CO2|Total,Energy|Demand|Transportation
 Emissions|CO2|Total,Energy|Supply
+Emissions|CO2|Total,
 Emissions|CO2|Cumulated,Cumulated
 Final Energy|Sector,Industry
 Final Energy|Sector,Transportation

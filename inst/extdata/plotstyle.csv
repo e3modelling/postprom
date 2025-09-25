@@ -40,3 +40,4 @@ Final Energy|Biomass,Biomass,#00b219,bar
 Emissions|CO2|Energy|Demand|Bunkers,Bunkers,#FDBF6F,bar
 Emissions|CO2|Energy|Supply,Supply,#bcbc6d,bar
 Emissions|CO2|Cumulated,Cumulated,#661a00,bar
+Emissions|CO2|,Total,red,dLine
