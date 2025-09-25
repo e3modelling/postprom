@@ -10,7 +10,7 @@
 #' @param aggregate Optional; a logical value indicating whether to aggregate data. Defaults to `TRUE`.
 #' @param save Optional; a logical value indicating whether to save the output. Defaults to `TRUE`.
 #' @param emissions Optional; a logical value indicating whether to generate a separate emissions csv file for running climate assessment. Defaults to `TRUE`.
-#'
+#' @param skipRead Skip generating if reporting already exists.
 #' @return A list of scenario reports generated from the provided GDX files.
 #' @details
 #' - If `regions` is not provided, it is inferred from the GDX file using the `readGDX` function.
@@ -33,7 +33,8 @@
 #' @export
 convertGDXtoMIF <- function(.path, mif_name, regions = NULL, years = NULL,
                             fullValidation = TRUE, scenario_name = NULL,
-                            aggregate = TRUE, emissions = TRUE, save = TRUE) {
+                            aggregate = TRUE, emissions = TRUE, save = TRUE,
+                            skipRead = TRUE) {
   if (is.null(regions)) regions <- readGDX(file.path(.path, "blabla.gdx"), "runCYL")
   if (is.null(years)) {
     years <- as.character(c(2010:2020))
@@ -57,7 +58,8 @@ convertGDXtoMIF <- function(.path, mif_name, regions = NULL, years = NULL,
       scenario_name = scenario,
       aggregate = aggregate,
       append = append,
-      save = save
+      save = save,
+      skipRead = skipRead
     )
   },
   .path, scenario_name,
@@ -69,8 +71,16 @@ convertGDXtoMIF <- function(.path, mif_name, regions = NULL, years = NULL,
 }
 # Helpers -----------------------------------------------------------------
 convertGDXtoMIF_single <- function(.path, regions, years, path_mif, append,
+                                   skipRead,
                                    scenario_name = NULL, aggregate = TRUE,
                                    emissions=TRUE, save = TRUE) {
+  
+  if (file.exists(path_mif) & skipRead == T) {
+    reports <- read.report(reporting_file)[[1]][[1]]
+    message("Mif file exists. Loaded reporting and skipped generation.")
+    return(reports)
+  }
+  
   print(paste0("Region aggregation: ", aggregate))
   print(paste0("Processing path: ", .path))
   path_gdx <- file.path(.path, "blabla.gdx")
