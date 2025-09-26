@@ -152,7 +152,7 @@ reportFinalEnergy <- function(path, regions, years) {
     VmConsFuelTechDACProd_EWDAC2 <- VmConsFuelTechDACProd_EWDAC
     getItems(VmConsFuelTechDACProd_EWDAC2, 3) <- "Final Energy|Enhanced Weathering|Electricity"
     
-    Direct_Air_Capture <- dimSums(VmConsFuelTechDACProd[,,c("HTDAC","LTDAC")], dim = 3)
+    Direct_Air_Capture <- dimSums(VmConsFuelTechDACProd[,,c("HTDAC","LTDAC","H2DAC")], dim = 3)
     getItems(Direct_Air_Capture, 3) <- "Final Energy|Direct Air Capture"
     
     Direct_Air_Capture_HTDAC <- dimSums(VmConsFuelTechDACProd[,,c("HTDAC")], dim = 3)
@@ -170,10 +170,20 @@ reportFinalEnergy <- function(path, regions, years) {
     Direct_Air_Capture_LTDAC_ELC <- dimSums(VmConsFuelTechDACProd[,,c("LTDAC")][,,"ELC"], dim = 3)
     getItems(Direct_Air_Capture_LTDAC_ELC, 3) <- "Final Energy|Direct Air Capture|LTDAC|ELC"
     
+    Direct_Air_Capture_H2DAC_H2F <- dimSums(VmConsFuelTechDACProd[,,c("H2DAC")][,,"H2F"], dim = 3)
+    getItems(Direct_Air_Capture_H2DAC_H2F, 3) <- "Final Energy|Direct Air Capture|H2DAC|H2F"
+    
+    Direct_Air_Capture_H2DAC_ELC <- dimSums(VmConsFuelTechDACProd[,,c("H2DAC")][,,"ELC"], dim = 3)
+    getItems(Direct_Air_Capture_H2DAC_ELC, 3) <- "Final Energy|Direct Air Capture|H2DAC|ELC"
+    
+    Carbon_Dioxide_Removal <- dimSums(VmConsFuelTechDACProd, dim = 3)
+    getItems(Carbon_Dioxide_Removal, 3) <- "Final Energy|Carbon Dioxide Removal"
+    
     DAC <- mbind(
       VmConsFuelTechDACProd_EWDAC, VmConsFuelTechDACProd_EWDAC2,
       Direct_Air_Capture, Direct_Air_Capture_HTDAC, Direct_Air_Capture_LTDAC,
-      Direct_Air_Capture_HTDAC_ELC, Direct_Air_Capture_HTDAC_NGS, Direct_Air_Capture_LTDAC_ELC
+      Direct_Air_Capture_HTDAC_ELC, Direct_Air_Capture_HTDAC_NGS, Direct_Air_Capture_LTDAC_ELC, 
+      Direct_Air_Capture_H2DAC_ELC, Direct_Air_Capture_H2DAC_H2F, Carbon_Dioxide_Removal
     )
     
     DAC <- add_dimension(DAC, dim = 3.2, add = "unit", nm = "Mtoe")

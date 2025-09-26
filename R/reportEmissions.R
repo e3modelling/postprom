@@ -253,10 +253,17 @@ reportEmissions <- function(path, regions, years) {
     Enhanced_Weathering <- new.magpie(regions, years, "Carbon Capture|Enhanced Weathering", fill = 0)
     LTDAC             <- new.magpie(regions, years, "Carbon Capture|Direct Air Capture|LTDAC", fill = 0)
     HTDAC             <- new.magpie(regions, years, "Carbon Capture|Direct Air Capture|HTDAC", fill = 0)
+    H2DAC             <- new.magpie(regions, years, "Carbon Capture|Direct Air Capture|H2DAC", fill = 0)
     Direct_Air_Capture<- new.magpie(regions, years, "Carbon Capture|Direct Air Capture", fill = 0)
     
-    DAC <- mbind(VCapDAC_total, Enhanced_Weathering, LTDAC, HTDAC, Direct_Air_Capture)
+    DAC <- mbind(VCapDAC_total, Enhanced_Weathering, LTDAC, HTDAC, Direct_Air_Capture, H2DAC)
     DAC <- add_dimension(DAC, dim = 3.2, add = "unit", nm = "Mt CO2/yr")
+    
+    CDR<- new.magpie(regions, years, "Emissions|CO2|Carbon Dioxide Removal", fill = 0)
+    CDR <- add_dimension(CDR, dim = 3.2, add = "unit", nm = "Mt CO2/yr")
+    magpie_object <- mbind(magpie_object, CDR)
+    
+    ###############################################
     
   } else {
     VCapDAC <- VCapDAC[regions, years, ]
@@ -273,23 +280,37 @@ reportEmissions <- function(path, regions, years) {
     HTDAC <- VCapDAC[,,"HTDAC"]
     getItems(HTDAC, 3) <- "Carbon Capture|Direct Air Capture|HTDAC"
     
-    Direct_Air_Capture <- dimSums(VCapDAC[,,c("HTDAC","LTDAC")], dim = 3)
+    
+    H2DAC <- VCapDAC[,,"H2DAC"]
+    getItems(H2DAC, 3) <- "Carbon Capture|Direct Air Capture|H2DAC"
+    
+    Direct_Air_Capture <- dimSums(VCapDAC[,,c("HTDAC","LTDAC","H2DAC")], dim = 3)
     getItems(Direct_Air_Capture, 3) <- "Carbon Capture|Direct Air Capture"
     
-    DAC <- mbind(VCapDAC_total, Enhanced_Weathering, LTDAC, HTDAC, Direct_Air_Capture)
+    DAC <- mbind(VCapDAC_total, Enhanced_Weathering, LTDAC, HTDAC, Direct_Air_Capture, H2DAC)
     DAC <- DAC / 1e6
     DAC <- add_dimension(DAC, dim = 3.2, add = "unit", nm = "Mt CO2/yr")
+    
+    #######################################
+    #cdr for plotting
+    CDR <- - dimSums(VCapDAC, dim = 3) / 10^6
+    CDR <- dimSums(CDR, dim = 3)
+    getItems(CDR, 3) <- "Emissions|CO2|Carbon Dioxide Removal"
+    CDR <- add_dimension(CDR, dim = 3.2, add = "unit", nm = "Mt CO2/yr")
+    magpie_object <- mbind(magpie_object, CDR)
+    
+    ###############################################
   }
   
   magpie_object <- mbind(magpie_object, DAC)
   
   getItems(VCapDAC_total, 3) <- NULL
   
-  #######################################
+  VCapDAC_total <- VCapDAC_total * (-1)
   
   ############## TOTAL  ##############
 
-  total_CO2 <- sum1 + sum2 + sum3 + sum4 + sum5 - sum6 + sum7 + remind + hydrogen - hydrogen_CCS - (VCapDAC_total / 10^6)
+  total_CO2 <- sum1 + sum2 + sum3 + sum4 + sum5 - sum6 + sum7 + remind + hydrogen - hydrogen_CCS + (VCapDAC_total / 10^6)
 
   getItems(total_CO2, 3) <- "Emissions|CO2"
 

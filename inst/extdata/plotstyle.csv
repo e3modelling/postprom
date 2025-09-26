@@ -41,3 +41,6 @@ Emissions|CO2|Energy|Demand|Bunkers,Bunkers,#FDBF6F,bar
 Emissions|CO2|Energy|Supply,Supply,#bcbc6d,bar
 Emissions|CO2|Cumulated,Cumulated,#661a00,bar
 Emissions|CO2|,Total,red,dLine
+Emissions|CO2|Carbon Dioxide Removal,CDR,#87e6a4,bar
+Emissions|CO2|AFOLU,AFOLU,#595933,bar
+Emissions|CO2|Industrial Processes,Industrial Processes,#661a00,bar
