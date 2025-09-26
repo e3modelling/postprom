@@ -25,6 +25,10 @@ Secondary Energy|Electricity|Biomass,Biomass,#005900,bar
 Secondary Energy|Electricity|Demand,Demand,red,dLine
 Secondary Energy|Electricity|Biomass|Non-CHP|w/ CCS,Biomass w/ CCS,#37e314,area
 Secondary Energy|Electricity|Biomass|Non-CHP|w/o CCS,Biomass w/o CCS,#123d0a,area
+Secondary Energy|Electricity|Coal|Non-CHP|w/ CCS,Coal w/ CCS,#7b807a,area
+Secondary Energy|Electricity|Coal|Non-CHP|w/o CCS,Coal w/o CCS,#262625,area
+Secondary Energy|Electricity|Gas|Non-CHP|w/ CCS,Gas w/ CCS,#bfbf69,area
+Secondary Energy|Electricity|Gas|Non-CHP|w/o CCS,Gas w/o CCS,#595933,area
 Secondary Energy|Electricity|Biomass|Non-CHP,Biomass w/ CHP,#37e315,area
 Secondary Energy|Electricity|Biomass|CHP,Biomass w/o CHP,#123d0a,area
 Secondary Energy|Electricity|Coal|Non-CHP,Coal w/ CHP,#7b807a,area
@@ -36,3 +40,4 @@ Final Energy|Biomass,Biomass,#00b219,bar
 Emissions|CO2|Energy|Demand|Bunkers,Bunkers,#FDBF6F,bar
 Emissions|CO2|Energy|Supply,Supply,#bcbc6d,bar
 Emissions|CO2|Cumulated,Cumulated,#661a00,bar
+Emissions|CO2|,Total,red,dLine

@@ -4,6 +4,7 @@ Emissions|CO2|Total,Energy|Demand|Industry
 Emissions|CO2|Total,Energy|Demand|Residential and Commercial
 Emissions|CO2|Total,Energy|Demand|Transportation
 Emissions|CO2|Total,Energy|Supply
+Emissions|CO2|Total,
 Emissions|CO2|Cumulated,Cumulated
 Final Energy|Sector,Industry
 Final Energy|Sector,Transportation
@@ -28,6 +29,10 @@ Secondary Energy|Electricity|Total,Geothermal
 Secondary Energy|Electricity|Total,Demand
 Secondary Energy|Electricity|CCS,Biomass|Non-CHP|w/ CCS
 Secondary Energy|Electricity|CCS,Biomass|Non-CHP|w/o CCS
+Secondary Energy|Electricity|CCS,Coal|Non-CHP|w/ CCS
+Secondary Energy|Electricity|CCS,Coal|Non-CHP|w/o CCS
+Secondary Energy|Electricity|CCS,Gas|Non-CHP|w/ CCS
+Secondary Energy|Electricity|CCS,Gas|Non-CHP|w/o CCS
 Secondary Energy|Electricity|CHP,Biomass|Non-CHP
 Secondary Energy|Electricity|CHP,Biomass|CHP
 Secondary Energy|Electricity|CHP,Coal|Non-CHP

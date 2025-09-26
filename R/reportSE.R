@@ -59,7 +59,7 @@ reportSE <- function(path, regions, years) {
   Prod <- helperPrepareProd(Prod, mapping)
 
   ProdNonCHP <- helperPrepareProd(tempProdNonCHP[,,CHPs$Tech], CHPs, "Non-CHP")
-  ProdNonCHP <- mbind(ProdNonCHP, helperPrepareProd(tempProdNonCHP[,,CCSs$Tech], CCSs, "Non-CHP|w/o CCS"))
+  ProdNonCCS <- helperPrepareProd(tempProdNonCHP[,,CCSs$Tech], CCSs, "Non-CHP|w/o CCS")
 
   ProdCHP <- helperPrepareProd(ProdCHP, CHPtoEF, "CHP")
   ProdCCS <- helperPrepareProd(ProdCCS, CCStoEF, "Non-CHP|w/ CCS")
@@ -78,16 +78,15 @@ reportSE <- function(path, regions, years) {
   getItems(totalDemand, 3.1) <- "Secondary Energy|Electricity|Demand"
 
   ProdNonCHP <- mbind(ProdNonCHP, helperAggregateCoalProd(ProdNonCHP, name = "Non-CHP"))
-  #ProdNonCCS <- mbind(ProdNonCCS, helperAggregateCoalProd(ProdNonCCS, name = "Non-CCS"))
+  ProdNonCCS <- mbind(ProdNonCCS, helperAggregateCoalProd(ProdNonCCS, name = "Non-CHP|w/o CCS"))
   ProdCHP <- mbind(ProdCHP, helperAggregateCoalProd(ProdCHP, name = "CHP"))
-  #ProdCCS <- mbind(ProdCCS, helperAggregateCoalProd(ProdCCS, name = "CCS"))
-
+  ProdCCS <- mbind(ProdCCS, helperAggregateCoalProd(ProdCCS, name = "Non-CHP|w/ CCS"))
 
   Total <- dimSums(Prod, 3.1, na.rm = TRUE)
   getItems(Total, 3.1) <- "Secondary Energy|Electricity"
   Prod <- mbind(Prod, helperAggregateCoalProd(Prod))
 
-  magpie_object <- mbind(Prod, ProdNonCHP, ProdCHP, ProdCCS, Total,
+  magpie_object <- mbind(Prod, ProdNonCHP, ProdCHP, ProdNonCCS, ProdCCS, Total,
                          TotalCHP, TotalNonCHP, totalDemand)
   magpie_object <- add_dimension(magpie_object, dim = 3.2, add = "unit",nm = "TWh")
   return(magpie_object)
