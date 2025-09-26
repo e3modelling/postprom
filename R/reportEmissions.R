@@ -259,6 +259,12 @@ reportEmissions <- function(path, regions, years) {
     DAC <- mbind(VCapDAC_total, Enhanced_Weathering, LTDAC, HTDAC, Direct_Air_Capture, H2DAC)
     DAC <- add_dimension(DAC, dim = 3.2, add = "unit", nm = "Mt CO2/yr")
     
+    CDR<- new.magpie(regions, years, "Emissions|CO2|Carbon Dioxide Removal", fill = 0)
+    CDR <- add_dimension(CDR, dim = 3.2, add = "unit", nm = "Mt CO2/yr")
+    magpie_object <- mbind(magpie_object, CDR)
+    
+    ###############################################
+    
   } else {
     VCapDAC <- VCapDAC[regions, years, ]
     
