@@ -241,6 +241,25 @@ reportEmissions <- function(path, regions, years) {
   
   sum7 <- dimSums(sum7, dim = 3, na.rm = TRUE)
   
+  ################# INDUSTRY SECTOR ##################
+  
+  # CO2 captured by CCS plants in INDUSTRY SECTOR
+  Industry_CCS <- readGDX(path, "V06CapCO2ElecHydr", field = 'l')[regions, years, ]
+  
+  if (!is.null(getItems(Industry_CCS,3))) {
+    Industry_CCS <- Industry_CCS[,,"IND"]
+    Industry_CCS <- Industry_CCS
+    Industry_CCS <- dimSums(Industry_CCS, 3, na.rm = TRUE)
+    
+    Industry_CCS_plot_in_mif <- Industry_CCS
+    getItems(Industry_CCS_plot_in_mif, 3) <- "Carbon Capture|Industry"
+    Industry_CCS_plot_in_mif <- add_dimension(Industry_CCS_plot_in_mif, dim = 3.2, add = "unit", nm = "Mt CO2/yr")
+    magpie_object <- mbind(magpie_object, Industry_CCS_plot_in_mif)
+    
+  } else {
+    Industry_CCS <- new.magpie(regions, years, fill = 0)
+  }
+  
   #########       DAC     #################
   
   DAC <- NULL
@@ -270,7 +289,8 @@ reportEmissions <- function(path, regions, years) {
     VCapDAC <- VCapDAC[regions, years, ]
     
     VCapDAC_total <- dimSums(VCapDAC, dim = 3)
-    getItems(VCapDAC_total, 3) <- "Carbon Capture"
+    VCap_total_plot <- VCapDAC_total / 1e6 + Industry_CCS + sum6 + hydrogen_CCS
+    getItems(VCap_total_plot, 3) <- "Carbon Capture"
     
     Enhanced_Weathering <- VCapDAC[,,"EWDAC"]
     getItems(Enhanced_Weathering, 3) <- "Carbon Capture|Enhanced Weathering"
@@ -288,9 +308,12 @@ reportEmissions <- function(path, regions, years) {
     Direct_Air_Capture <- dimSums(VCapDAC[,,c("HTDAC","LTDAC","H2DAC")], dim = 3)
     getItems(Direct_Air_Capture, 3) <- "Carbon Capture|Direct Air Capture"
     
-    DAC <- mbind(VCapDAC_total, Enhanced_Weathering, LTDAC, HTDAC, Direct_Air_Capture, H2DAC)
+    DAC <- mbind(Enhanced_Weathering, LTDAC, HTDAC, Direct_Air_Capture, H2DAC)
     DAC <- DAC / 1e6
     DAC <- add_dimension(DAC, dim = 3.2, add = "unit", nm = "Mt CO2/yr")
+    
+    VCap_total_plot <- add_dimension(VCap_total_plot, dim = 3.2, add = "unit", nm = "Mt CO2/yr")
+    magpie_object <- mbind(magpie_object, VCap_total_plot)
     
     #######################################
     #cdr for plotting
@@ -309,9 +332,11 @@ reportEmissions <- function(path, regions, years) {
   
   VCapDAC_total <- VCapDAC_total * (-1)
   
+  #################################################
+  
   ############## TOTAL  ##############
 
-  total_CO2 <- sum1 + sum2 + sum3 + sum4 + sum5 - sum6 + sum7 + remind + hydrogen - hydrogen_CCS + (VCapDAC_total / 10^6)
+  total_CO2 <- sum1 + sum2 + sum3 + sum4 + sum5 - sum6 + sum7 + remind + hydrogen - hydrogen_CCS + (VCapDAC_total / 10^6) - Industry_CCS
 
   getItems(total_CO2, 3) <- "Emissions|CO2"
 
@@ -373,6 +398,8 @@ reportEmissions <- function(path, regions, years) {
   
   sum_INDSE <- dimSums(sum_INDSE, 3, na.rm = TRUE)
 
+  sum_INDSE <- sum_INDSE - Industry_CCS
+  
   getItems(sum_INDSE, 3) <- "Emissions|CO2|Energy|Demand|Industry"
 
   sum_INDSE <- add_dimension(sum_INDSE, dim = 3.2, add = "unit", nm = "Mt CO2/yr")
@@ -463,6 +490,12 @@ reportEmissions <- function(path, regions, years) {
   
   Emissions_Supply_Electricity <- add_dimension(Emissions_Supply_Electricity, dim = 3.2, add = "unit", nm = "Mt CO2/yr")
   magpie_object <- mbind(magpie_object, Emissions_Supply_Electricity)
+  
+  carbon_capture_electricity <- sum6
+
+  getItems(carbon_capture_electricity, 3) <- "Carbon Capture|Electricity"
+  carbon_capture_electricity <- add_dimension(carbon_capture_electricity, dim = 3.2, add = "unit", nm = "Mt CO2/yr")
+  magpie_object <- mbind(magpie_object, carbon_capture_electricity)
   
   # Combine all summed fuels into a single magpie object for supply category
   supply_category <- do.call(mbind, fuel_sums)
