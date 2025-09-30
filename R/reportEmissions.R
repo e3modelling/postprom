@@ -88,7 +88,8 @@ reportEmissions <- function(path, regions, years) {
   VDemFinEneTranspPerFuel <- readGDX(path, "VmDemFinEneTranspPerFuel", field = 'l')[regions, years, ]
   VProdElec <- readGDX(path, "VmProdElec", field = 'l')[regions, years, ]
   iPlantEffByType <- readGDX(path, "imPlantEffByType")[regions, years, ]
-  iCO2CaptRate <- readGDX(path, "imCO2CaptRate")[regions, years, ]
+  v04CO2CaptRate <- readGDX(path, name = c("V04CO2CaptRate", "imCO2CaptRate"),
+                            field = "l", format = "first_found")[regions, years, ]
   VConsFuelTechH2Prod <- readGDX(path, "VmConsFuelTechH2Prod", field = 'l')[regions, years, ]
   # Link between Model Subsectors and Fuels
 
@@ -161,9 +162,9 @@ reportEmissions <- function(path, regions, years) {
   CCS <- PGALLtoEF[PGALLtoEF$PGALL %in% CCS$CCS, ]
 
   # CO2 captured by CCS plants in power generation
-  var_16 <- VProdElec[, , CCS[, 1]] * 0.086 / iPlantEffByType[, , CCS[, 1]] * iCo2EmiFac[, , "PG"][, , CCS[, 2]] * iCO2CaptRate[, , CCS[, 1]]
+  var_16 <- VProdElec[, , CCS[, 1]] * 0.086 / iPlantEffByType[, , CCS[, 1]] * iCo2EmiFac[, , "PG"][, , CCS[, 2]] * v04CO2CaptRate[, , CCS[, 1]]
   emi_factor_ATHBMSCCS <- 4.1868
-  ATHBMSCCS <- VProdElec[, , "ATHBMSCCS"] * 0.086 / iPlantEffByType[, ,  "ATHBMSCCS"] * emi_factor_ATHBMSCCS * iCO2CaptRate[, ,  "ATHBMSCCS"]
+  ATHBMSCCS <- VProdElec[, , "ATHBMSCCS"] * 0.086 / iPlantEffByType[, ,  "ATHBMSCCS"] * emi_factor_ATHBMSCCS * v04CO2CaptRate[, ,  "ATHBMSCCS"]
   # CO2 captured by CCS plants
   sum6 <- dimSums(var_16, dim = 3, na.rm = TRUE) + ATHBMSCCS
 
