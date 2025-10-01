@@ -253,7 +253,7 @@ reportEmissions <- function(path, regions, years) {
   # CO2 captured by CCS plants in INDUSTRY SECTOR
   Industry_CCS <- readGDX(path, "V06CapCO2ElecHydr", field = 'l')[regions, years, ]
   
-  if (!is.null(getItems(Industry_CCS,3))) {
+  if (!is.null(getItems(Industry_CCS,3)) & ("IND" %in% getItems(Industry_CCS,3))) {
     Industry_CCS <- Industry_CCS[,,"IND"]
     Industry_CCS <- Industry_CCS
     Industry_CCS <- dimSums(Industry_CCS, 3, na.rm = TRUE)
