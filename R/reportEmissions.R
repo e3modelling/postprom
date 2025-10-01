@@ -370,6 +370,16 @@ reportEmissions <- function(path, regions, years) {
   Hydrogen_total <- add_dimension(Hydrogen_total, dim = 3.2, add = "unit", nm = "Mt CO2/yr")
 
   magpie_object <- mbind(magpie_object, Hydrogen_total)
+  
+  # hydrogen_CCS for plotting
+  hydrogen_CCS_plot <- hydrogen_CCS
+  
+  getItems(hydrogen_CCS_plot, 3) <- "Carbon Capture|Hydrogen"
+  
+  hydrogen_CCS_plot <- add_dimension(hydrogen_CCS_plot, dim = 3.2, add = "unit", nm = "Mt CO2/yr")
+  
+  magpie_object <- mbind(magpie_object, hydrogen_CCS_plot)
+  ##############
 
   # Extra Emissions
   # Emissions|CO2|Energy|Demand|Industry
