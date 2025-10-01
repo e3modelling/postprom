@@ -137,6 +137,14 @@ reportFinalEnergy <- function(path, regions, years) {
 
     FCONS_per_fuel <- add_dimension(FCONS_per_fuel, dim = 3.2, add = "unit", nm = "Mtoe")
     magpie_object <- mbind(magpie_object, FCONS_per_fuel)
+    
+    # per fuel of OPEN-PROM
+    FCONS_per_fuel_OP <- FCONS_by_sector_and_EF_open[, , sets6[, 1]]
+    FCONS_per_fuel_OP <- dimSums(FCONS_per_fuel_OP, 3.1)
+    getItems(FCONS_per_fuel_OP, 3) <- paste0("Final Energy|", sector_name[y], "|", getItems(FCONS_per_fuel_OP, 3))
+    
+    FCONS_per_fuel_OP <- add_dimension(FCONS_per_fuel_OP, dim = 3.2, add = "unit", nm = "Mtoe")
+    magpie_object <- mbind(magpie_object, FCONS_per_fuel_OP)
   }
   
   #########       DAC     #################
