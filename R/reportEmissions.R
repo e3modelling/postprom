@@ -160,9 +160,13 @@ reportEmissions <- function(path, regions, years) {
   CCS <- as.data.frame(CCS)
 
   CCS <- PGALLtoEF[PGALLtoEF$PGALL %in% CCS$CCS, ]
+  
+  iCo2EmiFac_PG <- iCo2EmiFac[, , "PG"][, , CCS[, 2]]
+  iCo2EmiFac_PG <- collapseDim(iCo2EmiFac_PG, 3.1)
+  getItems(iCo2EmiFac_PG, 3) <- getItems(VProdElec[, , CCS[, 1]], 3)
 
   # CO2 captured by CCS plants in power generation
-  var_16 <- VProdElec[, , CCS[, 1]] * 0.086 / iPlantEffByType[, , CCS[, 1]] * iCo2EmiFac[, , "PG"][, , CCS[, 2]] * v04CO2CaptRate[, , CCS[, 1]]
+  var_16 <- VProdElec[, , CCS[, 1]] * 0.086 / iPlantEffByType[, , CCS[, 1]] * iCo2EmiFac_PG * v04CO2CaptRate[, , CCS[, 1]]
   emi_factor_ATHBMSCCS <- 4.1868
   ATHBMSCCS <- VProdElec[, , "ATHBMSCCS"] * 0.086 / iPlantEffByType[, ,  "ATHBMSCCS"] * emi_factor_ATHBMSCCS * v04CO2CaptRate[, ,  "ATHBMSCCS"]
   # CO2 captured by CCS plants
@@ -216,8 +220,11 @@ reportEmissions <- function(path, regions, years) {
   
   # input hydrogen_CCS
   H2CCS <- readGDX(path, "H2CCS")
+  V05CaptRateH2 <- readGDX(path, "V05CaptRateH2", field = 'l')[,,H2CCS][regions, years, ]
   iCo2EmiFac[, , "H2P"][, , "BMSWAS"] <- emi_factor_ATHBMSCCS
-  hydrogen_CCS <- VConsFuelTechH2Prod[, , PGEF[, 1]][,,H2CCS] * iCo2EmiFac[, , "H2P"][, , PGEF[, 1]]
+  iCo2EmiFac_hydrogen <- collapseDim(iCo2EmiFac[, , "H2P"][, , PGEF[, 1]],3.1)
+  tech_hydrogen <- dimSums(VConsFuelTechH2Prod[, , PGEF[, 1]][,,H2CCS] * iCo2EmiFac_hydrogen,3.2)
+  hydrogen_CCS <- tech_hydrogen * V05CaptRateH2
   iCo2EmiFac[, , "H2P"][, , "BMSWAS"] <- 0
   hydrogen_CCS <- dimSums(hydrogen_CCS, 3, na.rm = TRUE)
 
