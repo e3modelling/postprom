@@ -36,6 +36,9 @@ Secondary Energy|Electricity|Coal|CHP,Coal w/o CHP,#262625,area
 Secondary Energy|Electricity|Gas|Non-CHP,Gas w/ CHP,#bfbf69,area
 Secondary Energy|Electricity|Gas|CHP,Gas w/o CHP,#595933,area
 Final Energy|Non Energy and Bunkers,Non Energy and Bunkers,yellow,bar
+Final Energy|Industry,Industry,orange,bar
+Final Energy|Transportation,Transportation,black,bar
+Final Energy|Residential and Commercial,Res and Com,red,bar
 Final Energy|Biomass,Biomass,#00b219,bar
 Emissions|CO2|Energy|Demand|Bunkers,Bunkers,#FDBF6F,bar
 Emissions|CO2|Energy|Supply,Supply,#bcbc6d,bar
