@@ -20,6 +20,74 @@
 #' @export
 reportFinalEnergy <- function(path, regions, years) {
   # read GAMS set used for reporting of Final Energy
+  
+  energy_codes <- data.frame(
+    Code = c(
+      "HCL","LGN","CRO","LPG","GSL","KRS","GDO","RFO","OLQ","NGS","OGS","NUC","STE",
+      "HYD","WND","SOL","BMSWAS","GEO","MET","ETH","BGDO","H2F","ELC",
+      "STE1CL","STE1CH","STE1CD","STE1CR","STE1CG","STE1CB",
+      "STE1AL","STE1AH","STE1AD","STE1AR","STE1AG","STE1AB","STE1AH2F",
+      "STE2LGN","STE2OSL","STE2GDO","STE2RFO","STE2OLQ","STE2NGS","STE2OGS","STE2BMS",
+      "PHEVGSL","PHEVGDO","CHEVGSL","CHEVGDO",
+      "HTDAC","H2DAC","LTDAC","EWDAC"
+    ),
+    Description = c(
+      "Hard Coal, Coke and Other Solids",
+      "Lignite",
+      "Crude Oil and Feedstocks",
+      "Liquefied Petroleum Gas",
+      "Gasoline",
+      "Kerosene",
+      "Diesel Oil",
+      "Residual Fuel Oil",
+      "Other Liquids",
+      "Natural Gas",
+      "Other Gases",
+      "Nuclear",
+      "Steam",
+      "Hydro",
+      "Wind",
+      "Solar",
+      "Biomass and Waste",
+      "Geothermal and other renewable sources eg. Tidal, etc.",
+      "Methanol",
+      "Ethanol",
+      "Biodiesel",
+      "Hydrogen",
+      "Electricity",
+      "Steam coming from CHP plants conventional lgn",
+      "Steam produced from CHP conventional hcl",
+      "CHP conventional gdo",
+      "Steam produced from CHP conventional rfo",
+      "Steam produced from CHP conventional ngs",
+      "Steam produced from CHP conventional bmswas",
+      "Steam produced from CHP advanced lgn",
+      "Steam produced from CHP advanced hcl",
+      "Steam produced from CHP advanced gdo",
+      "Steam produced from CHP advanced rfo",
+      "Steam produced from CHP advanced ngs",
+      "Steam produced from CHP advanced bmswas",
+      "Steam produced from Hydrogen powered CHP fuel cells",
+      "Steam coming from district heating plants burning lgn",
+      "Steam produced from district heating plants burning hcl",
+      "Steam produced from district heating plants burning gdo",
+      "Steam produced from district heating plants burning rfo",
+      "Steam produced from district heating plants burning olq",
+      "Steam produced from district heating plants burning ngs",
+      "Steam produced from district heating plants burning ogs",
+      "Steam produced from district heating plants burning bmswas",
+      "Plug in Hybrid engine - gasoline",
+      "Plug in Hybrid engine - diesel",
+      "Conventional Hybrid engine - gasoline",
+      "Conventional Hybrid engine - diesel",
+      "High-Temperature DAC",
+      "High-Temperature H2-fueled DAC",
+      "Low-Temperature DAC",
+      "Enhanced-Weathering DAC"
+    ),
+    stringsAsFactors = FALSE
+  )
+  
 
   sets <- readGDX(path, "BALEF2EFS")
   names(sets) <- c("BAL", "EF")
@@ -141,10 +209,22 @@ reportFinalEnergy <- function(path, regions, years) {
     # per fuel of OPEN-PROM
     FCONS_per_fuel_OP <- FCONS_by_sector_and_EF_open[, , sets6[, 1]]
     FCONS_per_fuel_OP <- dimSums(FCONS_per_fuel_OP, 3.1)
+    FCONS_per_fuel_OP_new_names <- FCONS_per_fuel_OP
     getItems(FCONS_per_fuel_OP, 3) <- paste0("Final Energy|", sector_name[y], "|", getItems(FCONS_per_fuel_OP, 3))
     
     FCONS_per_fuel_OP <- add_dimension(FCONS_per_fuel_OP, dim = 3.2, add = "unit", nm = "Mtoe")
     magpie_object <- mbind(magpie_object, FCONS_per_fuel_OP)
+    
+    energy_codes_sector <- energy_codes[energy_codes[,"Code"] %in% getItems(FCONS_per_fuel_OP_new_names, 3),]
+    FCONS_per_fuel_OP_new_names <- toolAggregate(FCONS_per_fuel_OP_new_names[,,energy_codes_sector[,"Code"]], dim = 3, rel = energy_codes_sector, from = "Code", to = "Description")
+    
+    getItems(FCONS_per_fuel_OP_new_names, 3) <- paste0("Final Energy|", sector_name[y], "|", getItems(FCONS_per_fuel_OP_new_names, 3))
+    
+    FCONS_per_fuel_OP_new_names <- add_dimension(FCONS_per_fuel_OP_new_names, dim = 3.2, add = "unit", nm = "Mtoe")
+    
+    FCONS_per_fuel_OP_new_names <- FCONS_per_fuel_OP_new_names[,,setdiff(getItems(FCONS_per_fuel_OP_new_names,3) , getItems(magpie_object,3))]
+    
+    magpie_object <- mbind(magpie_object, FCONS_per_fuel_OP_new_names)
   }
   
   #########       DAC     #################
