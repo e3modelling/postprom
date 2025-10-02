@@ -40,10 +40,13 @@ Final Energy|Industry,Industry,orange,bar
 Final Energy|Transportation,Transportation,black,bar
 Final Energy|Residential and Commercial,Res and Com,red,bar
 Final Energy|Biomass,Biomass,#00b219,bar
-Emissions|CO2|Energy|Demand|Bunkers,Bunkers,#FDBF6F,bar
+Emissions|CO2|Energy|Demand|Bunkers,Bunkers,yellow,bar
 Emissions|CO2|Energy|Supply,Supply,#bcbc6d,bar
 Emissions|CO2|Cumulated,Cumulated,#661a00,bar
 Emissions|CO2|,Total,red,dLine
 Emissions|CO2|Carbon Dioxide Removal,CDR,#87e6a4,bar
 Emissions|CO2|AFOLU,AFOLU,#595933,bar
 Emissions|CO2|Industrial Processes,Industrial Processes,#661a00,bar
+Emissions|CO2|Energy|Demand|Industry,Industry,orange,bar
+Emissions|CO2|Energy|Demand|Residential and Commercial,Res and Com,#0000FF,bar
+Emissions|CO2|Energy|Demand|Transportation,Transportation,#000000,bar
