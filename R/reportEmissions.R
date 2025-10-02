@@ -221,6 +221,13 @@ reportEmissions <- function(path, regions, years) {
   # input hydrogen_CCS
   H2CCS <- readGDX(path, "H2CCS")
   V05CaptRateH2 <- readGDX(path, "V05CaptRateH2", field = 'l')[,,H2CCS][regions, years, ]
+  
+  if (is.null(V05CaptRateH2)) {
+    message("V05CaptRateH2 not found – creating empty V05CaptRateH2 placeholder")
+    # Zero placeholder for Carbon Capture
+    V05CaptRateH2     <- new.magpie(regions, years, "V05CaptRateH2", fill = 0)
+  }
+  
   iCo2EmiFac[, , "H2P"][, , "BMSWAS"] <- emi_factor_ATHBMSCCS
   iCo2EmiFac_hydrogen <- collapseDim(iCo2EmiFac[, , "H2P"][, , PGEF[, 1]],3.1)
   tech_hydrogen <- dimSums(VConsFuelTechH2Prod[, , PGEF[, 1]][,,H2CCS] * iCo2EmiFac_hydrogen,3.2)
