@@ -65,7 +65,7 @@ reportEmissions <- function(path, regions, years) {
   fscenario <- readGDX(path, "fscenario")
   # Get supplementary emissions from NAVIGATE through mrprom
   Navigate_Emissions <- calcOutput("NavigateEmissions", aggregate = TRUE, regionmapping = "regionmappingOPDEV3.csv")
-  
+
   if (fscenario %in% c(0, 1)) {
     Navigate_Emissions <- Navigate_Emissions[, , "SUP_NPi_Default"][regions, years, ]
   } else if (fscenario == 2) {
@@ -73,6 +73,8 @@ reportEmissions <- function(path, regions, years) {
   } else if (fscenario == 3) {
     Navigate_Emissions <- Navigate_Emissions[, , "SUP_2C_Default"][regions, years, ]
   }
+
+  Navigate_Emissions <- extractAggregatedData(fscenario,Navigate_Emissions,years)
 
   Navigate_Emissions <- collapseDim(Navigate_Emissions, 3.1)
   Navigate_Emissions <- collapseDim(Navigate_Emissions, 3.1)
@@ -582,4 +584,61 @@ reportEmissions <- function(path, regions, years) {
   Cumulated <- add_dimension(Cumulated, dim = 3.2, add = "unit", nm = "Gt CO2")
   magpie_object <- mbind(magpie_object, Cumulated)
   return(magpie_object)
+}
+# Helpers -------------------------------------------------------------
+extractAggregatedData <- function(scenario,x,years, ...) {
+  
+  map <- toolGetMapping(name = "NavigateEmissions.csv",
+                      type = "sectoral",
+                      where = "mrprom")
+  
+  # Get the aggregated data for World, LAM etc
+  if (scenario %in% c(0, 1)) {
+    xa <- readSource("Navigate", subtype = "SUP_NPi_Default", convert = FALSE)
+  } else if (scenario == 2) {
+    xa <- readSource("Navigate", subtype = "SUP_1p5C_Default", convert = FALSE)
+  } else if (scenario == 3) {
+    xa <- readSource("Navigate", subtype = "SUP_2C_Default", convert = FALSE)
+  }
+ 
+  xa <- xa[,,map[,"Emissions"]]
+  xa <- xa[,years,"REMIND-MAgPIE 3_2-4_6"]
+  xa <- as.quitte(xa)
+  xa <- interpolate_missing_periods(xa, 2010:2100, expand.values = TRUE)
+  xa <- as.magpie(xa)
+
+  desiredRegions <- c(
+  "REMIND 3_2|Canada, Australia, New Zealand",
+  "REMIND 3_2|Latin America and the Caribbean",
+  "REMIND 3_2|Middle East and North Africa",
+  "REMIND 3_2|Non-EU28 Europe",
+  "REMIND 3_2|Other Asia",
+  "REMIND 3_2|Russia and Reforming Economies",
+  "REMIND 3_2|Sub-Saharan Africa"
+)
+
+  xa<- xa[desiredRegions,,]
+  # Mapping
+  RegionMap <- c(
+  "REMIND 3_2|Canada, Australia, New Zealand" = "CAZ",
+  "REMIND 3_2|EU 28"                           = "ELL",
+  "REMIND 3_2|Latin America and the Caribbean" = "LAM",
+  "REMIND 3_2|Middle East and North Africa"   = "MEA",
+  "REMIND 3_2|Non-EU28 Europe"                = "NEU",
+  "REMIND 3_2|Other Asia"                      = "OAS",
+  "REMIND 3_2|Russia and Reforming Economies"  = "REF",
+  "REMIND 3_2|Sub-Saharan Africa"             = "SSA"
+  )
+
+  commonRegions <- intersect(RegionMap[getRegions(xa)], getRegions(x))
+  xaRegions <- names(RegionMap)[RegionMap %in% commonRegions]
+  matchRegions <- RegionMap[xaRegions]
+
+  for (i in seq_along(matchRegions)) {
+    x[matchRegions[i], , ] <- xa[xaRegions[i], , ]
+  }
+  # set NA to 0
+  x[is.na(x)] <- 10^-6
+
+  return(x)
 }
