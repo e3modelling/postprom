@@ -523,6 +523,18 @@ reportEmissions <- function(path, regions, years) {
   carbon_capture_electricity <- add_dimension(carbon_capture_electricity, dim = 3.2, add = "unit", nm = "Mt CO2/yr")
   magpie_object <- mbind(magpie_object, carbon_capture_electricity)
   
+  district_heating <- sum3
+  
+  getItems(district_heating, 3) <- "Emissions|CO2|Energy|Supply|District Heating"
+  district_heating <- add_dimension(district_heating, dim = 3.2, add = "unit", nm = "Mt CO2/yr")
+  magpie_object <- mbind(magpie_object, district_heating)
+  
+  own_consumption <- sum4
+  
+  getItems(own_consumption, 3) <- "Emissions|CO2|Energy|Supply|Own Consumption"
+  own_consumption <- add_dimension(own_consumption, dim = 3.2, add = "unit", nm = "Mt CO2/yr")
+  magpie_object <- mbind(magpie_object, own_consumption)
+  
   # Combine all summed fuels into a single magpie object for supply category
   supply_category <- do.call(mbind, fuel_sums)
   
