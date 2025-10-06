@@ -68,17 +68,53 @@ reportEmissions <- function(path, regions, years) {
 
   if (fscenario %in% c(0, 1)) {
     Navigate_Emissions <- Navigate_Emissions[, , "SUP_NPi_Default"][regions, years, ]
+    Land_Use <- readSource("Navigate", subtype = "SUP_NPi_Default")
   } else if (fscenario == 2) {
     Navigate_Emissions <- Navigate_Emissions[, , "SUP_1p5C_Default"][regions, years, ]
+    Land_Use <- readSource("Navigate", subtype = "SUP_1p5C_Default")
   } else if (fscenario == 3) {
     Navigate_Emissions <- Navigate_Emissions[, , "SUP_2C_Default"][regions, years, ]
+    Land_Use <- readSource("Navigate", subtype = "SUP_2C_Default")
   }
 
+  ####################  Carbon Capture
+  Land_Use <- Land_Use[,,c("Carbon Removal|Land Use")]
+  Land_Use <- Land_Use[,,"REMIND-MAgPIE 3_2-4_6"]
+  
+  mapping <- toolGetMapping("regionmappingOPDEV3.csv",
+                            type = "regional",
+                            where = "mrprom")
+  
+  Land_Use[is.na(Land_Use)] <- 10^-6
+  Land_Use <- toolAggregate(Land_Use,rel  = mapping,from = "ISO3.Code",to   = "Region.Code")
+  
+  Land_Use <- as.quitte(Land_Use)
+
+  Land_Use <- interpolate_missing_periods(Land_Use, 2010:2100, expand.values = TRUE)
+  
+  Land_Use <- as.magpie(Land_Use)
+  
+  Land_Use <- Land_Use[,years,]
+  
+  # set NA to 0
+  Land_Use[is.na(Land_Use)] <- 10^-6
+  
+  Land_Use <- Land_Use[regions, years, ]
+  
+  Navigate_Emissions <- mbind(Navigate_Emissions, Land_Use)
+  
   Navigate_Emissions <- extractAggregatedData(fscenario,Navigate_Emissions,years)
 
   Navigate_Emissions <- collapseDim(Navigate_Emissions, 3.1)
   Navigate_Emissions <- collapseDim(Navigate_Emissions, 3.1)
-
+  
+  Carbon_Removal_Land_Use <- Navigate_Emissions[,,"Carbon Removal|Land Use.Mt CO2/yr"]
+  getItems(Carbon_Removal_Land_Use, 3) <-NULL
+  
+  l <- getItems(Navigate_Emissions,3.1) == "Carbon Removal|Land Use"
+  
+  getItems(Navigate_Emissions,3.1)[l] <- "Carbon Capture|Land Use"
+  
   remind_AFOLU_Industrial_Processes <- Navigate_Emissions[, , c("Emissions|CO2|AFOLU", "Emissions|CO2|Industrial Processes")]
   remind <- dimSums(remind_AFOLU_Industrial_Processes, 3, na.rm = TRUE)
 
@@ -171,6 +207,9 @@ reportEmissions <- function(path, regions, years) {
   var_16 <- VProdElec[, , CCS[, 1]] * 0.086 / iPlantEffByType[, , CCS[, 1]] * iCo2EmiFac_PG * v04CO2CaptRate[, , CCS[, 1]]
   emi_factor_ATHBMSCCS <- 4.1868
   ATHBMSCCS <- VProdElec[, , "ATHBMSCCS"] * 0.086 / iPlantEffByType[, ,  "ATHBMSCCS"] * emi_factor_ATHBMSCCS * v04CO2CaptRate[, ,  "ATHBMSCCS"]
+  
+  car_capt_other_sources <- dimSums(var_16[,,c("ATHCOALCCS","ATHLGNCCS","ATHGASCCS")], dim = 3, na.rm = TRUE)
+  
   # CO2 captured by CCS plants
   sum6 <- dimSums(var_16, dim = 3, na.rm = TRUE) + ATHBMSCCS
 
@@ -305,24 +344,33 @@ reportEmissions <- function(path, regions, years) {
     VCapDAC <- VCapDAC[regions, years, ]
     
     VCapDAC_total <- dimSums(VCapDAC, dim = 3)
-    VCap_total_plot <- VCapDAC_total / 1e6 + Industry_CCS + sum6 + hydrogen_CCS
+    VCap_total_plot <- VCapDAC_total / 1e6 + Industry_CCS + sum6 + hydrogen_CCS + Carbon_Removal_Land_Use
     getItems(VCap_total_plot, 3) <- "Carbon Capture"
     
+    Carbon_Geological_Storage <- dimSums(VCapDAC[,,c("HTDAC","H2DAC","LTDAC")], dim = 3) / 1e6 + Industry_CCS + sum6 + hydrogen_CCS
+    getItems(Carbon_Geological_Storage, 3) <- "Carbon Capture|Geological Storage"
+    
+    other_sources <- car_capt_other_sources + Industry_CCS + hydrogen_CCS
+    getItems(other_sources, 3) <- "Carbon Capture|Geological Storage|Other Sources"
+    
+    biom_car_capture <- ATHBMSCCS
+    getItems(biom_car_capture, 3) <- "Carbon Capture|Geological Storage|Biomass"
+      
     Enhanced_Weathering <- VCapDAC[,,"EWDAC"]
     getItems(Enhanced_Weathering, 3) <- "Carbon Capture|Enhanced Weathering"
     
     LTDAC <- VCapDAC[,,"LTDAC"]
-    getItems(LTDAC, 3) <- "Carbon Capture|Direct Air Capture|LTDAC"
+    getItems(LTDAC, 3) <- "Carbon Capture|Geological Storage|Direct Air Capture|LTDAC"
     
     HTDAC <- VCapDAC[,,"HTDAC"]
-    getItems(HTDAC, 3) <- "Carbon Capture|Direct Air Capture|HTDAC"
+    getItems(HTDAC, 3) <- "Carbon Capture|Geological Storage|Direct Air Capture|HTDAC"
     
     
     H2DAC <- VCapDAC[,,"H2DAC"]
-    getItems(H2DAC, 3) <- "Carbon Capture|Direct Air Capture|H2DAC"
+    getItems(H2DAC, 3) <- "Carbon Capture|Geological Storage|Direct Air Capture|H2DAC"
     
     Direct_Air_Capture <- dimSums(VCapDAC[,,c("HTDAC","LTDAC","H2DAC")], dim = 3)
-    getItems(Direct_Air_Capture, 3) <- "Carbon Capture|Direct Air Capture"
+    getItems(Direct_Air_Capture, 3) <- "Carbon Capture|Geological Storage|Direct Air Capture"
     
     DAC <- mbind(Enhanced_Weathering, LTDAC, HTDAC, Direct_Air_Capture, H2DAC)
     DAC <- DAC / 1e6
@@ -342,7 +390,11 @@ reportEmissions <- function(path, regions, years) {
     ###############################################
   }
   
-  magpie_object <- mbind(magpie_object, DAC)
+  Carbon_Geological_Storage <- add_dimension(Carbon_Geological_Storage, dim = 3.2, add = "unit", nm = "Mt CO2/yr")
+  other_sources <- add_dimension(other_sources, dim = 3.2, add = "unit", nm = "Mt CO2/yr")
+  biom_car_capture <- add_dimension(biom_car_capture, dim = 3.2, add = "unit", nm = "Mt CO2/yr")
+  
+  magpie_object <- mbind(magpie_object, DAC, Carbon_Geological_Storage,other_sources,biom_car_capture)
   
   getItems(VCapDAC_total, 3) <- NULL
   
@@ -595,6 +647,8 @@ reportEmissions <- function(path, regions, years) {
   Cumulated <- Cumulated / 1000
   Cumulated <- add_dimension(Cumulated, dim = 3.2, add = "unit", nm = "Gt CO2")
   magpie_object <- mbind(magpie_object, Cumulated)
+  
+  
   return(magpie_object)
 }
 # Helpers -------------------------------------------------------------
@@ -603,6 +657,14 @@ extractAggregatedData <- function(scenario,x,years, ...) {
   map <- toolGetMapping(name = "NavigateEmissions.csv",
                       type = "sectoral",
                       where = "mrprom")
+  
+  new_row <- data.frame(
+    Emissions = "Carbon Removal|Land Use",
+    stringsAsFactors = FALSE
+  )
+  
+  # Combine with the existing map
+  map <- rbind(map, new_row)
   
   # Get the aggregated data for World, LAM etc
   if (scenario %in% c(0, 1)) {
@@ -618,6 +680,7 @@ extractAggregatedData <- function(scenario,x,years, ...) {
   xa <- as.quitte(xa)
   xa <- interpolate_missing_periods(xa, 2010:2100, expand.values = TRUE)
   xa <- as.magpie(xa)
+  xa <- xa[,years,"REMIND-MAgPIE 3_2-4_6"]
 
   desiredRegions <- c(
   "REMIND 3_2|Canada, Australia, New Zealand",
