@@ -281,7 +281,5 @@ reportFinalEnergy <- function(path, regions, years) {
     message("VmConsFuelTechDACProd not found in GDX – skipping DAC block")
   }
   
-  #######################################
-  
   return(magpie_object)
 }
