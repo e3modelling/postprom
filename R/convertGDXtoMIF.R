@@ -88,6 +88,8 @@ convertGDXtoMIF_single <- function(.path, regions, years, path_mif, append,
   reports <- mbind(reports, reportCapacityAdditions(path_gdx, regions, years))
   reports <- mbind(reports, reportFuelConsTargets(path_gdx, regions, years))
 
+  GrossInlandConsumption <- reportGrossInlandConsumption(path_gdx, regions, years)
+  
   if (aggregate == TRUE) reports <- aggregateMIF(report = reports)
 
   if (emissions == TRUE) generateEmissionsFile(.path, reports, years, scenario_name)
@@ -99,6 +101,13 @@ convertGDXtoMIF_single <- function(.path, regions, years, path_mif, append,
       model = "OPEN-PROM",
       scenario = scenario_name,
       append = append
+    )
+    write.report(
+      GrossInlandConsumption,
+      file = path_mif,
+      model = "OPEN-PROM",
+      scenario = scenario_name,
+      append = TRUE
     )
     print(paste0("Saved mif file in ", path_mif))
   }
