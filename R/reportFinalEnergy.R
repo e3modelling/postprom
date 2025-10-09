@@ -278,7 +278,9 @@ reportFinalEnergy <- function(path, regions, years) {
     magpie_object <- mbind(magpie_object, DAC)
     
   } else {
-    message("VmConsFuelTechDACProd not found in GDX – skipping DAC block")
+    CDR<- new.magpie(regions, years, "Final Energy|Carbon Dioxide Removal", fill = 0)
+    CDR <- add_dimension(CDR, dim = 3.2, add = "unit", nm = "Mtoe")
+    magpie_object <- mbind(magpie_object, CDR)
   }
   
   return(magpie_object)

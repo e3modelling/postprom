@@ -379,6 +379,12 @@ reportEmissions <- function(path, regions, years) {
     VCap_total_plot <- add_dimension(VCap_total_plot, dim = 3.2, add = "unit", nm = "Mt CO2/yr")
     magpie_object <- mbind(magpie_object, VCap_total_plot)
     
+    Carbon_Geological_Storage <- add_dimension(Carbon_Geological_Storage, dim = 3.2, add = "unit", nm = "Mt CO2/yr")
+    other_sources <- add_dimension(other_sources, dim = 3.2, add = "unit", nm = "Mt CO2/yr")
+    biom_car_capture <- add_dimension(biom_car_capture, dim = 3.2, add = "unit", nm = "Mt CO2/yr")
+    
+    magpie_object <- mbind(magpie_object, Carbon_Geological_Storage,other_sources,biom_car_capture)
+    
     #######################################
     #cdr for plotting
     CDR <- - dimSums(VCapDAC, dim = 3) / 10^6
@@ -390,11 +396,7 @@ reportEmissions <- function(path, regions, years) {
     ###############################################
   }
   
-  Carbon_Geological_Storage <- add_dimension(Carbon_Geological_Storage, dim = 3.2, add = "unit", nm = "Mt CO2/yr")
-  other_sources <- add_dimension(other_sources, dim = 3.2, add = "unit", nm = "Mt CO2/yr")
-  biom_car_capture <- add_dimension(biom_car_capture, dim = 3.2, add = "unit", nm = "Mt CO2/yr")
-  
-  magpie_object <- mbind(magpie_object, DAC, Carbon_Geological_Storage,other_sources,biom_car_capture)
+  magpie_object <- mbind(magpie_object, DAC)
   
   getItems(VCapDAC_total, 3) <- NULL
   
