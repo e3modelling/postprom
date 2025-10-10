@@ -50,11 +50,9 @@ plotReport <- function(magpie_obj, plot_style = "bar",
   y_label <- strsplit(items, "\\|")[[1]][1]
   y_label <- paste0(y_label," [", units, "]")
   
-
-  drop_NA <- as.quitte(magpie_obj)
   
   plot <- plotTool(
-    data = filter(drop_NA, !is.na(drop_NA[["value"]])),
+    data = filter(as.quitte(magpie_obj), !is.na(value)),
     colors_vars = colors_vars,
     variable = variable_name,
     plot_style = plot_style,

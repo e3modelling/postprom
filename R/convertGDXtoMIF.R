@@ -90,22 +90,20 @@ convertGDXtoMIF_single <- function(.path, regions, years, path_mif, append,
 
   GrossInlandConsumption <- reportGrossInlandConsumption(path_gdx, regions, years)
   
+  #add dummy NA values for all regions and years
+  GrossInlandConsumption <- add_columns(GrossInlandConsumption, addnm = setdiff(getRegions(reports),getRegions(GrossInlandConsumption)), dim = 1, fill = NA)
+  GrossInlandConsumption <- add_columns(GrossInlandConsumption, addnm = setdiff(getYears(reports),getYears(GrossInlandConsumption)), dim = 2, fill = NA)
+  
   if (aggregate == TRUE) {
     
-    reports <- aggregateMIF(report = reports)
-    
-    GrossInlandConsumption <- add_columns(GrossInlandConsumption, addnm = setdiff(getRegions(reports),getRegions(GrossInlandConsumption)), dim = 1, fill = NA)
-    GrossInlandConsumption <- add_columns(GrossInlandConsumption, addnm = setdiff(getYears(reports),getYears(GrossInlandConsumption)), dim = 2, fill = NA)
-    reports <- mbind(reports, GrossInlandConsumption)
+   reports <- aggregateMIF(report = reports)
     
   } else {
     
-    GrossInlandConsumption <- add_columns(GrossInlandConsumption, addnm = setdiff(getRegions(reports),getRegions(GrossInlandConsumption)), dim = 1, fill = NA)
-    GrossInlandConsumption <- add_columns(GrossInlandConsumption, addnm = setdiff(getYears(reports),getYears(GrossInlandConsumption)), dim = 2, fill = NA)
     reports <- add_columns(reports, addnm = setdiff(getRegions(GrossInlandConsumption),getRegions(reports)), dim = 1, fill = NA)
-    reports <- mbind(reports, GrossInlandConsumption)
-    
   }
+  
+  reports <- mbind(reports, GrossInlandConsumption)
 
   if (emissions == TRUE) generateEmissionsFile(.path, reports, years, scenario_name)
 
