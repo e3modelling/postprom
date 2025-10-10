@@ -44,6 +44,8 @@ Final Energy|Carbon Dioxide Removal,CDR,blue,bar
 Emissions|CO2|Energy|Demand|Bunkers,Bunkers,yellow,bar
 Emissions|CO2|Energy|Supply,Supply,#bcbc6d,bar
 Emissions|CO2|Cumulated,Cumulated,#661a00,bar
+Emissions|CO2|Budget1p5C,Budget1p5C,red,dLine
+Emissions|CO2|Budget2C,Budget2C,red,dLine
 Emissions|CO2|,Total,red,dLine
 Emissions|CO2|Carbon Dioxide Removal,CDR,#87e6a4,bar
 Emissions|CO2|AFOLU,AFOLU,#595933,bar

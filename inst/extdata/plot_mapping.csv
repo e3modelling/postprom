@@ -9,6 +9,8 @@ Emissions|CO2|Total,Industrial Processes
 Emissions|CO2|Total,Carbon Dioxide Removal
 Emissions|CO2|Total,
 Emissions|CO2|Cumulated,Cumulated
+Emissions|CO2|Cumulated,Budget1p5C
+Emissions|CO2|Cumulated,Budget2C
 Final Energy|Sector,Carbon Dioxide Removal
 Final Energy|Sector,Industry
 Final Energy|Sector,Transportation

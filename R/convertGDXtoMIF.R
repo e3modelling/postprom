@@ -96,7 +96,19 @@ convertGDXtoMIF_single <- function(.path, regions, years, path_mif, append,
   
   if (aggregate == TRUE) {
     
-   reports <- aggregateMIF(report = reports)
+    reports <- aggregateMIF(report = reports)
+
+    # Add carbon budget values (1p5C, 2C) to the magpie object and add cumulated emissions before 2020 
+    # Carbon budget values for 1p5C and 2C and for probability 67%
+    carbonBudget1p5C <- reports[, , "Emissions|CO2|Cumulated", drop = FALSE]
+    carbonBudget1p5C[] <- NA
+    dimnames(carbonBudget1p5C)[[3]] <- "Emissions|CO2|Budget1p5C.Gt CO2/yr"  
+    carbonBudget1p5C['World',,] <- 400 + as.numeric(reports["World", 2019, "Emissions|CO2|Cumulated.Gt CO2"])
+    carbonBudget2C <- reports[, , "Emissions|CO2|Cumulated", drop = FALSE]
+    carbonBudget2C[] <- NA
+    dimnames(carbonBudget2C)[[3]] <- "Emissions|CO2|Budget2C.Gt CO2/yr"  
+    carbonBudget2C['World',,] <- 1150 + as.numeric(reports["World", 2019, "Emissions|CO2|Cumulated.Gt CO2"])
+    reports <- mbind(reports, carbonBudget1p5C, carbonBudget2C)
     
   } else {
     
