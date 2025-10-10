@@ -52,3 +52,4 @@ Emissions|CO2|Energy|Demand|Industry,Industry,orange,bar
 Emissions|CO2|Energy|Demand|Residential and Commercial,Res and Com,#0000FF,bar
 Emissions|CO2|Energy|Demand|Transportation,Transportation,#000000,bar
 Price|Carbon|,Price|Carbon,#661a00,dLine
+Gross Inland Consumption|Biomass and Waste|,Biomass,#661a01,dLine

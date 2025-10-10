@@ -100,6 +100,10 @@ reportGrossInlandConsumption <- function(path, regions, years) {
   
   V03ConsGrssInl_BMSWAS <- add_dimension(V03ConsGrssInl_BMSWAS, dim = 3.2, add = "unit", nm = "EJ")
   getItems(V03ConsGrssInl_BMSWAS, 1) <- "World"
+  
+  V03ConsGrssInl_BMSWAS_for_plot <- V03ConsGrssInl_BMSWAS
+  getItems(V03ConsGrssInl_BMSWAS_for_plot, 3.1) <- "Gross Inland Consumption|Biomass and Waste|"
+  V03ConsGrssInl_BMSWAS <- mbind(V03ConsGrssInl_BMSWAS, V03ConsGrssInl_BMSWAS_for_plot)
 
   return(V03ConsGrssInl_BMSWAS)
 }
