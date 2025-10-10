@@ -90,7 +90,22 @@ convertGDXtoMIF_single <- function(.path, regions, years, path_mif, append,
 
   GrossInlandConsumption <- reportGrossInlandConsumption(path_gdx, regions, years)
   
-  if (aggregate == TRUE) reports <- aggregateMIF(report = reports)
+  if (aggregate == TRUE) {
+    
+    reports <- aggregateMIF(report = reports)
+    
+    GrossInlandConsumption <- add_columns(GrossInlandConsumption, addnm = setdiff(getRegions(reports),getRegions(GrossInlandConsumption)), dim = 1, fill = NA)
+    GrossInlandConsumption <- add_columns(GrossInlandConsumption, addnm = setdiff(getYears(reports),getYears(GrossInlandConsumption)), dim = 2, fill = NA)
+    reports <- mbind(reports, GrossInlandConsumption)
+    
+  } else {
+    
+    GrossInlandConsumption <- add_columns(GrossInlandConsumption, addnm = setdiff(getRegions(reports),getRegions(GrossInlandConsumption)), dim = 1, fill = NA)
+    GrossInlandConsumption <- add_columns(GrossInlandConsumption, addnm = setdiff(getYears(reports),getYears(GrossInlandConsumption)), dim = 2, fill = NA)
+    reports <- add_columns(reports, addnm = setdiff(getRegions(GrossInlandConsumption),getRegions(reports)), dim = 1, fill = NA)
+    reports <- mbind(reports, GrossInlandConsumption)
+    
+  }
 
   if (emissions == TRUE) generateEmissionsFile(.path, reports, years, scenario_name)
 
@@ -101,13 +116,6 @@ convertGDXtoMIF_single <- function(.path, regions, years, path_mif, append,
       model = "OPEN-PROM",
       scenario = scenario_name,
       append = append
-    )
-    write.report(
-      GrossInlandConsumption,
-      file = path_mif,
-      model = "OPEN-PROM",
-      scenario = scenario_name,
-      append = TRUE
     )
     print(paste0("Saved mif file in ", path_mif))
   }
