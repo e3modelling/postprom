@@ -95,15 +95,13 @@ convertGDXtoMIF_single <- function(.path, regions, years, path_mif, append,
   GrossInlandConsumption <- add_columns(GrossInlandConsumption, addnm = setdiff(getYears(reports),getYears(GrossInlandConsumption)), dim = 2, fill = NA)
   
   if (aggregate == TRUE) {
-    
-   reports <- aggregateMIF(report = reports)
-    
+      reports <- aggregateMIF(report = reports)
   } else {
-    
     reports <- add_columns(reports, addnm = setdiff(getRegions(GrossInlandConsumption),getRegions(reports)), dim = 1, fill = NA)
   }
-  
   reports <- mbind(reports, GrossInlandConsumption)
+  reports <- mbind(reports, reportBudget(magpieObject=reports,aggregate, budgetBaseYear = 2019,
+                       budget1p5= 400, budget2c= 1150, probLabel= "67%"))
 
   if (emissions == TRUE) generateEmissionsFile(.path, reports, years, scenario_name)
 
