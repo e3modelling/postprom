@@ -14,10 +14,10 @@
 #' @importFrom magclass getItems getNames add_dimension mbind
 #' @export
 reportPE <- function(path, regions, years) {
-  vars = c("V03ProdPrimary", "BALEF2EFS")
+  vars = c("V03ConsGrssInl", "BALEF2EFS")
   values <- readGDX(path, vars, field = 'l')
 
-  VProdPrimary <- values$V03ProdPrimary[regions, years, ]
+  V03ConsGrssInl <- values$V03ConsGrssInl[regions, years, ]
   sets <- values$BALEF2EFS
   names(sets) <- c("BAL", "EF")
 
@@ -34,8 +34,8 @@ reportPE <- function(path, regions, years) {
     gsub(pattern, replacements[pattern], x)
   }, names(replacements), init = sets$BAL)
 
-    VProdPrimary <- toolAggregate(
-    VProdPrimary[ , , unique(sets$EF)],
+  V03ConsGrssInl <- toolAggregate(
+    V03ConsGrssInl[ , , unique(sets$EF)],
     dim = 3,
     rel = sets,
     from = "EF",
@@ -43,10 +43,10 @@ reportPE <- function(path, regions, years) {
   )
 
   # Update item names
-  getItems(VProdPrimary, 3) <- paste0("Primary Energy|", getItems(VProdPrimary, 3))
-  getNames(VProdPrimary)[getNames(VProdPrimary) == "Primary Energy|Total"] <- "Primary Energy"
+  getItems(V03ConsGrssInl, 3) <- paste0("Primary Energy|", getItems(V03ConsGrssInl, 3))
+  getNames(V03ConsGrssInl)[getNames(V03ConsGrssInl) == "Primary Energy|Total"] <- "Primary Energy"
 
   # Add dimensions and bind to magpie object
-  VProdPrimary <- add_dimension(VProdPrimary, dim = 3.2, add = "unit", nm = "Mtoe")
-  return(VProdPrimary)
+  V03ConsGrssInl <- add_dimension(V03ConsGrssInl, dim = 3.2, add = "unit", nm = "Mtoe")
+  return(V03ConsGrssInl)
 }
