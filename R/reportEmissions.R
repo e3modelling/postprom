@@ -23,6 +23,9 @@ reportEmissions <- function(path, regions, years) {
   
   magpie_object <- NULL
   
+  reg_map <- jsonlite::read_json(paste0(dirname(path),"/metadata.json"))[["Model Information"]][["Region Mapping"]][[1]]
+  setConfig(regionmapping = reg_map)
+  
   ########## SBS
   desc_map <- c(
     IS = "Iron and Steel",
@@ -64,7 +67,7 @@ reportEmissions <- function(path, regions, years) {
   
   fscenario <- readGDX(path, "fscenario")
   # Get supplementary emissions from NAVIGATE through mrprom
-  Navigate_Emissions <- calcOutput("NavigateEmissions", aggregate = TRUE, regionmapping = "regionmappingOPDEV3.csv")
+  Navigate_Emissions <- calcOutput("NavigateEmissions", aggregate = TRUE, regionmapping = reg_map)
 
   if (fscenario %in% c(0, 1)) {
     Navigate_Emissions <- Navigate_Emissions[, , "SUP_NPi_Default"][regions, years, ]
@@ -81,7 +84,7 @@ reportEmissions <- function(path, regions, years) {
   Land_Use <- Land_Use[,,c("Carbon Removal|Land Use")]
   Land_Use <- Land_Use[,,"REMIND-MAgPIE 3_2-4_6"]
   
-  mapping <- toolGetMapping("regionmappingOPDEV3.csv",
+  mapping <- toolGetMapping(reg_map,
                             type = "regional",
                             where = "mrprom")
   
@@ -103,7 +106,9 @@ reportEmissions <- function(path, regions, years) {
   
   Navigate_Emissions <- mbind(Navigate_Emissions, Land_Use)
   
-  Navigate_Emissions <- extractAggregatedData(fscenario,Navigate_Emissions,years)
+  if (reg_map == "regionmappingOPDEV3.csv") {
+    Navigate_Emissions <- extractAggregatedData(fscenario,Navigate_Emissions,years)
+  }
 
   Navigate_Emissions <- collapseDim(Navigate_Emissions, 3.1)
   Navigate_Emissions <- collapseDim(Navigate_Emissions, 3.1)
