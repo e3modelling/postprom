@@ -14,12 +14,16 @@ reportBudget(
 )
 }
 \arguments{
-\item{path}{The file path to the GDX data file.}
+\item{budgetBaseYear}{The cumulated CO2 emissions in the year before 2020 where the budget begins.}
 
-\item{regions}{A character vector of region names to filter data.}
+\item{budget1p5}{The carbon budget for CO2 emissions in Gt CO2 reaching 1.5C until 2100.}
+
+\item{budget2c}{The carbon budget for CO2 emissions in Gt CO2 reaching 2C until 2100.}
+
+\item{probLabel}{The probability for the carbon budgets.}
 }
 \value{
-A magpie object containing processed population data with proper units.
+A magpie object containing carbon budgets.
 }
 \description{
 This function adds two variables in the magpie object 
