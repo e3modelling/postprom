@@ -10,6 +10,7 @@
 #' @param aggregate Optional; a logical value indicating whether to aggregate data. Defaults to `TRUE`.
 #' @param save Optional; a logical value indicating whether to save the output. Defaults to `TRUE`.
 #' @param emissions Optional; a logical value indicating whether to generate a separate emissions csv file for running climate assessment. Defaults to `TRUE`.
+#' @param Validation_data_for_plots Optional; a logical value indicating whether to add to plots validation data. Defaults to `TRUE`.
 #'
 #' @return A list of scenario reports generated from the provided GDX files.
 #' @details
@@ -33,7 +34,8 @@
 #' @export
 convertGDXtoMIF <- function(.path, mif_name, regions = NULL, years = NULL,
                             fullValidation = TRUE, scenario_name = NULL,
-                            aggregate = TRUE, emissions = TRUE, save = TRUE) {
+                            aggregate = TRUE, emissions = TRUE, save = TRUE,
+                            Validation_data_for_plots = TRUE) {
   if (is.null(regions)) regions <- readGDX(file.path(.path, "blabla.gdx"), "runCYL")
   if (is.null(years)) {
     years <- as.character(c(2010:2020))
@@ -48,6 +50,8 @@ convertGDXtoMIF <- function(.path, mif_name, regions = NULL, years = NULL,
     if (length(.path) > 1) paste0("comparison_", current_time, "_", mif_name) else mif_name
   )
 
+  if (Validation_data_for_plots == TRUE) val_data <- readValidationMIF(.path[1])
+  
   scenarios_reports <- mapply(function(path, scenario) {
     convertGDXtoMIF_single(
       .path = path,
@@ -65,7 +69,8 @@ convertGDXtoMIF <- function(.path, mif_name, regions = NULL, years = NULL,
   )
 
   if (fullValidation == TRUE) appendValidationMIF(.path[1], path_mif)
-  return(scenarios_reports)
+  
+  return(c(scenarios_reports, val_data))
 }
 # Helpers -----------------------------------------------------------------
 convertGDXtoMIF_single <- function(.path, regions, years, path_mif, append,
@@ -165,4 +170,20 @@ appendValidationMIF <- function(runpath, path_mif) {
       base_dir
     ))
   }
+}
+
+readValidationMIF <- function(runpath) {
+  base_dir <- dirname(dirname(runpath[1]))
+  validation_path <- file.path(base_dir, "fullValidation2.mif")
+  
+  if (file.exists(validation_path)) {
+    fullVALIDATION2 <- read.report(validation_path)
+  } else {
+    message(paste0(
+      "Skipping validation data for plots: 'fullValidation2.mif' not found in ",
+      base_dir
+    ))
+  }
+  fullVALIDATION2 <- fullVALIDATION2[["historical"]]
+  return(fullVALIDATION2)
 }
