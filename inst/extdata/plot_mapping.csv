@@ -27,6 +27,7 @@ Final Energy|Fuel,Electricity
 Final Energy|Fuel,Liquids
 Final Energy|Fuel,Heat
 Final Energy|Fuel,Biomass
+Final Energy|Fuel,VAL
 Secondary Energy|Electricity|Total,Solar
 Secondary Energy|Electricity|Total,Oil
 Secondary Energy|Electricity|Total,Wind
