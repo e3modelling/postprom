@@ -1,4 +1,5 @@
 X,legend,color,style
+Capacity|Electricity|VAL,EMBER,black,dLine
 Capacity|Electricity|Solar,Solar,#ffcc00,bar
 Capacity|Electricity|Oil,Oil,#663a00,bar
 Capacity|Electricity|Wind,Wind,#337fff,bar
@@ -13,6 +14,7 @@ Capacity|Electricity|PGAWNO,PGAWNO,#334cff,bar
 Capacity|Electricity|PGSOL,PGSOL,#ffe600,bar
 Capacity|Electricity|Hydro,Hydro,#07cbf2,bar
 Capacity|Electricity|CHP,CHP,#87e6a4,bar
+Secondary Energy|Electricity|VAL,EMBER,black,dLine
 Secondary Energy|Electricity|PGAWND,PGAWND,#8800ff,bar
 Secondary Energy|Electricity|PGAWNO,PGAWNO,#334cff,bar
 Secondary Energy|Electricity|PGCSP,PGCSP,#ffb400,bar
@@ -41,6 +43,9 @@ Final Energy|Transportation,Transportation,black,bar
 Final Energy|Residential and Commercial,Res and Com,red,bar
 Final Energy|Biomass,Biomass,#00b219,bar
 Final Energy|Carbon Dioxide Removal,CDR,blue,bar
+Final Energy|VAL,IEA,black,dLine
+Final Energy|Industry|VAL,Industry|IEA,black,dLine
+Final Energy|Transportation|VAL,Transportation|IEA,black,dLine
 Emissions|CO2|Energy|Demand|Bunkers,Bunkers,yellow,bar
 Emissions|CO2|Energy|Supply,Supply,#bcbc6d,bar
 Emissions|CO2|Cumulated,Cumulated,#661a00,bar
