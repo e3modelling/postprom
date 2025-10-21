@@ -107,7 +107,10 @@ reportEmissions <- function(path, regions, years) {
   Navigate_Emissions <- mbind(Navigate_Emissions, Land_Use)
   
   if (reg_map == "regionmappingOPDEV3.csv") {
-    Navigate_Emissions <- extractAggregatedData(fscenario,Navigate_Emissions,years)
+    Navigate_Emissions <- extractAggregatedData(fscenario,Navigate_Emissions,years,onlyRWO = FALSE)
+  }
+  else {
+    Navigate_Emissions <- extractAggregatedData(fscenario,Navigate_Emissions,years,onlyRWO = TRUE)
   }
 
   Navigate_Emissions <- collapseDim(Navigate_Emissions, 3.1)
@@ -659,7 +662,7 @@ reportEmissions <- function(path, regions, years) {
   return(magpie_object)
 }
 # Helpers -------------------------------------------------------------
-extractAggregatedData <- function(scenario,x,years, ...) {
+extractAggregatedData <- function(scenario,x,years,onlyRWO=FALSE, ...) {
   
   map <- toolGetMapping(name = "NavigateEmissions.csv",
                       type = "sectoral",
@@ -697,28 +700,49 @@ extractAggregatedData <- function(scenario,x,years, ...) {
   "REMIND 3_2|Other Asia",
   "REMIND 3_2|Russia and Reforming Economies",
   "REMIND 3_2|Sub-Saharan Africa"
-)
-
-  xa<- xa[desiredRegions,,]
-  # Mapping
-  RegionMap <- c(
-  "REMIND 3_2|Canada, Australia, New Zealand" = "CAZ",
-  "REMIND 3_2|EU 28"                           = "ELL",
-  "REMIND 3_2|Latin America and the Caribbean" = "LAM",
-  "REMIND 3_2|Middle East and North Africa"   = "MEA",
-  "REMIND 3_2|Non-EU28 Europe"                = "NEU",
-  "REMIND 3_2|Other Asia"                      = "OAS",
-  "REMIND 3_2|Russia and Reforming Economies"  = "REF",
-  "REMIND 3_2|Sub-Saharan Africa"             = "SSA"
   )
 
-  commonRegions <- intersect(RegionMap[getRegions(xa)], getRegions(x))
-  xaRegions <- names(RegionMap)[RegionMap %in% commonRegions]
-  matchRegions <- RegionMap[xaRegions]
+  # If only RWO is needed (e.g., DEV mode), then substract the regions (e.g., USA) from the world.
+  if (onlyRWO==FALSE) {
+    xa<- xa[desiredRegions,,]
+    # Mapping
+    RegionMap <- c(
+    "REMIND 3_2|Canada, Australia, New Zealand" = "CAZ",
+    "REMIND 3_2|EU 28"                           = "ELL",
+    "REMIND 3_2|Latin America and the Caribbean" = "LAM",
+    "REMIND 3_2|Middle East and North Africa"   = "MEA",
+    "REMIND 3_2|Non-EU28 Europe"                = "NEU",
+    "REMIND 3_2|Other Asia"                      = "OAS",
+    "REMIND 3_2|Russia and Reforming Economies"  = "REF",
+    "REMIND 3_2|Sub-Saharan Africa"             = "SSA"
+    )
 
-  for (i in seq_along(matchRegions)) {
-    x[matchRegions[i], , ] <- xa[xaRegions[i], , ]
+    commonRegions <- intersect(RegionMap[getRegions(xa)], getRegions(x))
+    xaRegions <- names(RegionMap)[RegionMap %in% commonRegions]
+    matchRegions <- RegionMap[xaRegions]
+
+    for (i in seq_along(matchRegions)) {
+      x[matchRegions[i], , ] <- xa[xaRegions[i], , ]
+    }
   }
+  else {
+    extracted <- xa['World',,]
+
+    # Check if 'RWO' exists as a region and then compute RWO as World - sum of countries
+    if ("RWO" %in% getItems(x,1)) {
+      
+      withoutRWO <- x[!getItems(x,1) %in% "RWO", , ]
+      mainCountriesSum <- dimSums(withoutRWO, dim = 1)
+      newRWO <- extracted - mainCountriesSum
+      getItems(newRWO,1) <- "RWO"
+      
+      x <- mbind(withoutRWO, newRWO)
+      
+    } else {
+      print("Rest of the world (RWO) is missing from magpie object!")
+    }
+  }
+
   # set NA to 0
   x[is.na(x)] <- 10^-6
 
