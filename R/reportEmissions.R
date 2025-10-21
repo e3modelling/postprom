@@ -107,10 +107,9 @@ reportEmissions <- function(path, regions, years) {
   Navigate_Emissions <- mbind(Navigate_Emissions, Land_Use)
   
   if (reg_map == "regionmappingOPDEV3.csv") {
-    Navigate_Emissions <- extractAggregatedData(fscenario,Navigate_Emissions,years,onlyRWO = FALSE)
-  }
-  else {
-    Navigate_Emissions <- extractAggregatedData(fscenario,Navigate_Emissions,years,onlyRWO = TRUE)
+    Navigate_Emissions <- extractAggregatedData(fscenario, Navigate_Emissions, years, onlyRWO = FALSE)
+  } else {
+    Navigate_Emissions <- extractAggregatedData(fscenario, Navigate_Emissions, years, onlyRWO = TRUE)
   }
 
   Navigate_Emissions <- collapseDim(Navigate_Emissions, 3.1)
