@@ -23,7 +23,7 @@ ValidationMif <- function(.path, reg_map, mif_name = "fullValidation2.mif", Vali
   if (Validation_data_for_plots == TRUE) val_data <- ValidationMif2(.path[1], mif_name)
   
   if (reg_map != "regionmappingOPDEV3.csv") {
-    val_data <- NULL
+    reports_val <- NULL
   } else {
     # rename GLO to World
     reports_val <- lapply(val_data, function(x) {
