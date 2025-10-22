@@ -57,7 +57,7 @@ batchPlotReport <- function(report, metadata, save_pdf) {
 # Helpers -------------------------------------------------------------
 plotGroups <- function(vars, name, report, ...) {
   vars <- paste0(sub("\\|[^|]*$", "|", name), vars) # retrieve variable names
-  magpie_obj <- report[, , vars]
+  magpie_obj <- report[, , unique(vars)]
   plot <- plotReport(magpie_obj)
   return(plot)
 }

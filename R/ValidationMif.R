@@ -20,42 +20,47 @@
 #' @export
 ValidationMif <- function(.path, reg_map, mif_name = "fullValidation2.mif", Validation_data_for_plots = TRUE) {
   
-  if (Validation_data_for_plots == TRUE) val_data <- ValidationMif2(.path[1], mif_name)
-  
-  if (reg_map != "regionmappingOPDEV3.csv") {
-    reports_val <- NULL
-  } else {
-    # rename GLO to World
-    reports_val <- lapply(val_data, function(x) {
-      regions <- getRegions(x)
-      if ("GLO" %in% regions) {
-        getRegions(x)[regions == "GLO"] <- "World"
-      }
-      x
-    })
-    
-    region_sig <- function(x) paste(sort(getRegions(x)), collapse = "|")
-    sigs <- vapply(reports_val, region_sig, FUN.VALUE = character(1))
-    
-    # Find the most common region set
-    most_common_sig <- names(sort(table(sigs), decreasing = TRUE))[1]
-    
-    # Keep only magpie objects with that region set
-    same_region_list <- reports_val[sigs == most_common_sig]
-    
-    # Combine them
-    if (length(same_region_list) > 1) {
-      combined_all <- do.call(mbind, same_region_list)
-    } else if (length(same_region_list) == 1) {
-      combined_all <- same_region_list[[1]]
+  if (Validation_data_for_plots == TRUE) {
+    val_data <- ValidationMif2(.path[1], mif_name)
+    if (reg_map != "regionmappingOPDEV3.csv") {
+      reports_val <- NULL
     } else {
-      combined_all <- NULL
-      warning("No magpie objects with identical regions found.")
+      # rename GLO to World
+      reports_val <- lapply(val_data, function(x) {
+        regions <- getRegions(x)
+        if ("GLO" %in% regions) {
+          getRegions(x)[regions == "GLO"] <- "World"
+        }
+        x
+      })
+      
+      region_sig <- function(x) paste(sort(getRegions(x)), collapse = "|")
+      sigs <- vapply(reports_val, region_sig, FUN.VALUE = character(1))
+      
+      # Find the most common region set
+      most_common_sig <- names(sort(table(sigs), decreasing = TRUE))[1]
+      
+      # Keep only magpie objects with that region set
+      same_region_list <- reports_val[sigs == most_common_sig]
+      
+      # Combine them
+      if (length(same_region_list) > 1) {
+        combined_all <- do.call(mbind, same_region_list)
+      } else if (length(same_region_list) == 1) {
+        combined_all <- same_region_list[[1]]
+      } else {
+        combined_all <- NULL
+        warning("No magpie objects with identical regions found.")
+      }
+      reports_val <- combined_all
+      reports_val <- as.quitte(reports_val) %>% as.magpie()
+      getItems(reports_val, 3.1) <- paste0(getItems(reports_val, 3.1), "|VAL")
+      }
+  } else {
+    reports_val <- NULL
     }
-    reports_val <- combined_all
-    reports_val <- as.quitte(reports_val) %>% as.magpie()
-    getItems(reports_val, 3.1) <- paste0(getItems(reports_val, 3.1), "|VAL")
-  }
+  
+ 
   
   return(reports_val)
 }
