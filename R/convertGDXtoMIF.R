@@ -91,7 +91,11 @@ convertGDXtoMIF_single <- function(.path, regions, years, path_mif, append,
   reports <- mbind(reports, reportCapacityElectricity(path_gdx, regions, years))
   reports <- mbind(reports, reportACTV(path_gdx, regions, years))
   reports <- mbind(reports, reportCapacityAdditions(path_gdx, regions, years))
-  reports <- mbind(reports, reportFuelConsTargets(path_gdx, regions, years))
+  
+  reg_map <- jsonlite::read_json(paste0(dirname(path_gdx),"/metadata.json"))[["Model Information"]][["Region Mapping"]][[1]]
+  if (reg_map == "regionmappingOPDEV3.csv") {
+    reports <- mbind(reports, reportFuelConsTargets(path_gdx, regions, years))
+  }
 
   GrossInlandConsumption <- reportGrossInlandConsumption(path_gdx, regions, years)
   
