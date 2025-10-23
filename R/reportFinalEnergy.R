@@ -113,17 +113,24 @@ reportFinalEnergy <- function(path, regions, years) {
   sets4 <- readGDX(path, "SECtoEF")
 
   # OPEN-PROM sectors
-  sector <- c("TRANSE", "INDSE", "DOMSE", "NENSE")
-  sector_name <- c("Transportation", "Industry", "Residential and Commercial", "Non Energy and Bunkers")
+  # 2 times "NENSE" to separate "Non Energy" and "Bunkers"
+  sector <- c("TRANSE", "INDSE", "DOMSE", "NENSE", "NENSE")
+  sector_name <- c("Transportation", "Industry", "Residential and Commercial", "Non Energy", "Bunkers")
 
   # variables of OPEN-PROM related to sectors
-  blabla_var <- c("VmDemFinEneTranspPerFuel", "VmConsFuel", "VmConsFuel", "VmConsFuel")
+  blabla_var <- c("VmDemFinEneTranspPerFuel", "VmConsFuel", "VmConsFuel", "VmConsFuel", "VmConsFuel")
 
   for (y in 1:length(sector)) {
     # read GAMS set used for reporting of Final Energy different for each sector
     sets6 <- readGDX(path, sector[y]) %>% as.data.frame()
     names(sets6) <- sector[y]
-
+    # y=4 for NENSE-Non Energy, y=5 for NENSE-Bunkers
+    if (y == 4) {
+      sets6 <- as.data.frame(sets6[c(2,3),1])
+    } else if (y == 5) {
+      sets6 <- as.data.frame(sets6[1,1])
+      names(sets6) <- "BUNKSE"
+    }
     var_gdx <- readGDX(path, blabla_var[y], field = "l")[regions, years, ]
     FCONS_by_sector_and_EF_open <- var_gdx[, , sets6[, 1]]
 
