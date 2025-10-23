@@ -619,6 +619,15 @@ reportEmissions <- function(path, regions, years) {
   supply_Gases <- dimSums(supply_Gases, 3, na.rm = TRUE)
   supply_Heat <- dimSums(supply_Heat, 3, na.rm = TRUE)
   
+  # add VmTransfInputCHPlants to Emissions|CO2|Energy|Supply|Heat
+  VmTransfInputCHPlants <- readGDX(path, "VmTransfInputCHPlants", field = 'l')[regions, years, ]
+  
+  if (!is.null(VmTransfInputCHPlants)) {
+    VmTransfInputCHPlants <- VmTransfInputCHPlants * iCo2EmiFac[, , "PG"][, , getItems(VmTransfInputCHPlants, 3)]
+    VmTransfInputCHPlants <- dimSums(VmTransfInputCHPlants, 3, na.rm = TRUE)
+    supply_Heat <- supply_Heat + VmTransfInputCHPlants
+  }
+  
   getItems(supply_Liquids, 3) <- paste0("Emissions|CO2|Energy|Supply|Liquids")
   getItems(supply_Solids, 3) <- paste0("Emissions|CO2|Energy|Supply|Solids")
   getItems(supply_Gases, 3) <- paste0("Emissions|CO2|Energy|Supply|Gases")
