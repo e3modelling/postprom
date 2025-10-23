@@ -44,8 +44,8 @@ Final Energy|Residential and Commercial,Res and Com,red,bar
 Final Energy|Biomass,Biomass,#00b219,bar
 Final Energy|Carbon Dioxide Removal,CDR,blue,bar
 Final Energy|VAL,IEA,red,dLine
-Final Energy|Industry|VAL,Industry|IEA,orange,dLine
-Final Energy|Transportation|VAL,Transportation|IEA,black,dLine
+Final Energy|Industry|VAL,Industry|IEA,purple,dLine
+Final Energy|Transportation|VAL,Transportation|IEA,green,dLine
 Emissions|CO2|Energy|Demand|Bunkers,Bunkers,yellow,bar
 Emissions|CO2|Energy|Supply,Supply,#bcbc6d,bar
 Emissions|CO2|Cumulated,Cumulated,#661a00,bar
