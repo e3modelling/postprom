@@ -169,8 +169,8 @@ reportEmissions <- function(path, regions, years) {
   hydrogen <- VConsFuelTechH2Prod[, , paste(H2TECHEFtoEF[[1]],H2TECHEFtoEF[[2]],sep=".")] * iCo2EmiFac[, , "H2P"][, , unique(H2TECHEFtoEF$EF)]
   hydrogen <- dimSums(hydrogen, 3, na.rm = TRUE)
   # input to district heating plants
-  sum3 <- VTransfInputDHPlants * iCo2EmiFac[, , "PG"][, , getItems(VTransfInputDHPlants, 3)]
-  sum3 <- dimSums(sum3, 3, na.rm = TRUE)
+  district_heating <- VTransfInputDHPlants * iCo2EmiFac[, , "PG"][, , getItems(VTransfInputDHPlants, 3)]
+  district_heating <- dimSums(district_heating, 3, na.rm = TRUE)
   # consumption of energy branch
   sum4 <- VConsFiEneSec * iCo2EmiFac[, , "PG"][, , getItems(VConsFiEneSec, 3)]
   sum4 <- dimSums(sum4, 3, na.rm = TRUE)
@@ -412,8 +412,26 @@ reportEmissions <- function(path, regions, years) {
   #################################################
   
   ############## TOTAL  ##############
+  
+  # add VmTransfInputCHPlants to Emissions|CO2|Energy|Supply|Heat
+  VmTransfInputCHPlants <- readGDX(path, "VmTransfInputCHPlants", field = 'l')[regions, years, ]
+  
+  district_heating <- dimSums(district_heating,3)
+  
+  if (!is.null(VmTransfInputCHPlants)) {
+    VmTransfInputCHPlants <- VmTransfInputCHPlants * iCo2EmiFac[, , "PG"][, , getItems(VmTransfInputCHPlants, 3)]
+    VmTransfInputCHPlants <- dimSums(VmTransfInputCHPlants, 3, na.rm = TRUE)
+    supply_Heat <- VmTransfInputCHPlants + district_heating
+    
+    getItems(VmTransfInputCHPlants, 3) <- "Emissions|CO2|Energy|Supply|Heat|CHPlants"
+    VmTransfInputCHPlants <- add_dimension(VmTransfInputCHPlants, dim = 3.2, add = "unit", nm = "Mt CO2/yr")
+    magpie_object <- mbind(magpie_object, VmTransfInputCHPlants)
+    
+  } else {
+    supply_Heat <- district_heating
+  }
 
-  total_CO2 <- sum1 + sum2 + sum3 + sum4 + sum5 - sum6 + sum7 + remind + hydrogen - hydrogen_CCS + (VCapDAC_total / 10^6) - Industry_CCS
+  total_CO2 <- sum1 + sum2 + supply_Heat + sum4 + sum5 - sum6 + sum7 + remind + hydrogen - hydrogen_CCS + (VCapDAC_total / 10^6) - Industry_CCS
 
   getItems(total_CO2, 3) <- "Emissions|CO2"
 
@@ -560,11 +578,11 @@ reportEmissions <- function(path, regions, years) {
 
   # Emissions|CO2|Energy|Supply
   # input to power generation sector, sum2
-  # input to district heating plants, sum3
+  # input to district heating plants + VmTransfInputCHPlants = supply_Heat
   # consumption of energy branch, sum4
   # CO2 captured by CCS plants in power generation, sum6
   # Emissions|CO2|Energy|Supply|Hydrogen
-  sum_Supply <- sum2 + sum3 + sum4 - sum6 + Emissions_Supply_Hydrogen
+  sum_Supply <- sum2 + supply_Heat + sum4 - sum6 + Emissions_Supply_Hydrogen
 
   getItems(sum_Supply, 3) <- "Emissions|CO2|Energy|Supply"
 
@@ -584,9 +602,7 @@ reportEmissions <- function(path, regions, years) {
   carbon_capture_electricity <- add_dimension(carbon_capture_electricity, dim = 3.2, add = "unit", nm = "Mt CO2/yr")
   magpie_object <- mbind(magpie_object, carbon_capture_electricity)
   
-  district_heating <- sum3
-  
-  getItems(district_heating, 3) <- "Emissions|CO2|Energy|Supply|District Heating"
+  getItems(district_heating, 3) <- "Emissions|CO2|Energy|Supply|Heat|District Heating"
   district_heating <- add_dimension(district_heating, dim = 3.2, add = "unit", nm = "Mt CO2/yr")
   magpie_object <- mbind(magpie_object, district_heating)
   
@@ -612,21 +628,12 @@ reportEmissions <- function(path, regions, years) {
   supply_Liquids <- supply_category[,,Liquids[["EF"]]]
   supply_Solids <- supply_category[,,Solids[["EF"]]]
   supply_Gases <- supply_category[,,Gases[["EF"]]]
-  supply_Heat <- supply_category[,,Heat[["EF"]]]
+  #supply_Heat <- supply_category[,,Heat[["EF"]]]
   
   supply_Liquids <- dimSums(supply_Liquids, 3, na.rm = TRUE)
   supply_Solids <- dimSums(supply_Solids, 3, na.rm = TRUE)
   supply_Gases <- dimSums(supply_Gases, 3, na.rm = TRUE)
-  supply_Heat <- dimSums(supply_Heat, 3, na.rm = TRUE)
-  
-  # add VmTransfInputCHPlants to Emissions|CO2|Energy|Supply|Heat
-  VmTransfInputCHPlants <- readGDX(path, "VmTransfInputCHPlants", field = 'l')[regions, years, ]
-  
-  if (!is.null(VmTransfInputCHPlants)) {
-    VmTransfInputCHPlants <- VmTransfInputCHPlants * iCo2EmiFac[, , "PG"][, , getItems(VmTransfInputCHPlants, 3)]
-    VmTransfInputCHPlants <- dimSums(VmTransfInputCHPlants, 3, na.rm = TRUE)
-    supply_Heat <- supply_Heat + VmTransfInputCHPlants
-  }
+  #supply_Heat <- dimSums(supply_Heat, 3, na.rm = TRUE)
   
   getItems(supply_Liquids, 3) <- paste0("Emissions|CO2|Energy|Supply|Liquids")
   getItems(supply_Solids, 3) <- paste0("Emissions|CO2|Energy|Supply|Solids")
