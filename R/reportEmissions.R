@@ -23,9 +23,6 @@ reportEmissions <- function(path, regions, years) {
   
   magpie_object <- NULL
   
-  reg_map <- jsonlite::read_json(paste0(dirname(path),"/metadata.json"))[["Model Information"]][["Region Mapping"]][[1]]
-  setConfig(regionmapping = reg_map)
-  
   ########## SBS
   desc_map <- c(
     IS = "Iron and Steel",
@@ -67,24 +64,30 @@ reportEmissions <- function(path, regions, years) {
   
   fscenario <- readGDX(path, "fscenario")
   # Get supplementary emissions from NAVIGATE through mrprom
-  Navigate_Emissions <- calcOutput("NavigateEmissions", aggregate = TRUE, regionmapping = reg_map)
+  Navigate_Emissions <- calcOutput("NavigateEmissions", aggregate = TRUE, regionmapping = "regionmappingOPDEV3.csv")
+  
+  if ("RWO" %in% regions) {
+    Navigate_Emissions_RWO <- calcOutput("NavigateEmissions", aggregate = TRUE, regionmapping = "regionmappingOPDEV4.csv")
+    Navigate_Emissions_RWO <- Navigate_Emissions_RWO["RWO",,]
+    Navigate_Emissions <- mbind(Navigate_Emissions, Navigate_Emissions_RWO)
+    }
 
   if (fscenario %in% c(0, 1)) {
     Navigate_Emissions <- Navigate_Emissions[, , "SUP_NPi_Default"][regions, years, ]
-    Land_Use <- readSource("Navigate", subtype = "SUP_NPi_Default")
+    Land_Use_raw <- readSource("Navigate", subtype = "SUP_NPi_Default")
   } else if (fscenario == 2) {
     Navigate_Emissions <- Navigate_Emissions[, , "SUP_1p5C_Default"][regions, years, ]
-    Land_Use <- readSource("Navigate", subtype = "SUP_1p5C_Default")
+    Land_Use_raw <- readSource("Navigate", subtype = "SUP_1p5C_Default")
   } else if (fscenario == 3) {
     Navigate_Emissions <- Navigate_Emissions[, , "SUP_2C_Default"][regions, years, ]
-    Land_Use <- readSource("Navigate", subtype = "SUP_2C_Default")
+    Land_Use_raw <- readSource("Navigate", subtype = "SUP_2C_Default")
   }
 
   ####################  Carbon Capture
-  Land_Use <- Land_Use[,,c("Carbon Removal|Land Use")]
+  Land_Use <- Land_Use_raw[,,c("Carbon Removal|Land Use")]
   Land_Use <- Land_Use[,,"REMIND-MAgPIE 3_2-4_6"]
   
-  mapping <- toolGetMapping(reg_map,
+  mapping <- toolGetMapping("regionmappingOPDEV3.csv",
                             type = "regional",
                             where = "mrprom")
   
@@ -97,6 +100,26 @@ reportEmissions <- function(path, regions, years) {
   
   Land_Use <- as.magpie(Land_Use)
   
+  if ("RWO" %in% regions) {
+    Land_Use2 <- Land_Use_raw[,,c("Carbon Removal|Land Use")]
+    Land_Use2 <- Land_Use2[,,"REMIND-MAgPIE 3_2-4_6"]
+    
+    mapping <- toolGetMapping("regionmappingOPDEV4.csv",
+                              type = "regional",
+                              where = "mrprom")
+    
+    Land_Use2[is.na(Land_Use2)] <- 10^-6
+    Land_Use2 <- toolAggregate(Land_Use2,rel  = mapping,from = "ISO3.Code",to   = "Region.Code")
+    
+    Land_Use2 <- as.quitte(Land_Use2)
+    
+    Land_Use2 <- interpolate_missing_periods(Land_Use2, 2010:2100, expand.values = TRUE)
+    
+    Land_Use2 <- as.magpie(Land_Use2)
+    Land_Use2 <- Land_Use2["RWO",,]
+    Land_Use <- mbind(Land_Use2, Land_Use)
+  }
+  
   Land_Use <- Land_Use[,years,]
   
   # set NA to 0
@@ -106,11 +129,7 @@ reportEmissions <- function(path, regions, years) {
   
   Navigate_Emissions <- mbind(Navigate_Emissions, Land_Use)
   
-  if (reg_map == "regionmappingOPDEV3.csv") {
-    Navigate_Emissions <- extractAggregatedData(fscenario, Navigate_Emissions, years, onlyRWO = FALSE)
-  } else {
-    Navigate_Emissions <- extractAggregatedData(fscenario, Navigate_Emissions, years, onlyRWO = TRUE)
-  }
+  Navigate_Emissions <- extractAggregatedData(fscenario, Navigate_Emissions, years)
 
   Navigate_Emissions <- collapseDim(Navigate_Emissions, 3.1)
   Navigate_Emissions <- collapseDim(Navigate_Emissions, 3.1)
@@ -677,7 +696,7 @@ reportEmissions <- function(path, regions, years) {
   return(magpie_object)
 }
 # Helpers -------------------------------------------------------------
-extractAggregatedData <- function(scenario,x,years,onlyRWO=FALSE, ...) {
+extractAggregatedData <- function(scenario,x,years, ...) {
   
   map <- toolGetMapping(name = "NavigateEmissions.csv",
                       type = "sectoral",
@@ -714,11 +733,12 @@ extractAggregatedData <- function(scenario,x,years,onlyRWO=FALSE, ...) {
   "REMIND 3_2|Non-EU28 Europe",
   "REMIND 3_2|Other Asia",
   "REMIND 3_2|Russia and Reforming Economies",
-  "REMIND 3_2|Sub-Saharan Africa"
+  "REMIND 3_2|Sub-Saharan Africa",
+  "World"
   )
 
   # If only RWO is needed (e.g., DEV mode), then substract the regions (e.g., USA) from the world.
-  if (onlyRWO==FALSE) {
+
     xa<- xa[desiredRegions,,]
     # Mapping
     RegionMap <- c(
@@ -739,13 +759,11 @@ extractAggregatedData <- function(scenario,x,years,onlyRWO=FALSE, ...) {
     for (i in seq_along(matchRegions)) {
       x[matchRegions[i], , ] <- xa[xaRegions[i], , ]
     }
-  }
-  else {
-    extracted <- xa['World',,]
 
     # Check if 'RWO' exists as a region and then compute RWO as World - sum of countries
     if ("RWO" %in% getItems(x,1)) {
       
+      extracted <- xa['World',,]
       withoutRWO <- x[!getItems(x,1) %in% "RWO", , ]
       mainCountriesSum <- dimSums(withoutRWO, dim = 1)
       newRWO <- extracted - mainCountriesSum
@@ -756,7 +774,7 @@ extractAggregatedData <- function(scenario,x,years,onlyRWO=FALSE, ...) {
     } else {
       print("Rest of the world (RWO) is missing from magpie object!")
     }
-  }
+
 
   # set NA to 0
   x[is.na(x)] <- 10^-6
