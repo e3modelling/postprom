@@ -8,6 +8,7 @@ Emissions|CO2|Total,AFOLU
 Emissions|CO2|Total,Industrial Processes
 Emissions|CO2|Total,Carbon Dioxide Removal
 Emissions|CO2|Total,
+Emissions|CO2|Total,VAL
 Emissions|CO2|Cumulated,Cumulated
 Emissions|CO2|Cumulated,Budget1p5C
 Emissions|CO2|Cumulated,Budget2C
@@ -15,6 +16,9 @@ Final Energy|Sector,Carbon Dioxide Removal
 Final Energy|Sector,Industry
 Final Energy|Sector,Transportation
 Final Energy|Sector,Residential and Commercial
+Final Energy|Sector,VAL
+Final Energy|Sector,Industry|VAL
+Final Energy|Sector,Transportation|VAL
 Final Energy|Sector,Non Energy
 Final Energy|Sector,Bunkers
 Final Energy|Fuel,Solids
@@ -24,6 +28,7 @@ Final Energy|Fuel,Electricity
 Final Energy|Fuel,Liquids
 Final Energy|Fuel,Heat
 Final Energy|Fuel,Biomass
+Final Energy|Fuel,VAL
 Secondary Energy|Electricity|Total,Solar
 Secondary Energy|Electricity|Total,Oil
 Secondary Energy|Electricity|Total,Wind
@@ -34,6 +39,7 @@ Secondary Energy|Electricity|Total,Biomass
 Secondary Energy|Electricity|Total,Hydro
 Secondary Energy|Electricity|Total,Geothermal
 Secondary Energy|Electricity|Total,Demand
+Secondary Energy|Electricity|Total,VAL
 Secondary Energy|Electricity|CCS,Biomass|Non-CHP|w/ CCS
 Secondary Energy|Electricity|CCS,Biomass|Non-CHP|w/o CCS
 Secondary Energy|Electricity|CCS,Coal|Non-CHP|w/ CCS
@@ -55,5 +61,6 @@ Capacity|Electricity|Total,Nuclear
 Capacity|Electricity|Total,Biomass
 Capacity|Electricity|Total,Geothermal
 Capacity|Electricity|Total,Hydro
+Capacity|Electricity|Total,VAL
 Price|Carbon|Yearly,
 Gross Inland Consumption|Biomass and Waste|Yearly,
