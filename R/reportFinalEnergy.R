@@ -122,19 +122,20 @@ reportFinalEnergy <- function(path, regions, years) {
 
   for (y in 1:length(sector)) {
     # read GAMS set used for reporting of Final Energy different for each sector
-    sets6 <- readGDX(path, sector[y]) %>% as.data.frame()
-    names(sets6) <- sector[y]
-    # y=4 for NENSE-Non Energy, y=5 for NENSE-Bunkers
-    if (y == 4) {
-      sets6 <- as.data.frame(sets6[c(2,3),1])
-    } else if (y == 5) {
-      sets6 <- as.data.frame(sets6[1,1])
-      names(sets6) <- "BUNKSE"
+    sectorsSet <- readGDX(path, sector[y]) %>% as.data.frame()
+    names(sectorsSet) <- sector[y]
+    # separate "Non Energy" and "Bunkers"
+    if (sector_name[y] == "Non Energy") {
+      sectorsSet <- as.data.frame(sectorsSet[!grepl("BU", sectorsSet[[1]]), , drop = FALSE])
+    } else if (sector_name[y] == "Bunkers") {
+      sectorsSet <- as.data.frame(sectorsSet[grepl("BU", sectorsSet[[1]]), , drop = FALSE])
+      names(sectorsSet) <- "BUNKSE"
     }
-    var_gdx <- readGDX(path, blabla_var[y], field = "l")[regions, years, ]
-    FCONS_by_sector_and_EF_open <- var_gdx[, , sets6[, 1]]
 
-    map_subsectors <- sets4 %>% filter(SBS %in% as.character(sets6[, 1]))
+    var_gdx <- readGDX(path, blabla_var[y], field = "l")[regions, years, ]
+    FCONS_by_sector_and_EF_open <- var_gdx[, , sectorsSet[, 1]]
+
+    map_subsectors <- sets4 %>% filter(SBS %in% as.character(sectorsSet[, 1]))
 
     map_subsectors$EF <- paste(map_subsectors$SBS, map_subsectors$EF, sep = ".")
 
@@ -175,7 +176,7 @@ reportFinalEnergy <- function(path, regions, years) {
     )
     sets5$EFA <- str_replace_all(sets5$EFA, rename_EFA)
 
-    sets10 <- sets5 %>% filter(EF %in% getItems(var_gdx[, , sets6[, 1]], 3.2))
+    sets10 <- sets5 %>% filter(EF %in% getItems(var_gdx[, , sectorsSet[, 1]], 3.2))
 
     # Aggregate model OPEN-PROM by subsector and by energy form
     by_energy_form_and_by_subsector_open <- toolAggregate(FCONS_by_sector_and_EF_open[, , as.character(unique(sets10$EF))], dim = 3.2, rel = sets10, from = "EF", to = "EFA")
@@ -201,7 +202,7 @@ reportFinalEnergy <- function(path, regions, years) {
     magpie_object <- mbind(magpie_object, by_energy_form_open)
 
     # per fuel
-    FCONS_per_fuel <- FCONS_by_sector_and_EF_open[, , sets6[, 1]][, , !(getItems(FCONS_by_sector_and_EF_open, 3.2)) %in% (getItems(by_energy_form_and_by_subsector_open, 3.2))]
+    FCONS_per_fuel <- FCONS_by_sector_and_EF_open[, , sectorsSet[, 1]][, , !(getItems(FCONS_by_sector_and_EF_open, 3.2)) %in% (getItems(by_energy_form_and_by_subsector_open, 3.2))]
 
     # remove . from magpie object and replace with |
     FCONS_per_fuel <- as.quitte(FCONS_per_fuel)
@@ -214,7 +215,7 @@ reportFinalEnergy <- function(path, regions, years) {
     magpie_object <- mbind(magpie_object, FCONS_per_fuel)
     
     # per fuel of OPEN-PROM
-    FCONS_per_fuel_OP <- FCONS_by_sector_and_EF_open[, , sets6[, 1]]
+    FCONS_per_fuel_OP <- FCONS_by_sector_and_EF_open[, , sectorsSet[, 1]]
     FCONS_per_fuel_OP <- dimSums(FCONS_per_fuel_OP, 3.1)
     FCONS_per_fuel_OP_new_names <- FCONS_per_fuel_OP
     getItems(FCONS_per_fuel_OP, 3) <- paste0("Final Energy|", sector_name[y], "|", getItems(FCONS_per_fuel_OP, 3))
