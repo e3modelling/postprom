@@ -36,7 +36,7 @@
 convertGDXtoMIF <- function(.path, mif_name, regions = NULL, years = NULL,
                             fullValidation = TRUE, scenario_name = NULL,
                             aggregate = TRUE, emissions = TRUE, save = TRUE,
-                            htmlReport == TRUE) {
+                            htmlReport = FALSE) {
   if (is.null(scenario_name)) scenario_name <- basename(.path)
   current_time <- format(Sys.time(), "%Y-%m-%d_%H-%M")
   append <- length(.path) > 1
@@ -70,7 +70,8 @@ convertGDXtoMIF <- function(.path, mif_name, regions = NULL, years = NULL,
 # Helpers -----------------------------------------------------------------
 convertGDXtoMIF_single <- function(.path, path_mif, append, regions = NULL,
                                    years = NULL, scenario_name = NULL,
-                                   aggregate = TRUE, emissions=TRUE, save = TRUE) {
+                                   aggregate = TRUE, emissions=TRUE, save = TRUE,
+                                   htmlReport = TRUE) {
   print(paste0("Region aggregation: ", aggregate))
   print(paste0("Processing path: ", .path))
   path_gdx <- file.path(.path, "blabla.gdx")
