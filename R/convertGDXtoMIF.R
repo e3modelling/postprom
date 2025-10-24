@@ -33,7 +33,8 @@
 #' @export
 convertGDXtoMIF <- function(.path, mif_name, regions = NULL, years = NULL,
                             fullValidation = TRUE, scenario_name = NULL,
-                            aggregate = TRUE, emissions = TRUE, save = TRUE) {
+                            aggregate = TRUE, emissions = TRUE, save = TRUE,
+                            htmlReport = FALSE) {
   if (is.null(regions)) regions <- readGDX(file.path(.path, "blabla.gdx"), "runCYL")
   if (is.null(years)) {
     years <- as.character(c(2010:2020))
@@ -57,7 +58,9 @@ convertGDXtoMIF <- function(.path, mif_name, regions = NULL, years = NULL,
       scenario_name = scenario,
       aggregate = aggregate,
       append = append,
-      save = save
+      save = save,
+      emissions = emissions,
+      htmlReport = htmlReport
     )
   },
   .path, scenario_name,
@@ -70,7 +73,8 @@ convertGDXtoMIF <- function(.path, mif_name, regions = NULL, years = NULL,
 # Helpers -----------------------------------------------------------------
 convertGDXtoMIF_single <- function(.path, regions, years, path_mif, append,
                                    scenario_name = NULL, aggregate = TRUE,
-                                   emissions=TRUE, save = TRUE) {
+                                   emissions = TRUE, save = TRUE,
+                                   htmlReport = TRUE) {
   print(paste0("Region aggregation: ", aggregate))
   print(paste0("Processing path: ", .path))
   path_gdx <- file.path(.path, "blabla.gdx")
@@ -118,7 +122,10 @@ convertGDXtoMIF_single <- function(.path, regions, years, path_mif, append,
       append = append
     )
     print(paste0("Saved mif file in ", path_mif))
+
+    if (htmlReport == TRUE) htmlReportValidation(.path, path_mif)
   }
+  
   return(reports)
 }
 
