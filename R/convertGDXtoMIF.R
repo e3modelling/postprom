@@ -34,12 +34,6 @@
 convertGDXtoMIF <- function(.path, mif_name, regions = NULL, years = NULL,
                             fullValidation = TRUE, scenario_name = NULL,
                             aggregate = TRUE, emissions = TRUE, save = TRUE) {
-  if (is.null(regions)) regions <- readGDX(file.path(.path, "blabla.gdx"), "runCYL")
-  if (is.null(years)) {
-    years <- as.character(c(2010:2020))
-    years <- c(years, as.character(readGDX(file.path(.path, "blabla.gdx"), "an")))
-    years <- paste0("y", years)
-  }
   if (is.null(scenario_name)) scenario_name <- basename(.path)
   current_time <- format(Sys.time(), "%Y-%m-%d_%H-%M")
   append <- length(.path) > 1
@@ -69,12 +63,19 @@ convertGDXtoMIF <- function(.path, mif_name, regions = NULL, years = NULL,
   return(scenarios_reports)
 }
 # Helpers -----------------------------------------------------------------
-convertGDXtoMIF_single <- function(.path, regions, years, path_mif, append,
-                                   scenario_name = NULL, aggregate = TRUE,
-                                   emissions=TRUE, save = TRUE) {
+convertGDXtoMIF_single <- function(.path, path_mif, append, regions = NULL,
+                                   years = NULL, scenario_name = NULL,
+                                   aggregate = TRUE, emissions=TRUE, save = TRUE) {
   print(paste0("Region aggregation: ", aggregate))
   print(paste0("Processing path: ", .path))
   path_gdx <- file.path(.path, "blabla.gdx")
+  
+  if (is.null(regions)) regions <- readGDX(path_gdx, "runCYL")
+  if (is.null(years)) {
+    years <- as.character(c(2010:2020))
+    years <- c(years, as.character(readGDX(path_gdx, "an")))
+    years <- paste0("y", years)
+  }
 
   reports <- reportFinalEnergy(path_gdx, regions, years)
   reports <- mbind(reports, reportEmissions(path_gdx, regions, years))
