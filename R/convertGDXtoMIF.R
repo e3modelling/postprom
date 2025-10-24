@@ -10,7 +10,8 @@
 #' @param aggregate Optional; a logical value indicating whether to aggregate data. Defaults to `TRUE`.
 #' @param save Optional; a logical value indicating whether to save the output. Defaults to `TRUE`.
 #' @param emissions Optional; a logical value indicating whether to generate a separate emissions csv file for running climate assessment. Defaults to `TRUE`.
-#' 
+#' @param htmlReport Optional; a logical value indicating whether to generate a HTML report file with piamValidation. Defaults to `FALSE`.
+
 #' @return A list of scenario reports generated from the provided GDX files.
 #' @details
 #' - If `regions` is not provided, it is inferred from the GDX file using the `readGDX` function.
@@ -26,14 +27,16 @@
 #'                 scenario_name = c("Scenario1", "Scenario2"),
 #'                 aggregate = TRUE,
 #'                 emissions = TRUE,
-#'                 save = TRUE)
+#'                 save = TRUE,
+#'                 htmlReport = FALSE)
 #' }
 #' @importFrom magclass mbind dimSums getItems getRegions write.report read.report
 #' @importFrom gdx readGDX
 #' @export
 convertGDXtoMIF <- function(.path, mif_name, regions = NULL, years = NULL,
                             fullValidation = TRUE, scenario_name = NULL,
-                            aggregate = TRUE, emissions = TRUE, save = TRUE) {
+                            aggregate = TRUE, emissions = TRUE, save = TRUE,
+                            htmlReport == TRUE) {
   if (is.null(scenario_name)) scenario_name <- basename(.path)
   current_time <- format(Sys.time(), "%Y-%m-%d_%H-%M")
   append <- length(.path) > 1
