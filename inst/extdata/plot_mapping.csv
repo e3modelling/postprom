@@ -16,10 +16,15 @@ Final Energy|Sector,Carbon Dioxide Removal
 Final Energy|Sector,Industry
 Final Energy|Sector,Transportation
 Final Energy|Sector,Residential and Commercial
+<<<<<<< HEAD
 Final Energy|Sector,Non Energy and Bunkers
 Final Energy|Sector,VAL
 Final Energy|Sector,Industry|VAL
 Final Energy|Sector,Transportation|VAL
+=======
+Final Energy|Sector,Non Energy
+Final Energy|Sector,Bunkers
+>>>>>>> main
 Final Energy|Fuel,Solids
 Final Energy|Fuel,Hydrogen
 Final Energy|Fuel,Gases
