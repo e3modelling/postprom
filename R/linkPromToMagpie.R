@@ -31,16 +31,17 @@
 #' }
 #' @export
 linkPromToMagpie <- function(path, pathPollutantPrices,
-                             pathBioenergyDemand,pathReport=NULL,pathSave=NULL, forward = TRUE) {
+                             pathBioenergyDemand,pathReport=NULL,pathSave=NULL, forward = TRUE, 
+                             scenario="R32M46-SSP2EU-NPi") {
   message("[✓] Starting soft-linking routine...")
-  if (forward == TRUE) OPEN2MAgPIE(path, pathPollutantPrices, pathBioenergyDemand)
+  if (forward == TRUE) OPEN2MAgPIE(path, pathPollutantPrices, pathBioenergyDemand,scenario)
   else if (forward == FALSE) MAgPIE2OPEN(path, pathReport, pathSave)
   else message("Wrong forward input")
 
 }
 
 # Helpers ------------------------------------------------------------------
-OPEN2MAgPIE <- function(path, pathPollutantPrices, pathBioenergyDemand) {
+OPEN2MAgPIE <- function(path, pathPollutantPrices, pathBioenergyDemand, scenario) {
   message("[OPEN2MAgPIE] Extracting outputs from OPEN-PROM...")
   regionMapping <- toolGetMapping(name = "regionmappingOPDEV3.csv",
                                   type = "regional",
@@ -70,16 +71,16 @@ OPEN2MAgPIE <- function(path, pathPollutantPrices, pathBioenergyDemand) {
     rename(years = period)
 
   test <- xq
-  names(test) <- c("year", "region", "var", "R32M46-SSP2EU-NPi")
+  names(test) <- c("year", "region", "var", scenario)
   test$year <- paste0("y", test$year)
-  final <- read.csv(pathPollutantPrices, skip = 5, check.names = FALSE)
+  final <- read.csv(pathPollutantPrices, check.names = FALSE)
   temp <- names(final)
   names(final)[1:3] <- c("year", "region", "var")
 
   temp <- final %>%
     inner_join(test, by=c("year", "region", "var")) %>%
-    select("R32M46-SSP2EU-NPi.y")
-  final["R32M46-SSP2EU-NPi"][final$var == "co2_c", ]<- temp
+    select(paste0(scenario, ".y"))
+  final[scenario][final$var == "co2_c", ]<- temp
 
   write.csv(final, "result_f56_pollutant_prices.cs3", quote = FALSE, row.names = FALSE)
 
@@ -107,7 +108,7 @@ OPEN2MAgPIE <- function(path, pathPollutantPrices, pathBioenergyDemand) {
   names(test) <- c("year", "region", "woodfuel")
   test$year <- paste0("y", test$year)
   test['var'] <- "const2020"
-  final <- read.csv(pathBioenergyDemand, skip = 4, check.names = FALSE)
+  final <- read.csv(pathBioenergyDemand, check.names = FALSE)
   names(final)[1:3] <- c("year", "region", "var")
   final <- filter(final, year>="y1995" & year<="y2150")
   final[ , !names(final) %in% c("year", "region", "var")] <- 0
@@ -155,10 +156,12 @@ MAgPIE2OPEN <- function(path, pathReport, pathSave) {
   
   Globiom <- Globiom[EU27,,]
   Globiom <- as.quitte(Globiom) %>% mutate(value = mean(value, na.rm = TRUE), .by = c("region"))
-  Globiom[["period"]] <- NA
+  #Globiom[["period"]] <- NA
   Globiom <- distinct(Globiom)
   Globiom <- as.quitte(Globiom)
   Globiom <- as.magpie(Globiom)
+  Globiom <- Globiom[,2020,]
+  Globiom <- dimSums(Globiom,2)
   Globiom_OP <- Globiom[intersect(getRegions(Globiom),regionOP[,3]),,]
   Globiom_ELL <- mean(Globiom[in_of_ELL,,])
   eur_map_op_prom <- add_columns(Globiom_OP, addnm = c("ELL"), dim = 1, fill = Globiom_ELL)
@@ -212,7 +215,7 @@ MAgPIE2OPEN <- function(path, pathReport, pathSave) {
   write.table(xq,
               quote = FALSE,
               row.names = FALSE,
-              file = file.path(pathSave,"iEmissions_magpie.csv"),
+              file = file.path("iEmissions_magpie.csv"),
               sep = ",",
               col.names = FALSE,
               append = TRUE)
@@ -225,7 +228,7 @@ MAgPIE2OPEN <- function(path, pathReport, pathSave) {
   write.table(xq,
               quote = FALSE,
               row.names = FALSE,
-              file = file.path(pathSave,"iPrices_magpie.csv"),
+              file = file.path("iPrices_magpie.csv"),
               sep = ",",
               col.names = FALSE,
               append = TRUE)
