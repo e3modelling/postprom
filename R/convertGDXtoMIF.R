@@ -10,7 +10,8 @@
 #' @param aggregate Optional; a logical value indicating whether to aggregate data. Defaults to `TRUE`.
 #' @param save Optional; a logical value indicating whether to save the output. Defaults to `TRUE`.
 #' @param emissions Optional; a logical value indicating whether to generate a separate emissions csv file for running climate assessment. Defaults to `TRUE`.
-#' 
+#' @param htmlReport Optional; a logical value indicating whether to generate a HTML report file with piamValidation. Defaults to `FALSE`.
+
 #' @return A list of scenario reports generated from the provided GDX files.
 #' @details
 #' - If `regions` is not provided, it is inferred from the GDX file using the `readGDX` function.
@@ -26,14 +27,16 @@
 #'                 scenario_name = c("Scenario1", "Scenario2"),
 #'                 aggregate = TRUE,
 #'                 emissions = TRUE,
-#'                 save = TRUE)
+#'                 save = TRUE,
+#'                 htmlReport = FALSE)
 #' }
 #' @importFrom magclass mbind dimSums getItems getRegions write.report read.report
 #' @importFrom gdx readGDX
 #' @export
 convertGDXtoMIF <- function(.path, mif_name, regions = NULL, years = NULL,
                             fullValidation = TRUE, scenario_name = NULL,
-                            aggregate = TRUE, emissions = TRUE, save = TRUE) {
+                            aggregate = TRUE, emissions = TRUE, save = TRUE,
+                            htmlReport = FALSE) {
   if (is.null(scenario_name)) scenario_name <- basename(.path)
   current_time <- format(Sys.time(), "%Y-%m-%d_%H-%M")
   append <- length(.path) > 1
@@ -51,7 +54,9 @@ convertGDXtoMIF <- function(.path, mif_name, regions = NULL, years = NULL,
       scenario_name = scenario,
       aggregate = aggregate,
       append = append,
-      save = save
+      save = save,
+      emissions = emissions,
+      htmlReport = htmlReport
     )
   },
   .path, scenario_name,
@@ -65,7 +70,8 @@ convertGDXtoMIF <- function(.path, mif_name, regions = NULL, years = NULL,
 # Helpers -----------------------------------------------------------------
 convertGDXtoMIF_single <- function(.path, path_mif, append, regions = NULL,
                                    years = NULL, scenario_name = NULL,
-                                   aggregate = TRUE, emissions=TRUE, save = TRUE) {
+                                   aggregate = TRUE, emissions=TRUE, save = TRUE,
+                                   htmlReport = TRUE) {
   print(paste0("Region aggregation: ", aggregate))
   print(paste0("Processing path: ", .path))
   path_gdx <- file.path(.path, "blabla.gdx")
@@ -120,7 +126,10 @@ convertGDXtoMIF_single <- function(.path, path_mif, append, regions = NULL,
       append = append
     )
     print(paste0("Saved mif file in ", path_mif))
+
+    if (htmlReport == TRUE) htmlReportValidation(.path, path_mif)
   }
+  
   return(reports)
 }
 

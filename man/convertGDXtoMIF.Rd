@@ -13,7 +13,8 @@ convertGDXtoMIF(
   scenario_name = NULL,
   aggregate = TRUE,
   emissions = TRUE,
-  save = TRUE
+  save = TRUE,
+  htmlReport = TRUE
 )
 }
 \arguments{
