@@ -22,6 +22,8 @@
 reportEmissions <- function(path, regions, years) {
   
   magpie_object <- NULL
+
+  reg_map <- jsonlite::read_json(paste0(dirname(path),"/metadata.json"))[["Model Information"]][["Region Mapping"]][[1]]
   
   ########## SBS
   desc_map <- c(
@@ -64,7 +66,7 @@ reportEmissions <- function(path, regions, years) {
   
   fscenario <- readGDX(path, "fscenario")
   # Get supplementary emissions from NAVIGATE through mrprom
-  Navigate_Emissions <- calcOutput("NavigateEmissions", aggregate = TRUE, regionmapping = "regionmappingOPDEV3.csv")
+  Navigate_Emissions <- calcOutput("NavigateEmissions", aggregate = TRUE, regionmapping = reg_map)
   
   if ("RWO" %in% regions) {
     Navigate_Emissions_RWO <- calcOutput("NavigateEmissions", aggregate = TRUE, regionmapping = "regionmappingOPDEV4.csv")
@@ -87,7 +89,7 @@ reportEmissions <- function(path, regions, years) {
   Land_Use <- Land_Use_raw[,,c("Carbon Removal|Land Use")]
   Land_Use <- Land_Use[,,"REMIND-MAgPIE 3_2-4_6"]
   
-  mapping <- toolGetMapping("regionmappingOPDEV3.csv",
+  mapping <- toolGetMapping(reg_map,
                             type = "regional",
                             where = "mrprom")
   
@@ -771,8 +773,6 @@ extractAggregatedData <- function(scenario,x,years, ...) {
       
       x <- mbind(withoutRWO, newRWO)
       
-    } else {
-      print("Rest of the world (RWO) is missing from magpie object!")
     }
 
 
