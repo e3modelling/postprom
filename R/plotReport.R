@@ -107,7 +107,10 @@ plotTool <- function(data, colors_vars, variable, plot_style,
       #legend.key.width = unit(legend_key_width, "cm")
     )
 
-  for (style in unique(colors_vars$style)) {
+  # Ensure that the draw order is bars/areas first, lines last
+  style_order <- intersect(c("bar", "area", "dLine"), unique(colors_vars$style))
+
+  for (style in style_order) {
     vars_per_style <- colors_vars$X[colors_vars$style == style]
     data_sub <- data %>% filter(.data[[variable]] %in% vars_per_style)
     plot <- plot + switch(style,
