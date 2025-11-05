@@ -6,13 +6,13 @@ Emissions|CO2|Total,Energy|Demand|Transportation
 Emissions|CO2|Total,Energy|Supply
 Emissions|CO2|Total,AFOLU
 Emissions|CO2|Total,Industrial Processes
-Emissions|CO2|Total,Carbon Dioxide Removal
+Emissions|CO2|Total,Other Capture and Removal
 Emissions|CO2|Total,
 Emissions|CO2|Total,VAL
 Emissions|CO2|Cumulated,Cumulated
 Emissions|CO2|Cumulated,Budget1p5C
 Emissions|CO2|Cumulated,Budget2C
-Final Energy|Sector,Carbon Dioxide Removal
+Final Energy|Sector,Other Capture and Removal
 Final Energy|Sector,Industry
 Final Energy|Sector,Transportation
 Final Energy|Sector,Residential and Commercial

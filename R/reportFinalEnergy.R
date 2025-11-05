@@ -273,7 +273,7 @@ reportFinalEnergy <- function(path, regions, years) {
     getItems(Direct_Air_Capture_H2DAC_ELC, 3) <- "Final Energy|Direct Air Capture|H2DAC|ELC"
     
     Carbon_Dioxide_Removal <- dimSums(VmConsFuelTechDACProd, dim = 3)
-    getItems(Carbon_Dioxide_Removal, 3) <- "Final Energy|Carbon Dioxide Removal"
+    getItems(Carbon_Dioxide_Removal, 3) <- "Final Energy|Other Capture and Removal"
     
     DAC <- mbind(
       VmConsFuelTechDACProd_EWDAC, VmConsFuelTechDACProd_EWDAC2,
@@ -286,7 +286,7 @@ reportFinalEnergy <- function(path, regions, years) {
     magpie_object <- mbind(magpie_object, DAC)
     
   } else {
-    CDR<- new.magpie(regions, years, "Final Energy|Carbon Dioxide Removal", fill = 0)
+    CDR<- new.magpie(regions, years, "Final Energy|Other Capture and Removal", fill = 0)
     CDR <- add_dimension(CDR, dim = 3.2, add = "unit", nm = "Mtoe")
     magpie_object <- mbind(magpie_object, CDR)
   }
