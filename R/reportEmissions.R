@@ -778,8 +778,6 @@ extractAggregatedData <- function(scenario,x,years, ...) {
       
       x <- mbind(withoutRWO, newRWO)
       
-    } else {
-      print("Rest of the world (RWO) is missing from magpie object!")
     }
 
 
