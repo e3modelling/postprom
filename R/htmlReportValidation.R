@@ -13,6 +13,13 @@
 #' @import rmarkdown
 #' @export 
 htmlReportValidation <- function(.path, openPromFile) {
+  
+  if (!piamValidation::is_piamValidation()) {
+    message("⚠️ piamValidation is not installed. Skipping HTML report for validation.")
+    message("To enable HTML report for validation, install piamValidation with:")
+    message("install.packages('piamValidation', repos = c('https://pik-piam.r-universe.dev', 'https://cloud.r-project.org'))")
+    return(invisible(NULL))
+  }
 
   configFile <- system.file(package = "postprom", file.path("extdata", "validationConfig_OPEN-PROM.csv"))
 
