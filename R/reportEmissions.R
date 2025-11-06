@@ -360,7 +360,7 @@ reportEmissions <- function(path, regions, years) {
     DAC <- mbind(VCapDAC_total, Enhanced_Weathering, LTDAC, HTDAC, Direct_Air_Capture, H2DAC)
     DAC <- add_dimension(DAC, dim = 3.2, add = "unit", nm = "Mt CO2/yr")
     
-    CDR<- new.magpie(regions, years, "Emissions|CO2|Carbon Dioxide Removal", fill = 0)
+    CDR<- new.magpie(regions, years, "Emissions|CO2|Other Capture and Removal", fill = 0)
     CDR <- add_dimension(CDR, dim = 3.2, add = "unit", nm = "Mt CO2/yr")
     magpie_object <- mbind(magpie_object, CDR)
     
@@ -415,7 +415,7 @@ reportEmissions <- function(path, regions, years) {
     #cdr for plotting
     CDR <- - dimSums(VCapDAC, dim = 3) / 10^6
     CDR <- dimSums(CDR, dim = 3)
-    getItems(CDR, 3) <- "Emissions|CO2|Carbon Dioxide Removal"
+    getItems(CDR, 3) <- "Emissions|CO2|Other Capture and Removal"
     CDR <- add_dimension(CDR, dim = 3.2, add = "unit", nm = "Mt CO2/yr")
     magpie_object <- mbind(magpie_object, CDR)
     
@@ -450,21 +450,6 @@ reportEmissions <- function(path, regions, years) {
     supply_Heat <- district_heating
   }
 
-  total_CO2 <- sum1 + sum2 + supply_Heat + sum4 + sum5 - sum6 + sum7 + remind + hydrogen - hydrogen_CCS + (VCapDAC_total / 10^6) - Industry_CCS
-
-  getItems(total_CO2, 3) <- "Emissions|CO2"
-
-  total_CO2 <- add_dimension(total_CO2, dim = 3.2, add = "unit", nm = "Mt CO2/yr")
-  magpie_object <- mbind(magpie_object, total_CO2, Navigate_Emissions)
-  
-  ####################################
-  
-  ########for plotting total co2
-  
-  plotting_total_co2 <- total_CO2
-  getItems(plotting_total_co2, 3.1) <- "Emissions|CO2|"
-  magpie_object <- mbind(magpie_object, plotting_total_co2)
-  
   ########################
 
   # Hydrogen
@@ -595,20 +580,7 @@ reportEmissions <- function(path, regions, years) {
   sum_Demand <- add_dimension(sum_Demand, dim = 3.2, add = "unit", nm = "Mt CO2/yr")
   magpie_object <- mbind(magpie_object, sum_Demand)
 
-  # Emissions|CO2|Energy|Supply
-  # input to power generation sector, sum2
-  # input to district heating plants + VmTransfInputCHPlants = supply_Heat
-  # consumption of energy branch, sum4
-  # CO2 captured by CCS plants in power generation, sum6
-  # Emissions|CO2|Energy|Supply|Hydrogen
-  sum_Supply <- sum2 + supply_Heat + sum4 - sum6 + Emissions_Supply_Hydrogen
-
-  getItems(sum_Supply, 3) <- "Emissions|CO2|Energy|Supply"
-
-  sum_Supply <- add_dimension(sum_Supply, dim = 3.2, add = "unit", nm = "Mt CO2/yr")
-  magpie_object <- mbind(magpie_object, sum_Supply)
-  
-  Emissions_Supply_Electricity <- sum2 + sum4 - sum6
+  Emissions_Supply_Electricity <- sum2 - sum6
   
   getItems(Emissions_Supply_Electricity, 3) <- "Emissions|CO2|Energy|Supply|Electricity"
   
@@ -627,7 +599,7 @@ reportEmissions <- function(path, regions, years) {
   
   own_consumption <- sum4
   
-  getItems(own_consumption, 3) <- "Emissions|CO2|Energy|Supply|Own Consumption"
+  getItems(own_consumption, 3) <- "Emissions|CO2|Energy|Supply|Autoproduction"
   own_consumption <- add_dimension(own_consumption, dim = 3.2, add = "unit", nm = "Mt CO2/yr")
   magpie_object <- mbind(magpie_object, own_consumption)
   
@@ -652,18 +624,37 @@ reportEmissions <- function(path, regions, years) {
   supply_Liquids <- dimSums(supply_Liquids, 3, na.rm = TRUE)
   supply_Solids <- dimSums(supply_Solids, 3, na.rm = TRUE)
   supply_Gases <- dimSums(supply_Gases, 3, na.rm = TRUE)
-  #supply_Heat <- dimSums(supply_Heat, 3, na.rm = TRUE)
-  
-  getItems(supply_Liquids, 3) <- paste0("Emissions|CO2|Energy|Supply|Liquids")
-  getItems(supply_Solids, 3) <- paste0("Emissions|CO2|Energy|Supply|Solids")
-  getItems(supply_Gases, 3) <- paste0("Emissions|CO2|Energy|Supply|Gases")
+  # supply_Heat <- dimSums(supply_Heat, 3, na.rm = TRUE)
+  # getItems(supply_Liquids, 3) <- paste0("Emissions|CO2|Energy|Supply|Liquids")
+  # getItems(supply_Solids, 3) <- paste0("Emissions|CO2|Energy|Supply|Solids")
+  # getItems(supply_Gases, 3) <- paste0("Emissions|CO2|Energy|Supply|Gases")
   getItems(supply_Heat, 3) <- paste0("Emissions|CO2|Energy|Supply|Heat")
-  
+
+  # TEMPORARY FIX!!!!!! 
+  supply_Liquids <- new.magpie(regions, years, "Emissions|CO2|Energy|Supply|Liquids", fill = 0)
+  supply_Solids <- new.magpie(regions, years, "Emissions|CO2|Energy|Supply|Solids", fill = 0)
+  supply_Gases <- new.magpie(regions, years, "Emissions|CO2|Energy|Supply|Gases", fill = 0)
+    
   supply_per_category <- mbind(supply_Liquids, supply_Solids, supply_Gases, supply_Heat)
   
   supply_per_category <- add_dimension(supply_per_category, dim = 3.2, add = "unit", nm = "Mt CO2/yr")
   
   magpie_object <- mbind(magpie_object, supply_per_category)
+
+  # Emissions|CO2|Energy|Supply
+  # input to power generation sector, sum2
+  # input to district heating plants + VmTransfInputCHPlants = supply_Heat
+  # consumption of energy branch, sum4
+  # CO2 captured by CCS plants in power generation, sum6
+  # Emissions|CO2|Energy|Supply|Hydrogen
+  # Add Emissions|CO2|Supply|Gases + Emissions|CO2|Supply|Liquids + Emissions|CO2|Supply|Solids:
+  # supply_Liquids + supply_Solids + supply_Gases
+  sum_Supply <- Emissions_Supply_Electricity + supply_Heat + sum4  + Emissions_Supply_Hydrogen + supply_Liquids + supply_Solids + supply_Gases
+
+  getItems(sum_Supply, 3) <- "Emissions|CO2|Energy|Supply"
+
+  sum_Supply <- add_dimension(sum_Supply, dim = 3.2, add = "unit", nm = "Mt CO2/yr")
+  magpie_object <- mbind(magpie_object, sum_Supply)
 
   # Emissions|CO2|Energy
   # Emissions|CO2|Energy|Demand, sum_Demand
@@ -675,6 +666,34 @@ reportEmissions <- function(path, regions, years) {
 
   sum_Energy <- add_dimension(sum_Energy, dim = 3.2, add = "unit", nm = "Mt CO2/yr")
   magpie_object <- mbind(magpie_object, sum_Energy)
+
+  # Emissions|CO2
+  total_CO2 <- sum_Supply + sum_Demand + remind + (VCapDAC_total / 10^6) 
+  getItems(total_CO2, 3) <- "Emissions|CO2"
+
+  total_CO2 <- add_dimension(total_CO2, dim = 3.2, add = "unit", nm = "Mt CO2/yr")
+  magpie_object <- mbind(magpie_object, total_CO2, Navigate_Emissions)
+  
+  ####################################
+  # Add Emissions|CO2|Energy + Emissions|CO2|Industrial processes to create Emissions|CO2|Industrial Processes
+  print(str(magpie_object))
+  sum <- magpie_object[, ,c("Emissions|CO2|Energy.Mt CO2/yr","Emissions|CO2|Industrial Processes.Mt CO2/yr")]
+  print(str(sum))
+  sum <- dimSums(sum, dim = 3, na.rm = TRUE)
+  print(str(sum))
+  getItems(sum,3) <- "Emissions|CO2|Energy and Industrial Processes.Mt CO2/yr"
+  # Fix separator "p" to "."
+  dimnames(sum)$d3 <- gsub("pMt", ".Mt", dimnames(sum)$d3)
+  
+  magpie_object <- mbind(magpie_object, sum)
+  
+  ####################################
+  ########for plotting total co2
+  # Emissions|CO2|
+  
+  plotting_total_co2 <- total_CO2
+  getItems(plotting_total_co2, 3.1) <- "Emissions|CO2|"
+  magpie_object <- mbind(magpie_object, plotting_total_co2)
 
   # Emissions|CO2|Cumulated
 
