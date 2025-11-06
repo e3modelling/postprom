@@ -676,11 +676,8 @@ reportEmissions <- function(path, regions, years) {
   
   ####################################
   # Add Emissions|CO2|Energy + Emissions|CO2|Industrial processes to create Emissions|CO2|Industrial Processes
-  print(str(magpie_object))
   sum <- magpie_object[, ,c("Emissions|CO2|Energy.Mt CO2/yr","Emissions|CO2|Industrial Processes.Mt CO2/yr")]
-  print(str(sum))
   sum <- dimSums(sum, dim = 3, na.rm = TRUE)
-  print(str(sum))
   getItems(sum,3) <- "Emissions|CO2|Energy and Industrial Processes.Mt CO2/yr"
   # Fix separator "p" to "."
   dimnames(sum)$d3 <- gsub("pMt", ".Mt", dimnames(sum)$d3)
