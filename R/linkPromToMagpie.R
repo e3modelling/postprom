@@ -43,7 +43,7 @@ linkPromToMagpie <- function(path, pathPollutantPrices,
 # Helpers ------------------------------------------------------------------
 OPEN2MAgPIE <- function(path, pathPollutantPrices, pathBioenergyDemand, scenario) {
   message("[OPEN2MAgPIE] Extracting outputs from OPEN-PROM...")
-  regionMapping <- toolGetMapping(name = "regionmappingOPDEV3.csv",
+  regionMapping <- toolGetMapping(name = "regionmappingOPDEV5.csv",
                                   type = "regional",
                                   where = "mrprom")
 
@@ -139,7 +139,7 @@ MAgPIE2OPEN <- function(path, pathReport, pathSave) {
   
   Globiom <- readSource("GLOBIOMEU", convert = FALSE)
   
-  regionOP <- toolGetMapping(name = "regionmappingOPDEV3.csv",
+  regionOP <- toolGetMapping(name = "regionmappingOPDEV5.csv",
                              type = "regional",
                              where = "mrprom")
   
@@ -148,11 +148,11 @@ MAgPIE2OPEN <- function(path, pathReport, pathSave) {
                               where = "mrprom")
   
   EU27 <- setdiff(getRegions(Globiom), "EU27")
-  ELL <- regionOP[which(regionOP[,3]=="ELL"),2]
+  #ELL <- regionOP[which(regionOP[,3]=="ELL"),2]
   dif <- setdiff(regionOP[,3],regionMag[,3])
   inc <- intersect(regionOP[,3],regionMag[,3])
-  in_of_ELL <- intersect(EU27, ELL)
-  rest_of_ELL <- ELL[!(ELL %in% in_of_ELL)]
+  #in_of_ELL <- intersect(EU27, ELL)
+  #rest_of_ELL <- ELL[!(ELL %in% in_of_ELL)]
   
   Globiom <- Globiom[EU27,,]
   Globiom <- as.quitte(Globiom) %>% mutate(value = mean(value, na.rm = TRUE), .by = c("region"))
@@ -163,9 +163,10 @@ MAgPIE2OPEN <- function(path, pathReport, pathSave) {
   Globiom <- Globiom[,2020,]
   Globiom <- dimSums(Globiom,2)
   Globiom_OP <- Globiom[intersect(getRegions(Globiom),regionOP[,3]),,]
-  Globiom_ELL <- mean(Globiom[in_of_ELL,,])
-  eur_map_op_prom <- add_columns(Globiom_OP, addnm = c("ELL"), dim = 1, fill = Globiom_ELL)
-  
+  #Globiom_ELL <- mean(Globiom[in_of_ELL,,])
+  #eur_map_op_prom <- add_columns(Globiom_OP, addnm = c("ELL"), dim = 1, fill = Globiom_ELL)
+  eur_map_op_prom <- Globiom_OP
+                                 
   OPEN_PROM_biom1 <- magpie[inc,,setdiff(getItems(magpie,3),"Prices|Bioenergy (US$2015/Mtoe)")]
   Emi_GBR <- readSource("UN_GBR_LULUCF")
   Emi_GBR <- mean(Emi_GBR)
