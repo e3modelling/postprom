@@ -20,8 +20,8 @@
 #' @export
 reportSE <- function(path, regions, years) {
   rename_EF <- c(
-    "LGN" = "Lignite",
-    "HCL" = "Hard coal",
+    "LGN" = "Coal",
+    "HCL" = "Coal",
     "GDO" = "Oil",
     "NGS" = "Gas",
     "BMSWAS" = "Biomass",
@@ -30,85 +30,87 @@ reportSE <- function(path, regions, years) {
     "WND" = "Wind",
     "SOL" = "Solar",
     "GEO" = "Geothermal",
-    "H2F" = "Hydrogen"
+    "H2F" = "Hydrogen",
+    "STE" = "Steam"
   )
   mapCCS <- readGDX(path, "CCS_NOCCS") %>% as.data.frame() %>%
     rename(CCS = PGALL, NOCCS = PGALL1)
 
+  TSTEAMtoEF <- data.frame(Tech = "TSTE", EF = "STE")
   PGALLtoEF <- readGDX(path, "PGALLtoEF") %>%
-    rename(Tech = PGALL, EF = PGEF)
+    rename(Tech = PGALL, EF = EFS) %>%
+    bind_rows(TSTEAMtoEF)
   CCStoEF <- PGALLtoEF %>%
     filter(Tech %in% mapCCS$CCS)
-  PGALLtoEF <- PGALLtoEF %>%
-    anti_join(mapCCS, by = c("Tech" = "CCS"))
-  CHPtoEF <- readGDX(path, "CHPtoEF") %>%
-    rename(Tech = EF, EF = EF1) %>%
-    filter(EF %in% PGALLtoEF$EF)
 
   PGALLtoEF$EF <- str_replace_all(PGALLtoEF$EF, rename_EF)
-  CHPtoEF$EF <- str_replace_all(CHPtoEF$EF, rename_EF)
   CCStoEF$EF <- str_replace_all(CCStoEF$EF, rename_EF)
-  mapping <- bind_rows(PGALLtoEF, CHPtoEF, CCStoEF)
-  CHPs <- filter(PGALLtoEF,!EF %in% setdiff(PGALLtoEF$EF, CHPtoEF$EF))
-  CCSs <- filter(PGALLtoEF,!EF %in% setdiff(PGALLtoEF$EF, CCStoEF$EF))
+  TSTEAMtoEF$EF <- str_replace_all(TSTEAMtoEF$EF, rename_EF)
 
-  tempProdNonCHP <- readGDX(path, "VmProdElec", field = "l")[regions, years, ]
-  ProdCHP <- readGDX(path, c("V04ProdElecEstCHP", "V04ProdElecCHP"), field = "l", format = "first_found")[regions, years, ]
-  ProdCCS <- tempProdNonCHP[,,mapCCS$CCS]
-  Prod <- mbind(tempProdNonCHP, ProdCHP)
-  Prod <- helperPrepareProd(Prod, mapping)
+  CCS <- PGALLtoEF %>%
+    filter(Tech %in% CCStoEF$Tech) %>%
+    select(Tech) %>%
+    unlist(use.names = FALSE)
 
-  ProdNonCHP <- helperPrepareProd(tempProdNonCHP[,,CHPs$Tech], CHPs, "Non-CHP")
-  ProdNonCCS <- helperPrepareProd(tempProdNonCHP[,,CCSs$Tech], CCSs, "Non-CHP|w/o CCS")
+  prodElecCHP <- readGDX(path, c("V04ProdElecEstCHP", "V04ProdElecCHP"), field = "l", format = "first_found")[regions, years, ]
+  prodElecCHP <- add_dimension(prodElecCHP, nm="TSTE", add = "PGALL", dim = 3.1)
+  prodElec <- readGDX(path, "VmProdElec", field = "l")[regions, years, ]
+  prodElec <- mbind(prodElec, prodElecCHP)
 
-  ProdCHP <- helperPrepareProd(ProdCHP, CHPtoEF, "CHP")
-  ProdCCS <- helperPrepareProd(ProdCCS, CCStoEF, "Non-CHP|w/ CCS")
+  # Create a mapping for naming (e.g., ATHLGN->Lignite|w/o CCS, etc.)
+  mapping <- PGALLtoEF %>%
+    mutate(
+      EF = ifelse(EF %in% c("Hard coal", "Lignite"), "Coal", EF),
+      EF = ifelse(Tech %in% CCS, paste0(EF, "|w/ CCS"), EF),
+      EF = ifelse(EF %in% CCStoEF$EF & !(Tech %in% CCS), paste0(EF, "|w/o CCS"), EF)
+    )
 
-  Total <- dimSums(Prod, 3.1, na.rm = TRUE)
-  getItems(Total, 3.1) <- "Secondary Energy|Electricity"
-
-  TotalCHP <- dimSums(ProdCHP, 3.1, na.rm = TRUE)
-  getItems(TotalCHP, 3.1) <- "Secondary Energy|Electricity|CHP"
-
-  TotalNonCHP <- Total - TotalCHP
-  TotalNonCHP <- collapseDim(TotalNonCHP, 3.2)
-  getItems(TotalNonCHP, 3.1) <- "Secondary Energy|Electricity|Non-CHP"
-
-  totalDemand <- readGDX(path, "V04DemElecTot", field = "l")[regions, years, ]
-  getItems(totalDemand, 3.1) <- "Secondary Energy|Electricity|Demand"
-
-  ProdNonCHP <- mbind(ProdNonCHP, helperAggregateCoalProd(ProdNonCHP, name = "Non-CHP"))
-  ProdNonCCS <- mbind(ProdNonCCS, helperAggregateCoalProd(ProdNonCCS, name = "Non-CHP|w/o CCS"))
-  ProdCHP <- mbind(ProdCHP, helperAggregateCoalProd(ProdCHP, name = "CHP"))
-  ProdCCS <- mbind(ProdCCS, helperAggregateCoalProd(ProdCCS, name = "Non-CHP|w/ CCS"))
-
-  Total <- dimSums(Prod, 3.1, na.rm = TRUE)
-  getItems(Total, 3.1) <- "Secondary Energy|Electricity"
-  Prod <- mbind(Prod, helperAggregateCoalProd(Prod))
-
-  magpie_object <- mbind(Prod, ProdNonCHP, ProdCHP, ProdNonCCS, ProdCCS, Total,
-                         TotalCHP, TotalNonCHP, totalDemand)
-  magpie_object <- add_dimension(magpie_object, dim = 3.2, add = "unit",nm = "TWh")
-  return(magpie_object)
+  prefix <- "Secondary Energy|Electricity|"
+  prodElec <- helperPrepareProd(prodElec, prefix = prefix, mapping = mapping)
+  prodAll <- mbind(prodElec, helperAggregateLevel(prodElec, level = 4))
+  prodAll <- mbind(prodAll, helperAggregateLevel(prodElec, level = 3))
+  prodAll <- add_dimension(prodAll, dim = 3.2, add = "unit",nm = "TWh")
+  return(prodAll)
 }
 
-# Helper -----------------------------------------------------------------------
-helperPrepareProd <- function(magpie, mapping, name = NULL) {
+# Helpers -----------------------------------------------------------------------
+helperPrepareProd <- function(magpie, mapping, prefix, name = NULL) {
+  # Rename magpie from OPEN-PROM Efs to labels (e.g. Gas -> Secondary Energy|Electricity|)
+  # and aggregate in case of duplicates (Coal from lignite and Hard coal to single Coal)
   magpie <- toolAggregate(
     magpie, dim = 3, rel = mapping, from = "Tech", to = "EF"
   )
 
-  title <- paste0("Secondary Energy|Electricity|", getItems(magpie, 3))
+  title <- paste0(prefix, getItems(magpie, 3))
   title <- if (!is.null(name)) paste(title, name, sep = "|") else title
   getItems(magpie, 3) <- title
   return(magpie)
 }
 
-helperAggregateCoalProd <- function(magpie_object, name = NULL) {
-  temp <- magpie_object[,,c("Lignite", "Hard coal"), pmatch = TRUE]
-  temp <- dimSums(temp, 3.1, na.rm = TRUE)
-  title <- "Secondary Energy|Electricity|Coal"
-  title <- if (!is.null(name)) paste(title, name, sep = "|") else title
-  getItems(temp, 3) <- title
-  return(temp)
+helperAggregateLevel <- function(magpie_object, level) {
+  # Aggregate a dimension based on names' levels:
+  # Secondary Energy|Electricity|Gas|w/o CCS, Secondary Energy|Electricity|Gas|w/ CCS
+  # to Secondary Energy|Electricity|Gas
+  if (!is.magpie(magpie_object)) stop("Input must be a magpie object")
+  if (!is.numeric(level) || level < 1) stop("Level must be a positive integer")
+
+  full_names <- getItems(magpie_object, dim = 3)
+  split_names <- strsplit(full_names, "\\|")
+  keep_idx <- sapply(split_names, length) == level
+
+  if (!any(keep_idx)) {
+    warning(paste("No entries found with exactly", level, "levels."))
+    return(NULL)
+  }
+  x <- magpie_object[,,keep_idx]
+
+  parent_names <- sapply(split_names[keep_idx], function(x) paste(x[1:level-1], collapse = "|"))
+
+  map <- data.frame(names=full_names[keep_idx], parent=parent_names)
+
+  # Aggregate across identical parent names
+  x <- toolAggregate(
+    x, dim = 3, rel = map, from = "names", to = "parent"
+  )
+  return(x)
 }
