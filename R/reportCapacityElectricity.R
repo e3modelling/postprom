@@ -43,6 +43,11 @@ reportCapacityElectricity <- function(path, regions, years) {
   PGALLtoEF$EF <- str_replace_all(PGALLtoEF$EF, rename_EF)
   CCStoEF$EF <- str_replace_all(CCStoEF$EF, rename_EF)
 
+  CCS <- PGALLtoEF %>%
+    filter(Tech %in% CCStoEF$Tech) %>%
+    select(Tech) %>%
+    unlist(use.names = FALSE)
+
   capacity <- readGDX(path, "V04CapElecNominal",
                       field = "l")[regions, years, ]
 
@@ -54,22 +59,9 @@ reportCapacityElectricity <- function(path, regions, years) {
     )
 
   prefix <- "Capacity|Electricity|"
-  capacity <- helperPrepareProd(capacity, mapping = mapping, prefix = prefix)
+  capacity <- helperRenameItems(capacity, mapping = mapping, prefix = prefix)
   capAll <- mbind(capacity, helperAggregateLevel(capacity, level = 4))
   capAll <- mbind(capAll, helperAggregateLevel(capacity, level = 3))
   capAll <- add_dimension(capAll, dim = 3.2, add = "unit",nm = "GW")
   return(capAll)
 }
-
-# Helper -----------------------------------------------------------------------
-helperPrepare <- function(magpie, mapping, name = NULL) {
-  magpie <- toolAggregate(
-    magpie, dim = 3, rel = mapping, from = "Tech", to = "EF"
-  )
-
-  title <- paste0("Capacity|Electricity|", getItems(magpie, 3))
-  title <- if (!is.null(name)) paste(title, name, sep = "|") else title
-  getItems(magpie, 3) <- title
-  return(magpie)
-}
-

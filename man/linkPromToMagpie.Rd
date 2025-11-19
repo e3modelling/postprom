@@ -10,7 +10,8 @@ linkPromToMagpie(
   pathBioenergyDemand,
   pathReport = NULL,
   pathSave = NULL,
-  forward = TRUE
+  forward = TRUE,
+  scenario = "R32M46-SSP2EU-NPi"
 )
 }
 \arguments{
