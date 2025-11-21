@@ -6,7 +6,6 @@
 \usage{
 ValidationMif(
   .path,
-  reg_map,
   mif_name = "fullValidation2.mif",
   Validation_data_for_plots = TRUE
 )

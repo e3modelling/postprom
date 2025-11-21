@@ -17,9 +17,7 @@ Creates a validation report file inn html with piamValidation
 }
 \examples{
 \dontrun{
-htmlReportValidation(.path = "path/to/run", "path/to/mif",
-                years = c("y2015", "y2025"),
-s               scenario_name = "NPI")
+htmlReportValidation(.path = "path/to/run", "path/to/mif")
 }
 
 }
