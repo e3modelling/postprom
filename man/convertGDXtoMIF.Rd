@@ -14,7 +14,7 @@ convertGDXtoMIF(
   aggregate = TRUE,
   emissions = TRUE,
   save = TRUE,
-  htmlReport = TRUE
+  htmlReport = FALSE
 )
 }
 \arguments{
@@ -33,6 +33,8 @@ convertGDXtoMIF(
 \item{emissions}{Optional; a logical value indicating whether to generate a separate emissions csv file for running climate assessment. Defaults to `TRUE`.}
 
 \item{save}{Optional; a logical value indicating whether to save the output. Defaults to `TRUE`.}
+
+\item{htmlReport}{Optional; a logical value indicating whether to generate a HTML report file with piamValidation. Defaults to `FALSE`.}
 }
 \value{
 A list of scenario reports generated from the provided GDX files.
@@ -54,6 +56,7 @@ convertGDXtoMIF(.path = c("path/to/gdx1", "path/to/gdx2"),
                 scenario_name = c("Scenario1", "Scenario2"),
                 aggregate = TRUE,
                 emissions = TRUE,
-                save = TRUE)
+                save = TRUE,
+                htmlReport = FALSE)
 }
 }

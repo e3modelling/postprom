@@ -55,8 +55,24 @@ batchPlotReport <- function(report, metadata, save_pdf) {
   )
 }
 # Helpers -------------------------------------------------------------
+#' Plot a group of related variables
+#'
+#' Internal helper for `batchPlotReport()`. It prefixes each variable
+#' with the group name, extracts those variables from the report, and
+#' generates a combined plot.
+#'
+#' @param vars Character vector of variable names to include in the group.
+#' @param name Character string representing the group name (e.g., "Emissions|CO2|Total").
+#' @param report magpie object containing the data to be plotted.
+#' @param ... Additional arguments passed to the main plotting function.
+#'
+#' @return A ggplot object reporting the grouped variables.
+#' @keywords internal
+#' @noRd
 plotGroups <- function(vars, name, report, ...) {
-  vars <- paste0(sub("\\|[^|]*$", "|", name), vars) # retrieve variable names
+  # Strip the part after the last "|" and append vars (vector)
+  vars <- paste0(sub("\\|[^|]*$", "|", name), vars)
+  vars <- sub("\\|$", "", vars) # Remove trailing "|", if present
   magpie_obj <- report[, , unique(vars)]
   plot <- plotReport(magpie_obj)
   return(plot)

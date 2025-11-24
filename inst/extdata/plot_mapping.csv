@@ -38,20 +38,15 @@ Secondary Energy|Electricity|Total,Nuclear
 Secondary Energy|Electricity|Total,Biomass
 Secondary Energy|Electricity|Total,Hydro
 Secondary Energy|Electricity|Total,Geothermal
+Secondary Energy|Electricity|Total,Steam
 Secondary Energy|Electricity|Total,Demand
 Secondary Energy|Electricity|Total,VAL
-Secondary Energy|Electricity|CCS,Biomass|Non-CHP|w/ CCS
-Secondary Energy|Electricity|CCS,Biomass|Non-CHP|w/o CCS
-Secondary Energy|Electricity|CCS,Coal|Non-CHP|w/ CCS
-Secondary Energy|Electricity|CCS,Coal|Non-CHP|w/o CCS
-Secondary Energy|Electricity|CCS,Gas|Non-CHP|w/ CCS
-Secondary Energy|Electricity|CCS,Gas|Non-CHP|w/o CCS
-Secondary Energy|Electricity|CHP,Biomass|Non-CHP
-Secondary Energy|Electricity|CHP,Biomass|CHP
-Secondary Energy|Electricity|CHP,Coal|Non-CHP
-Secondary Energy|Electricity|CHP,Coal|CHP
-Secondary Energy|Electricity|CHP,Gas|Non-CHP
-Secondary Energy|Electricity|CHP,Gas|CHP
+Secondary Energy|Electricity|CCS,Biomass|w/ CCS
+Secondary Energy|Electricity|CCS,Biomass|w/o CCS
+Secondary Energy|Electricity|CCS,Coal|w/ CCS
+Secondary Energy|Electricity|CCS,Coal|w/o CCS
+Secondary Energy|Electricity|CCS,Gas|w/ CCS
+Secondary Energy|Electricity|CCS,Gas|w/o CCS
 Capacity|Electricity|Total,Solar
 Capacity|Electricity|Total,Oil
 Capacity|Electricity|Total,Wind
@@ -62,5 +57,5 @@ Capacity|Electricity|Total,Biomass
 Capacity|Electricity|Total,Geothermal
 Capacity|Electricity|Total,Hydro
 Capacity|Electricity|Total,VAL
-Price|Carbon|Yearly,
-Gross Inland Consumption|Biomass and Waste|Yearly,
+Price|Carbon,Carbon
+Gross Inland Consumption|Biomass and Waste,Biomass and Waste
