@@ -16,7 +16,7 @@
 #' @importFrom magclass getItems add_dimension mbind
 #' @export
 reportGrossInlandConsumption <- function(path, regions, years) {
-  
+
   energy_codes <- data.frame(
     Code = c(
       "HCL","LGN","CRO","LPG","GSL","KRS","GDO","RFO","OLQ","NGS","OGS","NUC","STE",
@@ -83,27 +83,23 @@ reportGrossInlandConsumption <- function(path, regions, years) {
     ),
     stringsAsFactors = FALSE
   )
-  
+
   V03ConsGrssInl <- readGDX(path, "V03ConsGrssInl", field = "l")[regions, years, ]
-  
+
   #filter biomass
   V03ConsGrssInl_BMSWAS <- V03ConsGrssInl[,2020 : gsub("y", "", max(years)), "BMSWAS"]
-  
+
   #per year
   V03ConsGrssInl_BMSWAS <- dimSums(V03ConsGrssInl_BMSWAS, 1, na.rm = TRUE)
-  
+
   #Mtoe to EJ
   V03ConsGrssInl_BMSWAS <- V03ConsGrssInl_BMSWAS * 0.041868
-  
+
   getItems(V03ConsGrssInl_BMSWAS, 3) <- paste0("Gross Inland Consumption", "|", energy_codes[energy_codes[,"Code"]==getItems(V03ConsGrssInl_BMSWAS, 3),"Description"])
-  
-  
+
+
   V03ConsGrssInl_BMSWAS <- add_dimension(V03ConsGrssInl_BMSWAS, dim = 3.2, add = "unit", nm = "EJ")
   getItems(V03ConsGrssInl_BMSWAS, 1) <- "World"
-  
-  V03ConsGrssInl_BMSWAS_for_plot <- V03ConsGrssInl_BMSWAS
-  getItems(V03ConsGrssInl_BMSWAS_for_plot, 3.1) <- "Gross Inland Consumption|Biomass and Waste|"
-  V03ConsGrssInl_BMSWAS <- mbind(V03ConsGrssInl_BMSWAS, V03ConsGrssInl_BMSWAS_for_plot)
 
   return(V03ConsGrssInl_BMSWAS)
 }

@@ -22,9 +22,5 @@ reportPriceCarbon <- function(path, regions, years) {
   getItems(VCarVal, 3) <- "Price|Carbon"
 
   VCarVal <- add_dimension(VCarVal, dim = 3.2, add = "unit", nm = "US$2015/tn CO2")
-  VCarVal_for_plot <- VCarVal
-  getItems(VCarVal_for_plot, 3.1) <- "Price|Carbon|"
-  VCarVal <- mbind(VCarVal, VCarVal_for_plot)
-  
   return(VCarVal)
 }
