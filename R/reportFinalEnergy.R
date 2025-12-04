@@ -24,11 +24,7 @@ reportFinalEnergy <- function(path, regions, years) {
   energy_codes <- data.frame(
     Code = c(
       "HCL","LGN","CRO","LPG","GSL","KRS","GDO","RFO","OLQ","NGS","OGS","NUC","STE",
-      "HYD","WND","SOL","BMSWAS","GEO","MET","ETH","BGDO","H2F","ELC",
-      "STE1CL","STE1CH","STE1CD","STE1CR","STE1CG","STE1CB",
-      "STE1AL","STE1AH","STE1AD","STE1AR","STE1AG","STE1AB","STE1AH2F",
-      "STE2LGN","STE2OSL","STE2GDO","STE2RFO","STE2OLQ","STE2NGS","STE2OGS","STE2BMS",
-      "PHEVGSL","PHEVGDO","CHEVGSL","CHEVGDO",
+      "HYD","WND","SOL","BMSWAS","GEO","MET","ETH","BGDO","BGSL","H2F","ELC",
       "HTDAC","H2DAC","LTDAC","EWDAC"
     ),
     Description = c(
@@ -53,33 +49,9 @@ reportFinalEnergy <- function(path, regions, years) {
       "Methanol",
       "Ethanol",
       "Biodiesel",
+      "Biogasoline",
       "Hydrogen",
       "Electricity",
-      "Steam coming from CHP plants conventional lgn",
-      "Steam produced from CHP conventional hcl",
-      "CHP conventional gdo",
-      "Steam produced from CHP conventional rfo",
-      "Steam produced from CHP conventional ngs",
-      "Steam produced from CHP conventional bmswas",
-      "Steam produced from CHP advanced lgn",
-      "Steam produced from CHP advanced hcl",
-      "Steam produced from CHP advanced gdo",
-      "Steam produced from CHP advanced rfo",
-      "Steam produced from CHP advanced ngs",
-      "Steam produced from CHP advanced bmswas",
-      "Steam produced from Hydrogen powered CHP fuel cells",
-      "Steam coming from district heating plants burning lgn",
-      "Steam produced from district heating plants burning hcl",
-      "Steam produced from district heating plants burning gdo",
-      "Steam produced from district heating plants burning rfo",
-      "Steam produced from district heating plants burning olq",
-      "Steam produced from district heating plants burning ngs",
-      "Steam produced from district heating plants burning ogs",
-      "Steam produced from district heating plants burning bmswas",
-      "Plug in Hybrid engine - gasoline",
-      "Plug in Hybrid engine - diesel",
-      "Conventional Hybrid engine - gasoline",
-      "Conventional Hybrid engine - diesel",
       "High-Temperature DAC",
       "High-Temperature H2-fueled DAC",
       "Low-Temperature DAC",
@@ -201,8 +173,14 @@ reportFinalEnergy <- function(path, regions, years) {
     by_energy_form_open <- add_dimension(by_energy_form_open, dim = 3.2, add = "unit", nm = "Mtoe")
     magpie_object <- mbind(magpie_object, by_energy_form_open)
 
-    # per fuel
-    FCONS_per_fuel <- FCONS_by_sector_and_EF_open[, , sectorsSet[, 1]][, , !(getItems(FCONS_by_sector_and_EF_open, 3.2)) %in% (getItems(by_energy_form_and_by_subsector_open, 3.2))]
+    # Identify DAC tech that should never appear in sector reporting
+    DAC_fuels <- c("HTDAC", "H2DAC", "LTDAC", "EWDAC")
+    # Exclude also some duplicates like "ELC" = "Electricity"
+    excluded_fuels <- c(names(rename_EFA), DAC_fuels)
+
+    # per fuel 
+    # filters fuels that were already aggregated into energy forms and DAC
+    FCONS_per_fuel <- FCONS_by_sector_and_EF_open[, , sectorsSet[, 1]][, , !(getItems(FCONS_by_sector_and_EF_open, 3.2)) %in% c(getItems(by_energy_form_and_by_subsector_open, 3.2), excluded_fuels)]
 
     # remove . from magpie object and replace with |
     FCONS_per_fuel <- as.quitte(FCONS_per_fuel)
@@ -215,9 +193,14 @@ reportFinalEnergy <- function(path, regions, years) {
     magpie_object <- mbind(magpie_object, FCONS_per_fuel)
     
     # per fuel of OPEN-PROM
-    FCONS_per_fuel_OP <- FCONS_by_sector_and_EF_open[, , sectorsSet[, 1]]
+    # All non-DAC tech present in this sector
+    valid_fuels <- setdiff(getItems(FCONS_by_sector_and_EF_open, 3.2), excluded_fuels)
+
+    FCONS_per_fuel_OP <- FCONS_by_sector_and_EF_open[, , valid_fuels]
+
     FCONS_per_fuel_OP <- dimSums(FCONS_per_fuel_OP, 3.1)
     FCONS_per_fuel_OP_new_names <- FCONS_per_fuel_OP
+
     getItems(FCONS_per_fuel_OP, 3) <- paste0("Final Energy|", sector_name[y], "|", getItems(FCONS_per_fuel_OP, 3))
     
     FCONS_per_fuel_OP <- add_dimension(FCONS_per_fuel_OP, dim = 3.2, add = "unit", nm = "Mtoe")
