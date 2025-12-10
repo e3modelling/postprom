@@ -94,19 +94,23 @@ convertGDXtoMIF_single <- function(.path, path_mif, append, regions = NULL,
   reports <- mbind(reports, reportCapacityElectricity(path_gdx, regions, years))
   reports <- mbind(reports, reportACTV(path_gdx, regions, years))
   reports <- mbind(reports, reportCapacityAdditions(path_gdx, regions, years))
-
+  reports <- mbind(reports, reportCostsPGtechnologies(path_gdx, regions, years))
+  
+  reportLearningCurve <- reportLearningCurve(path_gdx, regions, years)
   GrossInlandConsumption <- reportGrossInlandConsumption(path_gdx, regions, years)
 
   #add dummy NA values for all regions and years
   GrossInlandConsumption <- add_columns(GrossInlandConsumption, addnm = setdiff(getRegions(reports),getRegions(GrossInlandConsumption)), dim = 1, fill = NA)
   GrossInlandConsumption <- add_columns(GrossInlandConsumption, addnm = setdiff(getYears(reports),getYears(GrossInlandConsumption)), dim = 2, fill = NA)
-
+  reportLearningCurve <- add_columns(reportLearningCurve, addnm = setdiff(getRegions(reports),getRegions(reportLearningCurve)), dim = 1, fill = NA)
+  
   if (aggregate == TRUE) {
       reports <- aggregateMIF(report = reports)
   } else {
     reports <- add_columns(reports, addnm = setdiff(getRegions(GrossInlandConsumption),getRegions(reports)), dim = 1, fill = NA)
   }
   reports <- mbind(reports, GrossInlandConsumption)
+  reports <- mbind(reports, reportLearningCurve)
   reports <- mbind(reports, reportBudget(magpieObject=reports,aggregate, budgetBaseYear = 2019,
                        budget1p5= 400, budget2c= 1150, probLabel= "67%"))
 
