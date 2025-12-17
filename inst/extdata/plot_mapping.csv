@@ -7,6 +7,7 @@ Emissions|CO2|Total,Energy|Supply
 Emissions|CO2|Total,AFOLU
 Emissions|CO2|Total,Industrial Processes
 Emissions|CO2|Total,Other Capture and Removal
+Emissions|CO2|Total,Validation
 Emissions|CO2|Total,
 Emissions|CO2|Total,VAL
 Emissions|CO2|Cumulated,Cumulated
@@ -16,9 +17,12 @@ Final Energy|Sector,Other Capture and Removal
 Final Energy|Sector,Industry
 Final Energy|Sector,Transportation
 Final Energy|Sector,Residential and Commercial
+Final Energy|Sector,Validation
 Final Energy|Sector,VAL
 Final Energy|Sector,Industry|VAL
 Final Energy|Sector,Transportation|VAL
+Final Energy|Sector,Industry|Validation
+Final Energy|Sector,Transportation|Validation
 Final Energy|Sector,Non Energy
 Final Energy|Sector,Bunkers
 Final Energy|Fuel,Solids
@@ -28,6 +32,7 @@ Final Energy|Fuel,Electricity
 Final Energy|Fuel,Liquids
 Final Energy|Fuel,Heat
 Final Energy|Fuel,Biomass
+Final Energy|Fuel,Validation
 Final Energy|Fuel,VAL
 Secondary Energy|Electricity|Total,Solar
 Secondary Energy|Electricity|Total,Oil
@@ -41,6 +46,7 @@ Secondary Energy|Electricity|Total,Geothermal
 Secondary Energy|Electricity|Total,Steam
 Secondary Energy|Electricity|Total,Demand
 Secondary Energy|Electricity|Total,VAL
+Secondary Energy|Electricity|Total,Validation
 Secondary Energy|Electricity|CCS,Biomass|w/ CCS
 Secondary Energy|Electricity|CCS,Biomass|w/o CCS
 Secondary Energy|Electricity|CCS,Coal|w/ CCS

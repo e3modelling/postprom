@@ -21,7 +21,7 @@
 ValidationMif <- function(.path, mif_name = "fullValidation2.mif", Validation_data_for_plots = TRUE) {
   
   if (Validation_data_for_plots == TRUE) {
-    val_data <- ValidationMif2(.path[1], mif_name)
+    val_data <- ValidationMif2(.path[1], mif_name)[[1]]
     # rename GLO to World
     reports_val <- lapply(val_data, function(x) {
     regions <- getRegions(x)
@@ -51,7 +51,17 @@ ValidationMif <- function(.path, mif_name = "fullValidation2.mif", Validation_da
     reports_val <- combined_all
     reports_val <- as.quitte(reports_val) %>% as.magpie()
     getItems(reports_val, 3.1) <- paste0(getItems(reports_val, 3.1), "|VAL")
-    } else {reports_val = NULL}
+  } else {reports_val = NULL}
+  ###### projections
+  
+  projections <- ValidationMif2(.path[1], mif_name)[[2]]
+  proj_IEA <- mbind(projections[[3]], projections[[4]])
+  proj_IEA <- as.quitte(proj_IEA) %>% as.magpie()
+  getItems(proj_IEA, 3.1) <- paste0(getItems(proj_IEA, 3.1), "|Validation")
+  proj_IEA <- add_columns(proj_IEA, addnm = setdiff(getRegions(reports_val),getRegions(proj_IEA)), dim = 1, fill = NA)
+  
+  reports_val <- mbind(reports_val, proj_IEA)
+  
   return(reports_val)
 }
 
@@ -67,6 +77,7 @@ ValidationMif2 <- function(runpath, mif_name) {
       base_dir
     ))
   }
-  fullVALIDATION2 <- fullVALIDATION2[["historical"]]
-  return(fullVALIDATION2)
+  historical <- fullVALIDATION2[["historical"]]
+  Validation <- fullVALIDATION2[["Validation"]]
+  return(list(historical, Validation))
 }
