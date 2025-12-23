@@ -1,0 +1,33 @@
+OPEN-PROM,IAMC
+CH4_manure,Emissions|CH4|AFOLU|Agriculture|Livestock|Manure Management
+CH4_enteric,Emissions|CH4|AFOLU|Agriculture|Livestock|Enteric Fermentation
+CH4_coal,Emissions|CH4|Energy|Supply|Solids
+CH4_sewage,Emissions|CH4|Waste
+CH4_ngas,Emissions|CH4|Energy|Supply|Gases
+CH4_landfills,Emissions|CH4|Waste
+CH4_oilp,Emissions|CH4|Energy|Supply|Liquids
+CH4_rice,Emissions|CH4|AFOLU|Agriculture|Rice
+N2O_sewage,Emissions|N2O|Waste
+N2O_adipic,Emissions|N2O|Industrial Processes|Chemicals
+N2O_manure,Emissions|N2O|AFOLU|Agriculture|Livestock|Manure Management
+N2O_fertilizer,Emissions|N2O|AFOLU|Agriculture|Managed Soils
+N2O_nitric,Emissions|N2O|Industrial Processes|Chemicals
+N2O_transport,Emissions|N2O|Energy|Demand|Transportation
+HFC_125,Emissions|HFC|HFC125
+HFC_134a,Emissions|HFC|HFC134a
+HFC_143a,Emissions|HFC|HFC143a
+HFC_152a,Emissions|HFC|HFC152a
+HFC_227ea,Emissions|HFC|HFC227ea
+HFC_23,Emissions|HFC|HFC23
+HFC_236fa,Emissions|HFC|HFC236fa
+HFC_32,Emissions|HFC|HFC32
+HFC_43_10,Emissions|HFC|HFC43-10
+HFC_245ca,Emissions|HFC|HFC245fa
+CF4,Emissions|CF4
+C2F6,Emissions|C2F6
+C6F14,Emissions|C6F14
+CF4,Emissions|PFC|CF4
+C2F6,Emissions|PFC|C2F6
+C6F14,Emissions|PFC|C6F14
+SF6,Emissions|SF6
+
