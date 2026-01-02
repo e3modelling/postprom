@@ -23,9 +23,6 @@ HFC_236fa,Emissions|HFC|HFC236fa
 HFC_32,Emissions|HFC|HFC32
 HFC_43_10,Emissions|HFC|HFC43-10
 HFC_245ca,Emissions|HFC|HFC245fa
-CF4,Emissions|CF4
-C2F6,Emissions|C2F6
-C6F14,Emissions|C6F14
 CF4,Emissions|PFC|CF4
 C2F6,Emissions|PFC|C2F6
 C6F14,Emissions|PFC|C6F14
