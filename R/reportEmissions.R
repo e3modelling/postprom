@@ -158,8 +158,14 @@ reportEmissions <- function(path, regions, years) {
                             field = "l", format = "first_found")[regions, years, ]
   VConsFuelTechH2Prod <- readGDX(path, "VmConsFuelTechH2Prod", field = 'l')[regions, years, ]
   emissionsNonCO2 <- readGDX(path, "V07EmiActBySrcRegTim",field = "l")[regions, years, ]
-  # Link between Model Subsectors and Fuels
 
+  if (is.null(emissionsNonCO2)) {
+    message("V07EmiActBySrcRegTim not found – creating empty emissionsNonCO2 placeholder")
+    # Zero placeholder for nonCO2 emissions with a single variable
+    emissionsNonCO2 <- new.magpie(regions, years, "CH4_manure", fill = 0)
+  }
+  
+  # Link between Model Subsectors and Fuels
   sets4 <- readGDX(path, "SECtoEF")
 
   EFtoEFS <- readGDX(path, "EFtoEFS")
@@ -695,7 +701,8 @@ reportEmissions <- function(path, regions, years) {
   emissionsNonCO2 <- toolAggregate(
     emissionsNonCO2,
     dim  = 3,
-    rel  = nonCO2mapping
+    rel  = nonCO2mapping,
+    partrel = TRUE
   )
   # Convert CH4 and N20 from Mt Ceq to "Mt CH4/yr" or "kt N2O/yr"
   allVariables <- getNames(emissionsNonCO2)
