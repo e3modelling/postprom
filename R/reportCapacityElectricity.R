@@ -62,7 +62,7 @@ reportCapacityElectricity <- function(path, regions, years) {
 
   prefix <- "Capacity|Electricity|"
   capacity <- helperRenameItems(capacity, mapping = mapping, prefix = prefix)
-  capAll <- helperAggregateLevel(prodElec, level = 2, recursive = TRUE)
+  capAll <- helperAggregateLevel(capacity, level = 2, recursive = TRUE)
 
   capAll <- add_dimension(capAll, dim = 3.2, add = "unit", nm = "GW")
   return(capAll)

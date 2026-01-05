@@ -148,9 +148,6 @@ reportEmissions <- function(path, regions, years) {
 
   iCo2EmiFac <- readGDX(path, "imCo2EmiFac")[regions, years, ]
   VConsFuel <- readGDX(path, "VmConsFuel", field = 'l')[regions, years, ]
-  VInpTransfTherm <- readGDX(path, "VmInpTransfTherm", field = 'l')[regions, years, ]
-  VTransfInputDHPlants <- readGDX(path, "VmTransfInputDHPlants", field = 'l')[regions, years, ]
-  VConsFiEneSec <- readGDX(path, "VmConsFiEneSec", field = 'l')[regions, years, ]
   VDemFinEneTranspPerFuel <- readGDX(path, "VmDemFinEneTranspPerFuel", field = 'l')[regions, years, ]
   VProdElec <- readGDX(path, "VmProdElec", field = 'l')[regions, years, ]
   iPlantEffByType <- readGDX(path, "imPlantEffByType")[regions, years, ]
