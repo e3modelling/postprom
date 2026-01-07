@@ -721,6 +721,11 @@ reportEmissions <- function(path, regions, years) {
   currentNames <- getNames(emissionsNonCO2)
   unitVector <- sapply(currentNames, getUnit)
   getNames(emissionsNonCO2) <- paste(currentNames, unitVector, sep = ".")
+
+  # Make emissionsNonCO2 override any same-named variables already in magpie_object
+  incoming <- getItems(emissionsNonCO2, 3)
+  magpie_object <- magpie_object[, , !getItems(magpie_object, 3) %in% incoming, drop = FALSE]
+  
   magpie_object <- mbind(magpie_object, emissionsNonCO2)
 
   # Emissions|CO2|Cumulated
