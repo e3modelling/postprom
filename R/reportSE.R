@@ -33,7 +33,8 @@ reportSE <- function(path, regions, years) {
     "H2F" = "Hydrogen",
     "STE" = "Steam"
   )
-  mapCCS <- readGDX(path, "CCS_NOCCS") %>% as.data.frame() %>%
+  mapCCS <- readGDX(path, "CCS_NOCCS") %>%
+    as.data.frame() %>%
     rename(CCS = PGALL, NOCCS = PGALL1)
 
   TSTEAMtoEF <- data.frame(Tech = "TSTE", EF = "STE")
@@ -53,7 +54,7 @@ reportSE <- function(path, regions, years) {
     unlist(use.names = FALSE)
 
   prodElecCHP <- readGDX(path, c("V04ProdElecEstCHP", "V04ProdElecCHP"), field = "l", format = "first_found")[regions, years, ]
-  prodElecCHP <- add_dimension(prodElecCHP, nm="TSTE", add = "PGALL", dim = 3.1)
+  prodElecCHP <- add_dimension(prodElecCHP, nm = "TSTE", add = "PGALL", dim = 3.1)
   prodElec <- readGDX(path, "VmProdElec", field = "l")[regions, years, ]
   prodElec <- mbind(prodElec, prodElecCHP)
 
@@ -67,13 +68,13 @@ reportSE <- function(path, regions, years) {
 
   prefix <- "Secondary Energy|Electricity|"
   prodElec <- helperRenameItems(prodElec, prefix = prefix, mapping = mapping)
-  prodAll <- mbind(prodElec, helperAggregateLevel(prodElec, level = 4))
-  prodAll <- mbind(prodAll, helperAggregateLevel(prodElec, level = 3))
+
+  prodAll <- helperAggregateLevel(prodElec, level = 2, recursive = TRUE)
 
   totalDemand <- readGDX(path, "V04DemElecTot", field = "l")[regions, years, ]
   getItems(totalDemand, 3.1) <- "Secondary Energy|Electricity|Demand"
   prodAll <- mbind(prodAll, totalDemand)
 
-  prodAll <- add_dimension(prodAll, dim = 3.2, add = "unit",nm = "TWh")
+  prodAll <- add_dimension(prodAll, dim = 3.2, add = "unit", nm = "TWh")
   return(prodAll)
 }
