@@ -44,7 +44,7 @@ convertGDXtoMIF <- function(.path, mif_name, regions = NULL, years = NULL,
     if (length(.path) > 1) dirname(.path[1]) else .path[1],
     if (length(.path) > 1) paste0("comparison_", current_time, "_", mif_name) else mif_name
   )
-  
+
   scenarios_reports <- mapply(function(path, scenario) {
     convertGDXtoMIF_single(
       .path = path,
@@ -64,7 +64,7 @@ convertGDXtoMIF <- function(.path, mif_name, regions = NULL, years = NULL,
   )
 
   if (fullValidation == TRUE) appendValidationMIF(.path[1], path_mif)
-  
+
   return(scenarios_reports)
 }
 # Helpers -----------------------------------------------------------------
@@ -75,7 +75,7 @@ convertGDXtoMIF_single <- function(.path, path_mif, append, regions = NULL,
   print(paste0("Region aggregation: ", aggregate))
   print(paste0("Processing path: ", .path))
   path_gdx <- file.path(.path, "blabla.gdx")
-  
+
   if (is.null(regions)) regions <- readGDX(path_gdx, "runCYL")
   if (is.null(years)) {
     years <- as.character(c(2010:2020))
@@ -94,12 +94,15 @@ convertGDXtoMIF_single <- function(.path, path_mif, append, regions = NULL,
   reports <- mbind(reports, reportCapacityElectricity(path_gdx, regions, years))
   reports <- mbind(reports, reportACTV(path_gdx, regions, years))
   reports <- mbind(reports, reportCapacityAdditions(path_gdx, regions, years))
-
-  GrossInlandConsumption <- reportGrossInlandConsumption(path_gdx, regions, years)
+  reports <- mbind(reports, reportCostsPGtechnologies(path_gdx, regions, years))
   
+  reportLearningCurve <- reportLearningCurve(path_gdx, regions, years)
+  GrossInlandConsumption <- reportGrossInlandConsumption(path_gdx, regions, years)
+
   #add dummy NA values for all regions and years
   GrossInlandConsumption <- add_columns(GrossInlandConsumption, addnm = setdiff(getRegions(reports),getRegions(GrossInlandConsumption)), dim = 1, fill = NA)
   GrossInlandConsumption <- add_columns(GrossInlandConsumption, addnm = setdiff(getYears(reports),getYears(GrossInlandConsumption)), dim = 2, fill = NA)
+  reportLearningCurve <- add_columns(reportLearningCurve, addnm = setdiff(getRegions(reports),getRegions(reportLearningCurve)), dim = 1, fill = NA)
   
   if (aggregate == TRUE) {
       reports <- aggregateMIF(report = reports)
@@ -107,6 +110,7 @@ convertGDXtoMIF_single <- function(.path, path_mif, append, regions = NULL,
     reports <- add_columns(reports, addnm = setdiff(getRegions(GrossInlandConsumption),getRegions(reports)), dim = 1, fill = NA)
   }
   reports <- mbind(reports, GrossInlandConsumption)
+  reports <- mbind(reports, reportLearningCurve)
   reports <- mbind(reports, reportBudget(magpieObject=reports,aggregate, budgetBaseYear = 2019,
                        budget1p5= 400, budget2c= 1150, probLabel= "67%"))
 
@@ -120,11 +124,11 @@ convertGDXtoMIF_single <- function(.path, path_mif, append, regions = NULL,
       scenario = scenario_name,
       append = append
     )
-    print(paste0("Saved mif file in ", path_mif))
+    print(paste0("Saving mif file in ", path_mif))
 
     if (htmlReport == TRUE) htmlReportValidation(.path, path_mif)
   }
-  
+
   return(reports)
 }
 
