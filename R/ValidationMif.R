@@ -55,7 +55,6 @@ ValidationMif <- function(.path, mif_name = "fullValidation2.mif", Validation_da
   ###### projections
   
   projections <- ValidationMif2(.path[1], mif_name)[[2]]
-  projections[[4]] <- add_columns(projections[[4]], addnm = setdiff(getRegions(projections[[3]]),getRegions(projections[[4]])), dim = 1, fill = NA)
   proj_IEA <- mbind(projections[[3]], projections[[4]])
   proj_IEA <- as.quitte(proj_IEA) %>% as.magpie()
   getItems(proj_IEA, 3.1) <- paste0(getItems(proj_IEA, 3.1), "|Validation")
