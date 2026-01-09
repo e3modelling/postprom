@@ -157,8 +157,15 @@ reportEmissions <- function(path, regions, years) {
   v04CO2CaptRate <- readGDX(path, name = c("V04CO2CaptRate", "imCO2CaptRate"),
                             field = "l", format = "first_found")[regions, years, ]
   VConsFuelTechH2Prod <- readGDX(path, "VmConsFuelTechH2Prod", field = 'l')[regions, years, ]
-  # Link between Model Subsectors and Fuels
+  emissionsNonCO2 <- readGDX(path, "V07EmiActBySrcRegTim",field = "l")[regions, years, ]
 
+  if (is.null(emissionsNonCO2)) {
+    message("V07EmiActBySrcRegTim not found – creating empty emissionsNonCO2 placeholder")
+    # Zero placeholder for nonCO2 emissions with a single variable
+    emissionsNonCO2 <- new.magpie(regions, years, "CH4_manure", fill = 0)
+  }
+  
+  # Link between Model Subsectors and Fuels
   sets4 <- readGDX(path, "SECtoEF")
 
   EFtoEFS <- readGDX(path, "EFtoEFS")
@@ -686,6 +693,41 @@ reportEmissions <- function(path, regions, years) {
 
   magpie_object <- mbind(magpie_object, sum)
 
+  # Add non-CO2 gases from OPEN-PROM
+  nonCO2mapping <- toolGetMapping("open-prom-emissions-mapping.csv",
+                          type = "sectoral",
+                          where = "postprom")
+
+  emissionsNonCO2 <- toolAggregate(
+    emissionsNonCO2,
+    dim  = 3,
+    rel  = nonCO2mapping,
+    partrel = TRUE
+  )
+  # Convert CH4 and N20 from Mt Ceq to "Mt CH4/yr" or "kt N2O/yr"
+  allVariables <- getNames(emissionsNonCO2)
+  ch4Vars <- grep("CH4", allVariables, value = TRUE)
+  n2oVars <- grep("N2O", allVariables, value = TRUE)
+
+  # Factor = (C -> CO2) / GWP * (Mt -> kt) for N2O
+  # Constants: C_TO_CO2 = 44/12, GWP_CH4 = 25, GWP_N2O = 298
+  conversionFactorCh4 <- (44/12) / 25   
+  conversionFactorN2o <- (44/12) / 298 * 1e3 
+
+  emissionsNonCO2[,,ch4Vars] <- emissionsNonCO2[,,ch4Vars] * conversionFactorCh4
+  emissionsNonCO2[,,n2oVars] <- emissionsNonCO2[,,n2oVars] * conversionFactorN2o
+  
+  # Add appropriate units for each gas
+  currentNames <- getNames(emissionsNonCO2)
+  unitVector <- sapply(currentNames, getUnit)
+  getNames(emissionsNonCO2) <- paste(currentNames, unitVector, sep = ".")
+
+  # Make emissionsNonCO2 override any same-named variables already in magpie_object
+  incoming <- getItems(emissionsNonCO2, 3)
+  magpie_object <- magpie_object[, , !getItems(magpie_object, 3) %in% incoming, drop = FALSE]
+  
+  magpie_object <- mbind(magpie_object, emissionsNonCO2)
+
   # Emissions|CO2|Cumulated
 
   Cumulated <- as.quitte(total_CO2)
@@ -705,6 +747,25 @@ reportEmissions <- function(path, regions, years) {
   return(magpie_object)
 }
 # Helpers -------------------------------------------------------------
+# Define a function to generate the unit for a single variable name - nonCO2
+getUnit <- function(varName) {
+  
+  if (grepl("CH4", varName)) {
+    # CH4 is always Mt
+    return("Mt CH4/yr")
+
+  } else if (grepl("N2O", varName)) {
+  # N2O is kt
+  return("kt N2O/yr")
+
+  } else {
+    # Extract the "leaf" (everything after the last '|')
+    # Example: "Emissions|HFC|HFC152a" -> "HFC152a"
+    gasName <- sub(".*\\|", "", varName)
+    # Return the kt unit
+    return(paste0("kt ", gasName, "/yr"))
+  }
+}
 extractAggregatedData <- function(scenario,x,years, ...) {
 
   map <- toolGetMapping(name = "NavigateEmissions.csv",

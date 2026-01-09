@@ -43,6 +43,7 @@ Secondary Energy|Electricity|Total,Nuclear
 Secondary Energy|Electricity|Total,Biomass
 Secondary Energy|Electricity|Total,Hydro
 Secondary Energy|Electricity|Total,Geothermal
+Secondary Energy|Electricity|Total,Hydrogen
 Secondary Energy|Electricity|Total,Steam
 Secondary Energy|Electricity|Total,Demand
 Secondary Energy|Electricity|Total,VAL
@@ -62,6 +63,7 @@ Capacity|Electricity|Total,Nuclear
 Capacity|Electricity|Total,Biomass
 Capacity|Electricity|Total,Geothermal
 Capacity|Electricity|Total,Hydro
+Capacity|Electricity|Total,Hydrogen
 Capacity|Electricity|Total,VAL
 Price|Carbon,Carbon
 Gross Inland Consumption|Biomass and Waste,Biomass and Waste
