@@ -54,23 +54,14 @@ ValidationMif <- function(.path, mif_name = "fullValidation2.mif", Validation_da
   } else {reports_val = NULL}
   
   ###### projections
+  Validation <- ValidationMif2(.path[1], mif_name)[[2]]
   
-  Current <- ValidationMif2(.path[1], mif_name)[[2]]
-  Stated <- ValidationMif2(.path[1], mif_name)[[3]]
-  
-  Current <- do.call(mbind, Current)
-  Stated <- do.call(mbind, Stated)
-  
-  Current <- add_dimension(Current, dim = 3.2, add = "scenario", nm = "Current Policies Scenario")
-  Stated <- add_dimension(Stated, dim = 3.2, add = "scenario", nm = "Stated Policies Scenario")
-  
-  proj_IEA <- mbind(Current, Stated)
+  proj_IEA <- mbind(Validation[[3]], Validation[[4]])
+
   proj_IEA <- as.quitte(proj_IEA) %>% as.magpie()
-  getItems(proj_IEA, 3.2) <- paste0(getItems(proj_IEA, 3.2), "|Validation")
+  getItems(proj_IEA, 3.1) <- paste0(getItems(proj_IEA, 3.1), "|Validation")
   proj_IEA <- add_columns(proj_IEA, addnm = setdiff(getRegions(reports_val),getRegions(proj_IEA)), dim = 1, fill = NA)
   proj_IEA <- proj_IEA[getRegions(reports_val),, ]
-  
-  reports_val <- add_dimension(reports_val, dim = 3.3, add = "scenario", nm = "historical")
   
   reports_val <- as.quitte(reports_val) %>% as.magpie()
   
@@ -92,7 +83,6 @@ ValidationMif2 <- function(runpath, mif_name) {
     ))
   }
   historical <- fullVALIDATION2[["historical"]]
-  Current <- fullVALIDATION2[["Current Policies Scenario"]]
-  Stated <- fullVALIDATION2[["Stated Policies Scenario"]]
-  return(list(historical, Current, Stated))
+  Validation <- fullVALIDATION2[["Validation"]]
+  return(list(historical, Validation))
 }
