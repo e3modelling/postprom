@@ -32,7 +32,8 @@ reportCapacityElectricity <- function(path, regions, years) {
     "H2F" = "Hydrogen",
     "STE" = "Steam"
   )
-  mapCCS <- readGDX(path, "CCS_NOCCS") %>% as.data.frame() %>%
+  mapCCS <- readGDX(path, "CCS_NOCCS") %>%
+    as.data.frame() %>%
     rename(CCS = PGALL, NOCCS = PGALL1)
 
   PGALLtoEF <- readGDX(path, "PGALLtoEF") %>%
@@ -49,7 +50,8 @@ reportCapacityElectricity <- function(path, regions, years) {
     unlist(use.names = FALSE)
 
   capacity <- readGDX(path, "V04CapElecNominal",
-                      field = "l")[regions, years, ]
+    field = "l"
+  )[regions, years, ]
 
   mapping <- PGALLtoEF %>%
     mutate(
@@ -60,8 +62,8 @@ reportCapacityElectricity <- function(path, regions, years) {
 
   prefix <- "Capacity|Electricity|"
   capacity <- helperRenameItems(capacity, mapping = mapping, prefix = prefix)
-  capAll <- mbind(capacity, helperAggregateLevel(capacity, level = 4))
-  capAll <- mbind(capAll, helperAggregateLevel(capacity, level = 3))
-  capAll <- add_dimension(capAll, dim = 3.2, add = "unit",nm = "GW")
+  capAll <- helperAggregateLevel(capacity, level = 2, recursive = TRUE)
+
+  capAll <- add_dimension(capAll, dim = 3.2, add = "unit", nm = "GW")
   return(capAll)
 }
