@@ -17,8 +17,8 @@
 #' @export
 reportLearningCurve <- function(path, regions, years) {
   
-  VmCostLC <- readGDX(path, "VmCostLC", field = "l")
-  V10CumCapGlobal <- readGDX(path, "V10CumCapGlobal", field = "l")
+  VmCostLC <- readGDX(path, "VmCostLC", field = "l")[, years, ]
+  V10CumCapGlobal <- readGDX(path, "V10CumCapGlobal", field = "l")[, years, ]
   
   # complete names
   getItems(VmCostLC, 3) <- paste0("Learning curve cost multiplier|", getItems(VmCostLC, 3))
