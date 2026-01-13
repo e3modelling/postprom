@@ -20,16 +20,23 @@ reportLearningCurve <- function(path, regions, years) {
   VmCostLC <- readGDX(path, "VmCostLC", field = "l")[, years, ]
   V10CumCapGlobal <- readGDX(path, "V10CumCapGlobal", field = "l")[, years, ]
   
-  # complete names
-  getItems(VmCostLC, 3) <- paste0("Learning curve cost multiplier|", getItems(VmCostLC, 3))
-  VmCostLC <- add_dimension(VmCostLC, dim = 3.2, add = "unit", nm = "1")
-  
-  # complete names
-  getItems(V10CumCapGlobal, 3) <- paste0("Global cumulative capacity|", getItems(V10CumCapGlobal, 3))
-  V10CumCapGlobal <- add_dimension(V10CumCapGlobal, dim = 3.2, add = "unit", nm = "GW")
-  
-  variables <- mbind(VmCostLC, V10CumCapGlobal)
-  getItems(variables, 1) <- "World"
+  if (!is.null(VmCostLC)) {
+    
+    # complete names
+    getItems(VmCostLC, 3) <- paste0("Learning curve cost multiplier|", getItems(VmCostLC, 3))
+    VmCostLC <- add_dimension(VmCostLC, dim = 3.2, add = "unit", nm = "1")
+    
+    # complete names
+    getItems(V10CumCapGlobal, 3) <- paste0("Global cumulative capacity|", getItems(V10CumCapGlobal, 3))
+    V10CumCapGlobal <- add_dimension(V10CumCapGlobal, dim = 3.2, add = "unit", nm = "GW")
+    
+    variables <- mbind(VmCostLC, V10CumCapGlobal)
+    getItems(variables, 1) <- "World"
+    
+  } else {
+    variables <- new.magpie("World", years, "Dummy", fill = 0)
+    variables <- add_dimension(variables, dim = 3.2, add = "unit", nm = "1")
+  }
   
   return(variables)
 }
