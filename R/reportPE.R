@@ -14,7 +14,7 @@
 #' @importFrom magclass getItems getNames add_dimension mbind
 #' @export
 reportPE <- function(path, regions, years) {
-  vars = c("V03ConsGrssInl", "BALEF2EFS")
+  vars <- c("V03ConsGrssInl", "BALEF2EFS")
   values <- readGDX(path, vars, field = 'l')
 
   V03ConsGrssInl <- values$V03ConsGrssInl[regions, years, ]
