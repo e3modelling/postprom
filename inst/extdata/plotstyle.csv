@@ -60,7 +60,7 @@ Emissions|CO2|Cumulated,Cumulated,#661a00,bar
 Emissions|CO2|Budget1p5C,Budget1p5C,black,dLine
 Emissions|CO2|Budget2C,Budget2C,red,dLine
 Emissions|CO2,Total,red,dLine
-Emissions|CO2|VAL,PIK,black,dLine
+Emissions|CO2|VAL,EDGAR,black,dLine
 Emissions|CO2|Validation,IEA|Projections,green,dLine
 Emissions|CO2|Other Capture and Removal,CDR,#87e6a4,bar
 Emissions|CO2|AFOLU,AFOLU,#595933,bar
