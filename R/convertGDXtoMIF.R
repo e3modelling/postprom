@@ -37,7 +37,7 @@
 convertGDXtoMIF <- function(.path, mif_name, regions = NULL, years = NULL,
                             fullValidation = TRUE, scenario_name = NULL,
                             aggregate = TRUE, emissions = TRUE, save = TRUE,
-                            htmlReport = FALSE, projectReport = TRUE) {
+                            htmlReport = FALSE, projectReport = FALSE) {
   if (is.null(scenario_name)) scenario_name <- basename(.path)
   current_time <- format(Sys.time(), "%Y-%m-%d_%H-%M")
   append <- length(.path) > 1
