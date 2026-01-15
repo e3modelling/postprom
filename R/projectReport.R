@@ -14,6 +14,8 @@
 #' }
 #' 
 #' @importFrom magclass mbind dimSums getItems getRegions write.report read.report
+#' @importFrom dplyr filter pull
+#' @importFrom utils read.csv
 #' @export
 projectReport <- function(.path, openPromFile) {
 
@@ -117,7 +119,7 @@ projectReport <- function(.path, openPromFile) {
   allRegions <- getRegions(finalResults$object)
   allYears <- getYears(finalResults$object)
 
-  tierMagpie <-new.magpie(cells = allRegions, years = allYears, names  = combinedVector, fill = 0)
+  tierMagpie <- new.magpie(cells = allRegions, years = allYears, names  = combinedVector, fill = 0)
   names(dimnames(tierMagpie))[3] <- "variable"
 
   #finalDataMagpie <- mbind(finalResults$object,tierMagpie)

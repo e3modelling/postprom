@@ -31,15 +31,13 @@
 #'                 htmlReport = FALSE,
 #'                 projectReport = FALSE)
 #' }
-#' @importFrom magclass mbind dimSums getItems getRegions getYears mdbind write.report read.report
-#' @importFrom dplyr filter pull
-#' @importFrom utils read.csv
+#' @importFrom magclass mbind dimSums getItems getRegions write.report read.report
 #' @importFrom gdx readGDX
 #' @export
 convertGDXtoMIF <- function(.path, mif_name, regions = NULL, years = NULL,
                             fullValidation = TRUE, scenario_name = NULL,
                             aggregate = TRUE, emissions = TRUE, save = TRUE,
-                            htmlReport = FALSE, projectReport = FALSE) {
+                            htmlReport = FALSE, projectReport = TRUE) {
   if (is.null(scenario_name)) scenario_name <- basename(.path)
   current_time <- format(Sys.time(), "%Y-%m-%d_%H-%M")
   append <- length(.path) > 1
