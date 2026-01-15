@@ -95,6 +95,7 @@ convertGDXtoMIF_single <- function(.path, path_mif, append, regions = NULL,
   reports <- mbind(reports, reportACTV(path_gdx, regions, years))
   reports <- mbind(reports, reportCapacityAdditions(path_gdx, regions, years))
   reports <- mbind(reports, reportCostsPGtechnologies(path_gdx, regions, years))
+  reports <- mbind(reports, reportVehicles(path_gdx, regions, years))
   
   reportLearningCurve <- reportLearningCurve(path_gdx, regions, years)
   GrossInlandConsumption <- reportGrossInlandConsumption(path_gdx, regions, years)
