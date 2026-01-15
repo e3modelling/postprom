@@ -98,3 +98,196 @@ helperAggregateLevel <- function(magpie_object, level, dim = 3.1, recursive = FA
   )
   return(x)
 }
+
+#' Convert units in a magpie object to expected units
+#'
+#' Converts variables in a magpie object (dimension 3 items) from the units found
+#' in the object to the units expected by a provided unit table. Conversions are
+#' applied variable-by-variable using audited, hard-coded conversion factors for
+#' a limited set of supported unit pairs (energy quantities, selected prices,
+#' population scaling, and macro aggregates).
+#'
+#' The function updates both the numeric values (by multiplying with a conversion
+#' factor) and the unit labels embedded in the third-dimension item names
+#' (e.g. `"GDP (billion USD_2010/yr)"`). Unsupported conversions either stop with an 
+#' error (default) or are skipped with a warning if `allowUnrecognized = TRUE`.
+#'
+#' @param magpieObj A magpie object whose third-dimension item names follow the
+#'   pattern `"variable (unit)"`. Values will be scaled in-place for variables
+#'   requiring conversion.
+#' @param unitTable A data.frame with (at least) the columns:
+#'   `variable`, `magpieUnit`, `expectedUnit`, and `unitMatches`.
+#'   Rows with `unitMatches` not `TRUE` are treated as mismatches to convert.
+#'   `variable` should match the variable name *without* the trailing `" (unit)"`
+#'   part in the magpie object.
+#' @param usd2015to2010 Numeric scalar deflator to convert values from USD_2015 to
+#'   USD_2010 (multiplicative factor). Used for currency and price conversions.
+#' @param allowUnrecognized Logical. If `FALSE` (default), unsupported unit pairs
+#'   cause an error and the function stops. If `TRUE`, unsupported conversions are
+#'   skipped (with a warning) and the variable name is recorded in `skipped`.
+#' @param quiet Logical. If `FALSE` (default), prints a short summary of how many
+#'   variables were converted and shows the first rows of the conversion log.
+#'
+#' @return A list with:
+#' \describe{
+#'   \item{object}{The converted magpie object (same class as input).}
+#'   \item{log}{A data.frame recording each successful conversion with columns
+#'     `variable`, `fromUnit`, `toUnit`, `factorUsed`.}
+#'   \item{skipped}{Character vector of variables skipped due to unsupported unit
+#'     pairs (only non-empty when `allowUnrecognized = TRUE`).}
+#' }
+#' @examples
+#' \dontrun{
+#' # unitTable is expected to have: variable, magpieUnit, expectedUnit, unitMatches
+#' res <- convertUnitsToExpected(
+#'   magpieObj        = x,
+#'   unitTable        = unitTable,
+#'   usd2015to2010    = 0.93,
+#'   allowUnrecognized = TRUE
+#' )}
+#' @importFrom magclass getItems
+#' @export
+convertUnitsToExpected <- function(magpieObj, unitTable, usd2015to2010, 
+                          allowUnrecognized = FALSE, quiet = FALSE) {
+
+  trim <- function(x) trimws(as.character(x))
+  cleanVar <- function(x) sub("\\s*\\(.*\\)$", "", x) # drop trailing " (unit)"
+  safeEq <- function(a, b) trim(a) == trim(b)
+
+  # normalize unit strings (case-insensitive)
+  normUnit <- function(u) {
+    u <- trim(u)
+    u <- gsub("KWh", "kWh", u, fixed = TRUE) # harmonize capitalization
+    u <- gsub("US\\$","USD_", u)             # normalize currency prefix
+    u <- gsub("USD__", "USD_", u)            # double underscore guard
+    u <- gsub("tn CO2", "t CO2", u, fixed = TRUE) # treat tn and t as same
+    u
+  }
+
+  # exact constants (audited)
+  TOE_PER_GJ   <- 1/41.868             # toe per GJ (for per-energy prices)
+  GJ_PER_TOE   <- 41.868               # GJ per toe
+  EJ_PER_MTOE  <- 0.041868             # EJ per Mtoe
+  EJ_PER_TWH   <- 0.0036               # EJ per TWh
+  GJ_PER_KWH   <- 0.0036               # GJ per kWh
+  KWH_PER_GJ   <- 1 / GJ_PER_KWH       # 277.7777777778
+  BILLION_TO_MILLION <- 1000
+
+  # compute factor for one pair of units
+  computeFactor <- function(fromU, toU) {
+    fromU0 <- normUnit(fromU)
+    toU0   <- normUnit(toU)
+
+    # identical after normalization -> factor 1
+    if (fromU0 == toU0) return(1)
+
+    # ---- energy quantity flows ----
+    # Mtoe -> EJ(/yr)
+    if (fromU0 == "Mtoe" && grepl("^EJ", toU0)) return(EJ_PER_MTOE)
+
+    # TWh -> EJ(/yr)
+    if (fromU0 == "TWh" && grepl("^EJ", toU0)) return(EJ_PER_TWH)
+
+    # ---- population ----
+    if (fromU0 == "billion" && toU0 == "million") return(BILLION_TO_MILLION)
+
+    # ---- prices ----
+    # KUSD_2015/toe -> USD_2010/GJ
+    if (fromU0 == "KUSD_2015/toe" && toU0 == "USD_2010/GJ")
+      return(1000 * usd2015to2010 * (1 / GJ_PER_TOE))  # ×1000 (KUSD->USD) × deflator × 1/41.868
+
+    # USD_2015/kWh -> USD_2010/GJ
+    if (fromU0 == "USD_2015/kWh" && toU0 == "USD_2010/GJ")
+      return(usd2015to2010 * KWH_PER_GJ)               # × deflator × 277.777...
+
+    # US$2015/KWh cases may have been normalized above
+    if (fromU0 == "USD_2015/kWh" && toU0 == "USD_2010/GJ")
+      return(usd2015to2010 * KWH_PER_GJ)
+
+    # Carbon price: USD_2015/t CO2 -> USD_2010/t CO2
+    if (fromU0 == "USD_2015/t CO2" && toU0 == "USD_2010/t CO2")
+      return(usd2015to2010)
+
+    # Some sources write USD_2015/tn CO2; normalized to t CO2 above
+    if (fromU0 == "USD_2015/t CO2" && toU0 == "USD_2010/t CO2")
+      return(usd2015to2010)
+
+    # ---- macro aggregates ----
+    # GDP: billion USD_2015/yr -> billion USD_2010/yr
+    if (fromU0 == "billion USD_2015/yr" && toU0 == "billion USD_2010/yr")
+      return(usd2015to2010)
+
+    # ---- unsupported pair ----
+    return(NA_real_)
+  }
+
+  # current 3rd-dimension item names and their clean labels
+  curNames <- magclass::getItems(magpieObj, dim = 3)
+  curClean <- cleanVar(curNames)
+
+  # keep only rows that actually differ and exist in the object
+  unitTable$variable    <- trim(unitTable$variable)
+  unitTable$magpieUnit  <- trim(unitTable$magpieUnit)
+  unitTable$expectedUnit<- trim(unitTable$expectedUnit)
+
+  toFix <- subset(unitTable, !isTRUE(unitMatches))
+  toFix <- toFix[toFix$variable %in% curClean, , drop = FALSE]
+
+  if (nrow(toFix) == 0L) {
+    if (!quiet) message("No unit mismatches found to convert.")
+    return(list(object = magpieObj, log = data.frame(), skipped = character()))
+  }
+
+  # containers for audit
+  audit <- list()
+  skipped <- character()
+
+  # perform conversions variable by variable
+  for (i in seq_len(nrow(toFix))) {
+    v   <- toFix$variable[i]
+    uIn <- toFix$magpieUnit[i]
+    uEx <- toFix$expectedUnit[i]
+
+    idx <- which(curClean == v)
+    if (!length(idx)) next
+
+    factor <- computeFactor(uIn, uEx)
+
+    if (is.na(factor)) {
+      msg <- paste0("Unsupported conversion: '", uIn, "' -> '", uEx, "' for variable '", v, "'.")
+      if (allowUnrecognized) {
+        warning(msg)
+        skipped <- c(skipped, v)
+        next
+      } else {
+        stop(msg, call. = FALSE)
+      }
+    }
+
+    # scale values
+    magpieObj[,, idx] <- magpieObj[,, idx] * factor
+
+    # update unit label in the 3rd-dimension name(s)
+    curNames[idx] <- paste0(v, " (", uEx, ")")
+
+    # add to audit
+    audit[[length(audit) + 1]] <- data.frame(
+      variable    = v,
+      fromUnit    = uIn,
+      toUnit      = uEx,
+      factorUsed  = factor,
+      stringsAsFactors = FALSE
+    )
+  }
+  getItems(magpieObj, dim = 3) <- curNames
+
+  auditDf <- if (length(audit)) do.call(rbind, audit) else data.frame()
+
+  if (!quiet && nrow(auditDf)) {
+    message("Converted ", nrow(auditDf), " variables. Example:\n",
+            utils::capture.output(print(utils::head(auditDf), row.names = FALSE)) |> paste(collapse = "\n"))
+    if (length(skipped)) message("Skipped (unsupported): ", paste(unique(skipped), collapse = "; "))
+  }
+
+  return(list(object = magpieObj, log = auditDf, skipped = unique(skipped)))
+}

@@ -1,0 +1,26 @@
+project_template,OPEN_PROM
+Carbon Capture|IndustrialProcesses,Carbon Capture|Industry
+Carbon Removal,Carbon Capture
+Carbon Removal|Enhanced Weathering,Carbon Capture|Enhanced Weathering
+Carbon Removal|Geological Storage,Carbon Capture|Geological Storage
+Carbon Removal|Geological Storage|Biomass,Carbon Capture|Geological Storage|Biomass
+Carbon Removal|Geological Storage|Direct Air Capture,Carbon Capture|Geological Storage|Direct Air Capture
+Carbon Removal|Geological Storage|Other Sources,Carbon Capture|Geological Storage|Other Sources
+Carbon Removal|Land Use,Carbon Capture|Land Use
+Final Energy|Geothermal,Final Energy|Geothermal heat
+Final Energy|Solar,Final Energy|Solar energy
+Final Energy|Carbon Management|Direct Air Capture,Final Energy|Direct Air Capture
+Final Energy|Carbon Management|Enhanced Weathering,Final Energy|Enhanced Weathering
+Final Energy|Geothermal,Final Energy|Geothermal heat
+Final Energy|Iron and Steel,Final Energy|IS
+Final Energy|Non-Metallic Minerals,Final Energy|BM
+Final Energy|Chemicals,Final Energy|CH
+Final Energy|Non-Ferrous Metals,Final Energy|NF
+Final Energy|Pulp and Paper,Final Energy|PP
+Final Energy|Non-Energy Use,Final Energy|Non Energy
+Final Energy|Solar,Final Energy|Solar energy
+Final Energy|Transportation|Bus,Final Energy|Transportation|PB
+Final Energy|Transportation|Passenger,Final Energy|Transportation|PC
+Final Energy|Transportation|Rail,Final Energy|Transportation|PT
+Final Energy|Transportation|Truck,Final Energy|Transportation|GU
+Final Energy|Transportation|Domestic Aviation,Final Energy|Transportation|PA
