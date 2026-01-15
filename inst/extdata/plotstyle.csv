@@ -16,7 +16,7 @@ Capacity|Electricity|PGSOL,PGSOL,#ffe600,bar
 Capacity|Electricity|Hydro,Hydro,#07cbf2,bar
 Capacity|Electricity|CHP,CHP,#87e6a4,bar
 Secondary Energy|Electricity|VAL,EMBER,black,dLine
-Secondary Energy|Electricity|Validation,IEA|Projections,blue,dLine
+Secondary Energy|Electricity|Validation,IEA|Projections,blue,solidLine
 Secondary Energy|Electricity|PGAWND,PGAWND,#8800ff,bar
 Secondary Energy|Electricity|PGAWNO,PGAWNO,#334cff,bar
 Secondary Energy|Electricity|PGCSP,PGCSP,#ffb400,bar
@@ -51,9 +51,9 @@ Final Energy|Other Capture and Removal,CDR,blue,bar
 Final Energy|VAL,IEA,red,dLine
 Final Energy|Industry|VAL,Industry|IEA,purple,dLine
 Final Energy|Transportation|VAL,Transportation|IEA,green,dLine
-Final Energy|Validation,IEA|Projections,blue,dLine
-Final Energy|Industry|Validation,Industry|IEA|Projections,yellow,dLine
-Final Energy|Transportation|Validation,Transportation|IEA|Projections,#ff33ff,dLine
+Final Energy|Validation,IEA|Projections,blue,solidLine
+Final Energy|Industry|Validation,Industry|IEA|Projections,purple4,solidLine
+Final Energy|Transportation|Validation,Transportation|IEA|Projections,forestgreen,solidLine
 Emissions|CO2|Energy|Demand|Bunkers,Bunkers,yellow,bar
 Emissions|CO2|Energy|Supply,Supply,#bcbc6d,bar
 Emissions|CO2|Cumulated,Cumulated,#661a00,bar
@@ -61,7 +61,7 @@ Emissions|CO2|Budget1p5C,Budget1p5C,black,dLine
 Emissions|CO2|Budget2C,Budget2C,red,dLine
 Emissions|CO2,Total,red,dLine
 Emissions|CO2|VAL,EDGAR,black,dLine
-Emissions|CO2|Validation,IEA|Projections,green,dLine
+Emissions|CO2|Validation,IEA|Projections,green,solidLine
 Emissions|CO2|Other Capture and Removal,CDR,#87e6a4,bar
 Emissions|CO2|AFOLU,AFOLU,#595933,bar
 Emissions|CO2|Industrial Processes,Industrial Processes,#661a00,bar
