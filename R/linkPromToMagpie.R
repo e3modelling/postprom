@@ -73,7 +73,7 @@ OPEN2MAgPIE <- function(path, pathPollutantPrices, pathBioenergyDemand, scenario
   test <- xq
   names(test) <- c("year", "region", "var", scenario)
   test$year <- paste0("y", test$year)
-  final <- read.csv(pathPollutantPrices, check.names = FALSE)
+  final <- read.csv(pathPollutantPrices, skip = 5, check.names = FALSE)
   temp <- names(final)
   names(final)[1:3] <- c("year", "region", "var")
 
@@ -108,7 +108,7 @@ OPEN2MAgPIE <- function(path, pathPollutantPrices, pathBioenergyDemand, scenario
   names(test) <- c("year", "region", "woodfuel")
   test$year <- paste0("y", test$year)
   test['var'] <- "const2020"
-  final <- read.csv(pathBioenergyDemand, check.names = FALSE)
+  final <- read.csv(pathBioenergyDemand, skip = 4, check.names = FALSE)
   names(final)[1:3] <- c("year", "region", "var")
   final <- filter(final, year>="y1995" & year<="y2150")
   final[ , !names(final) %in% c("year", "region", "var")] <- 0
