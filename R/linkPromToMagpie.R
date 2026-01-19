@@ -139,6 +139,8 @@ MAgPIE2OPEN <- function(path, pathReport, pathSave) {
   
   Globiom <- readSource("GLOBIOMEU", convert = FALSE)
   
+  years_GBR <- getYears(Globiom, as.integer = TRUE)
+  
   regionOP <- toolGetMapping(name = "regionmappingOPDEV5.csv",
                              type = "regional",
                              where = "mrprom")
@@ -169,10 +171,13 @@ MAgPIE2OPEN <- function(path, pathReport, pathSave) {
                                  
   OPEN_PROM_biom1 <- magpie[inc,,setdiff(getItems(magpie,3),"Prices|Bioenergy (US$2015/Mtoe)")]
   Emi_GBR <- readSource("UN_GBR_LULUCF")
+  years_GBR2 <- getYears(Emi_GBR, as.integer = TRUE)
+  years_GBR2 <- years_GBR2[years_GBR2 %in% years_GBR]
+  Emi_GBR <- Emi_GBR[,years_GBR2,]
   Emi_GBR <- mean(Emi_GBR)
   eur_map_op_prom <- add_columns(eur_map_op_prom, addnm = c("GBR"), dim = 1, fill = Emi_GBR)
   
-  rmap <- data.frame(EUR_24 = rep("EUR", 25),
+  rmap <- data.frame(EUR_24 = rep("EUR", 28),
                      EUR_24_OP = getRegions(eur_map_op_prom))
   
   OPEN_PROM_biom2 <- toolAggregate(magpie["EUR",,setdiff(getItems(magpie,3),"Prices|Bioenergy (US$2015/Mtoe)")], rel = rmap, weight = eur_map_op_prom)

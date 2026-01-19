@@ -86,7 +86,30 @@ convertGDXtoMIF_single <- function(.path, path_mif, append, regions = NULL,
   }
 
   reports <- reportFinalEnergy(path_gdx, regions, years)
-  reports <- mbind(reports, reportEmissions(path_gdx, regions, years))
+  
+  if (TRUE) {
+    reportEmissionsMagpie <- reportEmissionsMagpie(path_gdx, regions, years)
+    reportEmissions <- reportEmissions(path_gdx, regions, years)
+    reportEmissions <- reportEmissions[,,setdiff(getItems(reportEmissions,3),getItems(reportEmissionsMagpie,3))]
+    map <- toolGetMapping(name = "NavigateEmissions.csv",
+                          type = "sectoral",
+                          where = "mrprom")
+    
+    new_row <- data.frame(
+      Emissions = "Carbon Removal|Land Use",
+      stringsAsFactors = FALSE
+    )
+    # Combine with the existing map
+    map <- rbind(map, new_row)
+    
+    reportEmissions <- reportEmissions[,,setdiff(getItems(reportEmissions,3.1), map[,"Emissions"])]
+    
+    reportEmissions <- mbind(reportEmissions, reportEmissionsMagpie)
+  } else {
+    reportEmissions <- reportEmissions(path_gdx, regions, years)
+  }
+  
+  reports <- mbind(reports, reportEmissions)
   reports <- mbind(reports, reportSE(path_gdx, regions, years))
   reports <- mbind(reports, reportPE(path_gdx, regions, years))
   reports <- mbind(reports, reportGDP(path_gdx, regions, years))
