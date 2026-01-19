@@ -28,7 +28,8 @@
 #'                 aggregate = TRUE,
 #'                 emissions = TRUE,
 #'                 save = TRUE,
-#'                 htmlReport = FALSE)
+#'                 htmlReport = FALSE,
+#'                 projectReport = FALSE)
 #' }
 #' @importFrom magclass mbind dimSums getItems getRegions write.report read.report
 #' @importFrom gdx readGDX
@@ -36,7 +37,7 @@
 convertGDXtoMIF <- function(.path, mif_name, regions = NULL, years = NULL,
                             fullValidation = TRUE, scenario_name = NULL,
                             aggregate = TRUE, emissions = TRUE, save = TRUE,
-                            htmlReport = FALSE) {
+                            htmlReport = FALSE, projectReport = FALSE) {
   if (is.null(scenario_name)) scenario_name <- basename(.path)
   current_time <- format(Sys.time(), "%Y-%m-%d_%H-%M")
   append <- length(.path) > 1
@@ -56,7 +57,8 @@ convertGDXtoMIF <- function(.path, mif_name, regions = NULL, years = NULL,
       append = append,
       save = save,
       emissions = emissions,
-      htmlReport = htmlReport
+      htmlReport = htmlReport,
+      projectReport = projectReport
     )
   },
   .path, scenario_name,
@@ -71,7 +73,7 @@ convertGDXtoMIF <- function(.path, mif_name, regions = NULL, years = NULL,
 convertGDXtoMIF_single <- function(.path, path_mif, append, regions = NULL,
                                    years = NULL, scenario_name = NULL,
                                    aggregate = TRUE, emissions=TRUE, save = TRUE,
-                                   htmlReport = TRUE) {
+                                   htmlReport = TRUE, projectReport = TRUE) {
   print(paste0("Region aggregation: ", aggregate))
   print(paste0("Processing path: ", .path))
   path_gdx <- file.path(.path, "blabla.gdx")
@@ -95,6 +97,7 @@ convertGDXtoMIF_single <- function(.path, path_mif, append, regions = NULL,
   reports <- mbind(reports, reportACTV(path_gdx, regions, years))
   reports <- mbind(reports, reportCapacityAdditions(path_gdx, regions, years))
   reports <- mbind(reports, reportCostsPGtechnologies(path_gdx, regions, years))
+  reports <- mbind(reports, reportVehicles(path_gdx, regions, years))
   
   reportLearningCurve <- reportLearningCurve(path_gdx, regions, years)
   GrossInlandConsumption <- reportGrossInlandConsumption(path_gdx, regions, years)
@@ -127,6 +130,8 @@ convertGDXtoMIF_single <- function(.path, path_mif, append, regions = NULL,
     print(paste0("Saving mif file in ", path_mif))
 
     if (htmlReport == TRUE) htmlReportValidation(.path, path_mif)
+
+    if (projectReport == TRUE) projectReport(.path, path_mif)
   }
 
   return(reports)
