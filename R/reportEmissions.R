@@ -19,7 +19,7 @@
 #' @importFrom dplyr filter left_join mutate select group_by %>%
 
 #' @export
-reportEmissions <- function(path, regions, years) {
+reportEmissions <- function(path, regions, years, AFOLU = NULL, sLink2MAgPIE = 0) {
 
   magpie_object <- NULL
 
@@ -142,9 +142,19 @@ reportEmissions <- function(path, regions, years) {
   l <- getItems(Navigate_Emissions,3.1) == "Carbon Removal|Land Use"
 
   getItems(Navigate_Emissions,3.1)[l] <- "Carbon Capture|Land Use"
-
-  remind_AFOLU_Industrial_Processes <- Navigate_Emissions[, , c("Emissions|CO2|AFOLU", "Emissions|CO2|Industrial Processes")]
-  remind <- dimSums(remind_AFOLU_Industrial_Processes, 3, na.rm = TRUE)
+  
+  ##### From Magpie
+  if (sLink2MAgPIE == 1) {
+    print("coupled with MAgPIE")
+    remind_Industrial_Processes <- Navigate_Emissions[, , c("Emissions|CO2|Industrial Processes")]
+    remind_Industrial_Processes <- dimSums(remind_Industrial_Processes, 3, na.rm = TRUE)
+    Magpie_remind <- mbind(remind_Industrial_Processes, AFOLU)
+    remind <- dimSums(Magpie_remind, 3, na.rm = TRUE)
+    
+  } else {
+    remind_AFOLU_Industrial_Processes <- Navigate_Emissions[, , c("Emissions|CO2|AFOLU", "Emissions|CO2|Industrial Processes")]
+    remind <- dimSums(remind_AFOLU_Industrial_Processes, 3, na.rm = TRUE)
+  }
 
   iCo2EmiFac <- readGDX(path, "imCo2EmiFac")[regions, years, ]
   VConsFuel <- readGDX(path, "VmConsFuel", field = 'l')[regions, years, ]

@@ -87,24 +87,37 @@ convertGDXtoMIF_single <- function(.path, path_mif, append, regions = NULL,
 
   reports <- reportFinalEnergy(path_gdx, regions, years)
   
-  if (TRUE) {
+  sLink2MAgPIE <- readGDX(path_gdx, "sLink2MAgPIE")
+  
+  if (is.null(sLink2MAgPIE)) {
+    sLink2MAgPIE <- 0
+  }
+  
+  if (sLink2MAgPIE == 1) {
+    print("coupled with MAgPIE")
     reportEmissionsMagpie <- reportEmissionsMagpie(path_gdx, regions, years)
-    reportEmissions <- reportEmissions(path_gdx, regions, years)
+    AFOLU <- reportEmissionsMagpie[,,c("Emissions|CO2|AFOLU|Agriculture", "Emissions|CO2|Land")]
+    AFOLU <- dimSums(AFOLU, 3)
+    getItems(AFOLU, 3) <- "Emissions|CO2|AFOLU"
+    AFOLU_unit <- add_dimension(AFOLU, dim = 3.2, add = "unit", nm = "Mt CO2/yr")
+    reportEmissionsMagpie <- mbind(reportEmissionsMagpie, AFOLU_unit)
+    reportEmissions <- reportEmissions(path_gdx, regions, years, AFOLU, sLink2MAgPIE)
     reportEmissions <- reportEmissions[,,setdiff(getItems(reportEmissions,3),getItems(reportEmissionsMagpie,3))]
-    map <- toolGetMapping(name = "NavigateEmissions.csv",
-                          type = "sectoral",
-                          where = "mrprom")
-    
+    # map <- toolGetMapping(name = "NavigateEmissions.csv",
+    #                       type = "sectoral",
+    #                       where = "mrprom")
+    # 
     new_row <- data.frame(
-      Emissions = "Carbon Removal|Land Use",
+      Emissions = "Emissions|CO2|AFOLU",
       stringsAsFactors = FALSE
     )
-    # Combine with the existing map
-    map <- rbind(map, new_row)
-    
-    reportEmissions <- reportEmissions[,,setdiff(getItems(reportEmissions,3.1), map[,"Emissions"])]
+    # # Combine with the existing map
+    # map <- rbind(map, new_row)
+    # 
+    reportEmissions <- reportEmissions[,,setdiff(getItems(reportEmissions,3.1), new_row[,"Emissions"])]
     
     reportEmissions <- mbind(reportEmissions, reportEmissionsMagpie)
+    
   } else {
     reportEmissions <- reportEmissions(path_gdx, regions, years)
   }

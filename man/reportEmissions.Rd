@@ -4,7 +4,7 @@
 \alias{reportEmissions}
 \title{Process and Aggregate CO2 Emissions Data}
 \usage{
-reportEmissions(path, regions, years)
+reportEmissions(path, regions, years, AFOLU = NULL, sLink2MAgPIE = 0)
 }
 \arguments{
 \item{path}{The file path to the GDX data file.}
