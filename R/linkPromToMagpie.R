@@ -55,8 +55,48 @@ OPEN2MAgPIE <- function(path, pathPollutantPrices, pathBioenergyDemand, scenario
 
   variables <- readGDX(path, c("VmcarVal", "V03ConsGrssInl"), field = "l")
 
-  co2 <- variables$VmCarVal
-  co2_magpie <- toolAggregate(co2[unique(mapping[,"Region.Code.x"]),,],dim = 1,rel = mapping, from = "Region.Code.y", to = "Region.Code.x")
+  co2 <- variables$VmCarVal[unique(regionMapping[,3]),,]
+  
+  Globiom <- readSource("GLOBIOMEU", convert = FALSE)
+  
+  years_GBR <- getYears(Globiom, as.integer = TRUE)
+  
+  regionOP <- toolGetMapping(name = "regionmappingOPDEV5.csv",
+                             type = "regional",
+                             where = "mrprom")
+  
+  regionMag <- toolGetMapping(name = "h12.csv",
+                              type = "regional",
+                              where = "mrprom")
+  
+  EU27 <- setdiff(getRegions(Globiom), "EU27")
+  inc <- intersect(regionOP[,3],regionMag[,3])
+  
+  Globiom <- Globiom[EU27,,]
+  Globiom <- as.quitte(Globiom) %>% mutate(value = mean(value, na.rm = TRUE), .by = c("region"))
+  Globiom <- distinct(Globiom)
+  Globiom <- as.quitte(Globiom)
+  Globiom <- as.magpie(Globiom)
+  Globiom <- Globiom[,2020,]
+  Globiom <- dimSums(Globiom,2)
+  Globiom_OP <- Globiom[intersect(getRegions(Globiom),regionOP[,3]),,]
+  eur_map_op_prom <- Globiom_OP
+  
+  Emi_GBR <- readSource("UN_GBR_LULUCF")
+  years_GBR2 <- getYears(Emi_GBR, as.integer = TRUE)
+  years_GBR2 <- years_GBR2[years_GBR2 %in% years_GBR]
+  Emi_GBR <- Emi_GBR[,years_GBR2,]
+  Emi_GBR <- mean(Emi_GBR)
+  eur_map_op_prom <- add_columns(eur_map_op_prom, addnm = c("GBR"), dim = 1, fill = Emi_GBR)
+  
+  rmap <- data.frame(EUR_24 = rep("EUR", 28),
+                     EUR_24_OP = getRegions(eur_map_op_prom))
+  
+  co2_magpie1 <- toolAggregate(co2[getRegions(eur_map_op_prom),,],dim = 1,rel = rmap, weight = eur_map_op_prom)
+  
+  co2_magpie2 <- co2[inc,,]
+  co2_magpie <- mbind(co2_magpie1,co2_magpie2)
+  
   co2_magpie <- as.quitte(co2_magpie) %>%
     interpolate_missing_periods(period = 1995:2150, expand.values = TRUE) %>%
     as.magpie()
@@ -73,7 +113,7 @@ OPEN2MAgPIE <- function(path, pathPollutantPrices, pathBioenergyDemand, scenario
   test <- xq
   names(test) <- c("year", "region", "var", scenario)
   test$year <- paste0("y", test$year)
-  final <- read.csv(pathPollutantPrices, skip = 5, check.names = FALSE)
+  final <- read.csv(pathPollutantPrices, check.names = FALSE)
   temp <- names(final)
   names(final)[1:3] <- c("year", "region", "var")
 
@@ -86,7 +126,7 @@ OPEN2MAgPIE <- function(path, pathPollutantPrices, pathBioenergyDemand, scenario
 
 
   countries <- unique(mapping[,"Region.Code.x"])
-  biomass_demand <- variables$V03ConsGrssInl
+  biomass_demand <- variables$V03ConsGrssInl[unique(regionMapping[,3]),,]
   biomass_demand <- toolAggregate(biomass_demand[countries,,],dim = 1,rel = mapping, from = "Region.Code.y", to = "Region.Code.x")
   biomass_demand <- as.quitte(biomass_demand) %>%
     interpolate_missing_periods(period = 1995:2150, expand.values = TRUE) %>%
@@ -108,7 +148,7 @@ OPEN2MAgPIE <- function(path, pathPollutantPrices, pathBioenergyDemand, scenario
   names(test) <- c("year", "region", "woodfuel")
   test$year <- paste0("y", test$year)
   test['var'] <- "const2020"
-  final <- read.csv(pathBioenergyDemand, skip = 4, check.names = FALSE)
+  final <- read.csv(pathBioenergyDemand, check.names = FALSE)
   names(final)[1:3] <- c("year", "region", "var")
   final <- filter(final, year>="y1995" & year<="y2150")
   final[ , !names(final) %in% c("year", "region", "var")] <- 0
