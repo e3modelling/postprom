@@ -92,6 +92,8 @@ reportFinalEnergy <- function(path, regions, years) {
   # variables of OPEN-PROM related to sectors
   blabla_var <- c("VmDemFinEneTranspPerFuel", "VmConsFuel", "VmConsFuel", "VmConsFuel", "VmConsFuel")
 
+  #Final_Energy_with_Bunkers <- NULL
+  
   for (y in 1:length(sector)) {
     # read GAMS set used for reporting of Final Energy different for each sector
     sectorsSet <- readGDX(path, sector[y]) %>% as.data.frame()
@@ -125,6 +127,12 @@ reportFinalEnergy <- function(path, regions, years) {
 
     sector_open <- add_dimension(sector_open, dim = 3.2, add = "unit", nm = "Mtoe")
     magpie_object <- mbind(magpie_object, sector_open)
+    
+    # Final Energy|w/Bunkers
+    
+    # Final_Energy_with_Bunkers <- mbind(Final_Energy_with_Bunkers, sector_open)
+    
+    #########
 
     # Energy Forms Aggregations
     sets5 <- readGDX(path, "EFtoEFA")
@@ -217,6 +225,13 @@ reportFinalEnergy <- function(path, regions, years) {
     
     magpie_object <- mbind(magpie_object, FCONS_per_fuel_OP_new_names)
   }
+  
+  ################## Final_Energy_with_Bunkers
+  # Final_Energy_with_Bunkers <- dimSums(Final_Energy_with_Bunkers, dim = 3, na.rm = TRUE)
+  # getItems(Final_Energy_with_Bunkers, 3) <- paste0("Final Energy|w/Bunkers")
+  # 
+  # Final_Energy_with_Bunkers <- add_dimension(Final_Energy_with_Bunkers, dim = 3.2, add = "unit", nm = "Mtoe")
+  # magpie_object <- mbind(magpie_object, Final_Energy_with_Bunkers)
   
   #########       DAC     #################
   

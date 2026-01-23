@@ -120,7 +120,7 @@ OPEN2MAgPIE <- function(path, pathPollutantPrices, pathBioenergyDemand, scenario
   temp <- final %>%
     inner_join(test, by=c("year", "region", "var")) %>%
     select(paste0(scenario, ".y"))
-  final[scenario][final$var == "co2_c", ]<- temp
+  final[scenario][final$var == "co2_c", ] <- temp
 
   write.csv(final, "result_f56_pollutant_prices.cs3", quote = FALSE, row.names = FALSE)
 
