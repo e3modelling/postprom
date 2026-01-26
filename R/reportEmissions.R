@@ -38,7 +38,7 @@ reportEmissions <- function(path, regions, years) {
     OE = "Ore Extraction",
     OI = "Other Industrial sectors",
     SE = "Services and Trade",
-    AG = "Agriculture, Fishing, Forestry etc.",
+    AG = "Agriculture - Fishing - Forestry",
     HOU = "Households",
     PC = "Passenger Transport - Cars",
     PB = "Passenger Transport - Busses",
