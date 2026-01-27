@@ -28,7 +28,7 @@ reportFinalEnergy <- function(path, regions, years) {
       "HTDAC","H2DAC","LTDAC","EWDAC"
     ),
     Description = c(
-      "Hard Coal, Coke and Other Solids",
+      "Hard Coal-Coke-Other Solids",
       "Lignite",
       "Crude Oil and Feedstocks",
       "Liquefied Petroleum Gas",
@@ -45,7 +45,7 @@ reportFinalEnergy <- function(path, regions, years) {
       "Wind",
       "Solar",
       "Biomass and Waste",
-      "Geothermal and other renewable sources eg. Tidal, etc.",
+      "Geothermal and other renewable sources",
       "Methanol",
       "Ethanol",
       "Biodiesel",
@@ -138,7 +138,7 @@ reportFinalEnergy <- function(path, regions, years) {
     rename_EFA <- c(
       "SLD" = "Solids",
       "LQD" = "Liquids",
-      "OLQT" = "All liquids but GDO, RFO, GSL",
+      "OLQT" = "All liquids but GDO - RFO - GSL",
       "GAS" = "Gases",
       "NFF" = "Non Fossil Fuels",
       "REN" = "Renewables except Hydro",
