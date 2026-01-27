@@ -89,9 +89,9 @@ convertGDXtoMIF_single <- function(.path, path_mif, append, regions = NULL,
   
   sLink2MAgPIE <- readGDX(path_gdx, "sLink2MAgPIE")
   
-  if (is.null(sLink2MAgPIE)) {
+  #if (is.null(sLink2MAgPIE)) {
     sLink2MAgPIE <- 1
-  }
+  #}
   
   if (sLink2MAgPIE == 1) {
     print("coupled with MAgPIE")
