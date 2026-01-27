@@ -62,7 +62,7 @@ plotReport <- function(magpie_obj, plot_style = "bar",
   
   if (!is.null(save_name)) {
     print(paste0("Saving plot to ", save_name))
-    ggsave(save_name, plot, units = "in", width = 5.5, height = 4, dpi = 1200)
+    ggsave(save_name, plot, units = "in", width = 12, height = 12, dpi = 1200)
   }
   return(plot)
 }
@@ -117,8 +117,13 @@ plotTool <- function(data, colors_vars, variable, plot_style,
       theme_bw() +
       theme(
         text = element_text(size = text_size),
+        #strip.text.x = element_text(margin = margin(0.05, 0, 0.05, 0, "cm")),
         legend.position = "right",
         axis.text.x = element_text(angle = 90)
+        #aspect.ratio = 1.5 / 2,
+        #plot.title = element_text(size = text_size),
+        #legend.key.size = unit(legend_key_size, "cm"),
+        #legend.key.width = unit(legend_key_width, "cm")
       )
     
     # Ensure that the draw order is bars/areas first, lines last

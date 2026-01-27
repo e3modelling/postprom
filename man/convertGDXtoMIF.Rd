@@ -14,7 +14,8 @@ convertGDXtoMIF(
   aggregate = TRUE,
   emissions = TRUE,
   save = TRUE,
-  htmlReport = FALSE
+  htmlReport = FALSE,
+  projectReport = FALSE
 )
 }
 \arguments{
@@ -57,6 +58,7 @@ convertGDXtoMIF(.path = c("path/to/gdx1", "path/to/gdx2"),
                 aggregate = TRUE,
                 emissions = TRUE,
                 save = TRUE,
-                htmlReport = FALSE)
+                htmlReport = FALSE,
+                projectReport = FALSE)
 }
 }

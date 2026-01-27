@@ -29,7 +29,7 @@ Depends:
 Imports: gdx, madrat, magclass, stringr, quitte, rlang, 
          tidyr, dplyr, purrr, ggplot2, rmarkdown, knitr, mip,
          piamValidation, rmarkdown, pandoc
-RoxygenNote: 7.3.2
+RoxygenNote: 7.3.3
 Suggests: 
     testthat (>= 3.0.0),
     tinytex
