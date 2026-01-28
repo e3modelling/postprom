@@ -25,6 +25,7 @@
 #' @importFrom dplyr filter arrange %>% anti_join
 #' @importFrom quitte as.quitte
 #' @importFrom magclass getSets getNames getItems
+#' @importFrom grDevices dev.off pdf
 #' @export
 plotReport <- function(magpie_obj, plot_style = "bar",
                        label = NULL, save_name = NULL) {
@@ -60,10 +61,20 @@ plotReport <- function(magpie_obj, plot_style = "bar",
     y_label = y_label
   )
   
+  # if (!is.null(save_name)) {
+  #   print(paste0("Saving plot to ", save_name))
+  #   ggsave(save_name, plot, units = "in", width = 12, height = 16, dpi = 1200)
+  # }
+  
   if (!is.null(save_name)) {
     print(paste0("Saving plot to ", save_name))
-    ggsave(save_name, plot, units = "in", width = 12, height = 12, dpi = 1200)
+    pdf(save_name, width = 12, height = 20)
+    for (p in plot) {
+      print(p)   # print each ggplot to a new page
+    }
+    dev.off()
   }
+  
   return(plot)
 }
 # Helpers -------------------------------------------------------------
@@ -71,7 +82,7 @@ plotTool <- function(data, colors_vars, variable, plot_style,
                      label = NULL, text_size = 12,
                      legend_key_size = 0.5, legend_key_width = 0.5,
                      x_label = "period", y_label = NULL,
-                     n_regions_per_plot = 8) {
+                     n_regions_per_plot = 6) {
   
   if (is.null(label)) label <- "Labels"
   if (is.null(y_label)) {
