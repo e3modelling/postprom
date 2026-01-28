@@ -172,8 +172,8 @@ MAgPIE2OPEN <- function(path, pathReport, pathSave) {
             "Emissions|NO3-|Land (Mt NO3-/yr)","Emissions|OC|AFOLU|Land|Fires (Mt OC/yr)",
             "Emissions|SO2|AFOLU|Land|Fires (Mt SO2/yr)","Emissions|VOC|AFOLU|Land|Fires (Mt VOC/yr)")
   magpie <- magpie[, , vars]
-  GJtoMtoe <- 1/41868000
-  magpie[,, "Prices|Bioenergy (US$2017/GJ)"] <- magpie[,,"Prices|Bioenergy (US$2017/GJ)"]*100/103.42*(1/GJtoMtoe) # to USD2015 & 1/Mtoe
+  GJtotoe <- 1/41.868
+  magpie[,, "Prices|Bioenergy (US$2017/GJ)"] <- magpie[,,"Prices|Bioenergy (US$2017/GJ)"]*100/103.42*(1/GJtotoe) # to USD2015 & 1/toe
   
   getItems(magpie, 3)[getItems(magpie, 3)=="Prices|Bioenergy (US$2017/GJ)"] <- "Prices|Bioenergy (US$2015/Mtoe)"
   
