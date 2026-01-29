@@ -173,9 +173,9 @@ MAgPIE2OPEN <- function(path, pathReport, pathSave) {
             "Emissions|SO2|AFOLU|Land|Fires (Mt SO2/yr)","Emissions|VOC|AFOLU|Land|Fires (Mt VOC/yr)")
   magpie <- magpie[, , vars]
   GJtotoe <- 1/41.868
-  magpie[,, "Prices|Bioenergy (US$2017/GJ)"] <- magpie[,,"Prices|Bioenergy (US$2017/GJ)"]*100/103.42*(1/GJtotoe) # to USD2015 & 1/toe
+  magpie[,, "Prices|Bioenergy (US$2017/GJ)"] <- magpie[,,"Prices|Bioenergy (US$2017/GJ)"]*100/103.42*(1/GJtotoe)/1000 # to k$2015/toe
   
-  getItems(magpie, 3)[getItems(magpie, 3)=="Prices|Bioenergy (US$2017/GJ)"] <- "Prices|Bioenergy (US$2015/Mtoe)"
+  getItems(magpie, 3)[getItems(magpie, 3)=="Prices|Bioenergy (US$2017/GJ)"] <- "Prices|Bioenergy (k$2015/toe)"
   
   Globiom <- readSource("GLOBIOMEU", convert = FALSE)
   
@@ -209,7 +209,7 @@ MAgPIE2OPEN <- function(path, pathReport, pathSave) {
   #eur_map_op_prom <- add_columns(Globiom_OP, addnm = c("ELL"), dim = 1, fill = Globiom_ELL)
   eur_map_op_prom <- Globiom_OP
                                  
-  OPEN_PROM_biom1 <- magpie[inc,,setdiff(getItems(magpie,3),"Prices|Bioenergy (US$2015/Mtoe)")]
+  OPEN_PROM_biom1 <- magpie[inc,,setdiff(getItems(magpie,3),"Prices|Bioenergy (k$2015/toe)")]
   Emi_GBR <- readSource("UN_GBR_LULUCF")
   years_GBR2 <- getYears(Emi_GBR, as.integer = TRUE)
   years_GBR2 <- years_GBR2[years_GBR2 %in% years_GBR]
@@ -220,13 +220,13 @@ MAgPIE2OPEN <- function(path, pathReport, pathSave) {
   rmap <- data.frame(EUR_24 = rep("EUR", 28),
                      EUR_24_OP = getRegions(eur_map_op_prom))
   
-  OPEN_PROM_biom2 <- toolAggregate(magpie["EUR",,setdiff(getItems(magpie,3),"Prices|Bioenergy (US$2015/Mtoe)")], rel = rmap, weight = eur_map_op_prom)
+  OPEN_PROM_biom2 <- toolAggregate(magpie["EUR",,setdiff(getItems(magpie,3),"Prices|Bioenergy (k$2015/toe)")], rel = rmap, weight = eur_map_op_prom)
   
   OPEN_PROM_biom <- mbind(OPEN_PROM_biom1,OPEN_PROM_biom2)
   
-  OPEN_PROM_price1 <- magpie[inc,,"Prices|Bioenergy (US$2015/Mtoe)"]
+  OPEN_PROM_price1 <- magpie[inc,,"Prices|Bioenergy (k$2015/toe)"]
   
-  OPEN_PROM_price3 <-  toolAggregate(magpie["EUR",,"Prices|Bioenergy (US$2015/Mtoe)"], rel = rmap,weight = NULL)
+  OPEN_PROM_price3 <-  toolAggregate(magpie["EUR",,"Prices|Bioenergy (k$2015/toe)"], rel = rmap,weight = NULL)
   
   OPEN_PROM_price <- mbind(OPEN_PROM_price1,OPEN_PROM_price3)
   
@@ -237,7 +237,7 @@ MAgPIE2OPEN <- function(path, pathReport, pathSave) {
   OPEN_PROM <- as.magpie(OPEN_PROM)
   OPEN_PROM <- OPEN_PROM[,2010 : 2100,]
   
-  OPEN_PROM_pri <- OPEN_PROM[,,"Prices|Bioenergy.US$2015/Mtoe"]
+  OPEN_PROM_pri <- OPEN_PROM[,,"Prices|Bioenergy.k$2015/toe"]
   
   SBS <- readGDX(path, c("SBS"), field = "l")
   
