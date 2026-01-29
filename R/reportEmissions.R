@@ -77,7 +77,7 @@ reportEmissions <- function(path, regions, years) {
   if (fscenario %in% c(0, 1)) {
     Navigate_Emissions <- Navigate_Emissions[, , "SUP_NPi_Default"][regions, years, ]
     Land_Use_raw <- readSource("Navigate", subtype = "SUP_NPi_Default")
-  } else if (fscenario == 2) {
+  } else if (fscenario %in% c(2, 5, 6)) {
     Navigate_Emissions <- Navigate_Emissions[, , "SUP_1p5C_Default"][regions, years, ]
     Land_Use_raw <- readSource("Navigate", subtype = "SUP_1p5C_Default")
   } else if (fscenario == 3) {
@@ -654,7 +654,7 @@ extractAggregatedData <- function(scenario,x,years, ...) {
   # Get the aggregated data for World, LAM etc
   if (scenario %in% c(0, 1)) {
     xa <- readSource("Navigate", subtype = "SUP_NPi_Default", convert = FALSE)
-  } else if (scenario == 2) {
+  } else if (scenario %in% c(2, 5, 6)) {
     xa <- readSource("Navigate", subtype = "SUP_1p5C_Default", convert = FALSE)
   } else if (scenario == 3) {
     xa <- readSource("Navigate", subtype = "SUP_2C_Default", convert = FALSE)
