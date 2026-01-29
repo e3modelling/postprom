@@ -38,7 +38,7 @@ reportEmissions <- function(path, regions, years, AFOLU = NULL, sLink2MAgPIE = 0
     OE = "Ore Extraction",
     OI = "Other Industrial sectors",
     SE = "Services and Trade",
-    AG = "Agriculture, Fishing, Forestry etc.",
+    AG = "Agriculture - Fishing - Forestry",
     HOU = "Households",
     PC = "Passenger Transport - Cars",
     PB = "Passenger Transport - Busses",
@@ -137,7 +137,7 @@ reportEmissions <- function(path, regions, years, AFOLU = NULL, sLink2MAgPIE = 0
   Navigate_Emissions <- collapseDim(Navigate_Emissions, 3.1)
 
   Carbon_Removal_Land_Use <- Navigate_Emissions[,,"Carbon Removal|Land Use.Mt CO2/yr"]
-  getItems(Carbon_Removal_Land_Use, 3) <-NULL
+  getItems(Carbon_Removal_Land_Use, 3) <- NULL
 
   l <- getItems(Navigate_Emissions,3.1) == "Carbon Removal|Land Use"
 
@@ -565,13 +565,13 @@ reportEmissions <- function(path, regions, years, AFOLU = NULL, sLink2MAgPIE = 0
 
   ####################################
   # Add Emissions|CO2|Energy + Emissions|CO2|Industrial processes to create Emissions|CO2|Industrial Processes
-  sum <- magpie_object[, ,c("Emissions|CO2|Energy.Mt CO2/yr","Emissions|CO2|Industrial Processes.Mt CO2/yr")]
-  sum <- dimSums(sum, dim = 3, na.rm = TRUE)
-  getItems(sum,3) <- "Emissions|CO2|Energy and Industrial Processes.Mt CO2/yr"
+  sumIPEnergy <- magpie_object[, ,c("Emissions|CO2|Energy.Mt CO2/yr","Emissions|CO2|Industrial Processes.Mt CO2/yr")]
+  sumIPEnergy <- dimSums(sumIPEnergy, dim = 3, na.rm = TRUE)
+  getItems(sumIPEnergy,3) <- "Emissions|CO2|Energy and Industrial Processes.Mt CO2/yr"
   # Fix separator "p" to "."
-  dimnames(sum)$d3 <- gsub("pMt", ".Mt", dimnames(sum)$d3)
+  dimnames(sumIPEnergy)$d3 <- gsub("pMt", ".Mt", dimnames(sumIPEnergy)$d3)
 
-  magpie_object <- mbind(magpie_object, sum)
+  magpie_object <- mbind(magpie_object, sumIPEnergy)
 
   # Add non-CO2 gases from OPEN-PROM
   nonCO2mapping <- toolGetMapping("open-prom-emissions-mapping.csv",
