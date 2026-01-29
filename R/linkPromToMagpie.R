@@ -40,6 +40,9 @@ linkPromToMagpie <- function(path, pathPollutantPrices,
 
 }
 
+# NPi: R34M410-SSP2-NPi2025
+# 1p5C: R34M410-SSP2-PkBudg650
+
 # Helpers ------------------------------------------------------------------
 OPEN2MAgPIE <- function(path, pathPollutantPrices, pathBioenergyDemand, scenario) {
   message("[OPEN2MAgPIE] Extracting outputs from OPEN-PROM...")

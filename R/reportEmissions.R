@@ -145,7 +145,6 @@ reportEmissions <- function(path, regions, years, AFOLU = NULL, sLink2MAgPIE = 0
   
   ##### From Magpie
   if (sLink2MAgPIE == 1) {
-    print("coupled with MAgPIE")
     remind_Industrial_Processes <- Navigate_Emissions[, , c("Emissions|CO2|Industrial Processes")]
     remind_Industrial_Processes <- dimSums(remind_Industrial_Processes, 3, na.rm = TRUE)
     Magpie_remind <- mbind(remind_Industrial_Processes, AFOLU)

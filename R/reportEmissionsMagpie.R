@@ -1,11 +1,11 @@
 #' Process and Aggregate CO2 Emissions Data
 #'
-#' This function processes and aggregates CO2 emissions data from a mif file of
+#' This function processes and aggregates emissions data from a mif file of
 #' Magpie.
 #'
 #' @param path The file path to the mif data file.
 #' @param regions A character vector of region names to filter data.
-#' @return A magpie object containing processed and aggregated CO2 emissions data.
+#' @return A magpie object containing processed and aggregated emissions data.
 #'
 #' @examples
 #' \dontrun{
