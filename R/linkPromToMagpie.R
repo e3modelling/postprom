@@ -44,7 +44,7 @@ linkPromToMagpie <- function(path, pathPollutantPrices,
 # 1p5C: R34M410-SSP2-PkBudg650
 
 # Helpers ------------------------------------------------------------------
-OPEN2MAgPIE <- function(path, pathPollutantPrices, pathBioenergyDemand, scenario) {
+OPEN2MAgPIE <- function(path, pathPollutantPrices, pathBioenergyDemand, scenario, pathsave) {
   message("[OPEN2MAgPIE] Extracting outputs from OPEN-PROM...")
   regionMapping <- toolGetMapping(name = "regionmappingOPDEV5.csv",
                                   type = "regional",
@@ -125,8 +125,7 @@ OPEN2MAgPIE <- function(path, pathPollutantPrices, pathBioenergyDemand, scenario
     select(paste0(scenario, ".y"))
   final[scenario][final$var == "co2_c", ] <- temp
 
-  write.csv(final, "result_f56_pollutant_prices.cs3", quote = FALSE, row.names = FALSE)
-
+  write.csv(final, file = paste0(pathsave, "result_f56_pollutant_prices.cs3"), quote = FALSE, row.names = FALSE)
 
   countries <- unique(mapping[,"Region.Code.x"])
   biomass_demand <- variables$V03ConsGrssInl[unique(regionMapping[,3]),,]
@@ -161,7 +160,7 @@ OPEN2MAgPIE <- function(path, pathPollutantPrices, pathBioenergyDemand, scenario
     select("woodfuel.y")
   final["woodfuel"][final$var == "const2020", ] <- temp
 
-  write.csv(final, "result_f60_1stgen_bioenergy_dem.cs3", quote = FALSE, row.names = FALSE)
+  write.csv(final, file = paste0(pathsave, "result_f60_1stgen_bioenergy_dem.cs3"), quote = FALSE, row.names = FALSE)
 }
 
 
@@ -264,7 +263,7 @@ MAgPIE2OPEN <- function(path, pathReport, pathSave) {
   write.table(xq,
               quote = FALSE,
               row.names = FALSE,
-              file = file.path("iEmissions_magpie.csv"),
+              file.path(pathSave,"iEmissions_magpie.csv"),
               sep = ",",
               col.names = FALSE,
               append = TRUE)
@@ -277,7 +276,7 @@ MAgPIE2OPEN <- function(path, pathReport, pathSave) {
   write.table(xq,
               quote = FALSE,
               row.names = FALSE,
-              file = file.path("iPrices_magpie.csv"),
+              file = file.path(pathSave,"iPrices_magpie.csv"),
               sep = ",",
               col.names = FALSE,
               append = TRUE)
