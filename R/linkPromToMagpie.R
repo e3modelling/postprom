@@ -24,6 +24,7 @@
 #' @importFrom dplyr %>% select filter rename mutate inner_join
 #' @importFrom magclass as.magpie collapseDim add_dimension read.report
 #' @importFrom gdx readGDX
+#' @importFrom tidyr expand nesting pivot_wider
 #'
 #' @examples
 #' \dontrun{

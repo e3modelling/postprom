@@ -12,10 +12,10 @@ reportEmissionsMagpie(path, regions, years)
 \item{regions}{A character vector of region names to filter data.}
 }
 \value{
-A magpie object containing processed and aggregated CO2 emissions data.
+A magpie object containing processed and aggregated emissions data.
 }
 \description{
-This function processes and aggregates CO2 emissions data from a mif file of
+This function processes and aggregates emissions data from a mif file of
 Magpie.
 }
 \examples{
