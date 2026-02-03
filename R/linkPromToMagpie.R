@@ -260,11 +260,12 @@ MAgPIE2OPEN <- function(path, pathReport, pathSave) {
     select(c("region","period", "variable", "value")) %>%
     pivot_wider(names_from = "period")
   fheader <- paste("dummy,dummy", paste(colnames(xq)[3 : length(colnames(xq))], collapse = ","), sep = ",")
-  writeLines(fheader, con = "iEmissions_magpie.csv")
+  outfile <- file.path(pathSave, "iEmissions_magpie.csv")
+  writeLines(fheader, con = outfile)
   write.table(xq,
               quote = FALSE,
               row.names = FALSE,
-              file.path(pathSave,"iEmissions_magpie.csv"),
+              file = outfile,
               sep = ",",
               col.names = FALSE,
               append = TRUE)
@@ -273,11 +274,12 @@ MAgPIE2OPEN <- function(path, pathReport, pathSave) {
     select(c("region","period" , "variable", "value")) %>%
     pivot_wider(names_from = "period")
   fheader <- paste("dummy,dummy", paste(colnames(xq)[3 : length(colnames(xq))], collapse = ","), sep = ",")
-  writeLines(fheader, con = "iPrices_magpie.csv")
+  outfile <- file.path(pathSave, "iPrices_magpie.csv")
+  writeLines(fheader, con = outfile)
   write.table(xq,
               quote = FALSE,
               row.names = FALSE,
-              file = file.path(pathSave,"iPrices_magpie.csv"),
+              file = outfile,
               sep = ",",
               col.names = FALSE,
               append = TRUE)
