@@ -30,11 +30,11 @@
 #' linkPromToMagpie("output.gdx", "pollutant_prices.csv", "bioenergy_demand.csv")
 #' }
 #' @export
-linkPromToMagpie <- function(path, pathPollutantPrices,
+linkPromToMagpie <- function(path, pathPollutantPrices, pathsave, 
                              pathBioenergyDemand,pathReport=NULL,pathSave=NULL, forward = TRUE, 
                              scenario="R32M46-SSP2EU-NPi") {
   message("[✓] Starting soft-linking routine...")
-  if (forward == TRUE) OPEN2MAgPIE(path, pathPollutantPrices, pathBioenergyDemand,scenario)
+  if (forward == TRUE) OPEN2MAgPIE(path, pathPollutantPrices, pathBioenergyDemand,scenario, pathsave)
   else if (forward == FALSE) MAgPIE2OPEN(path, pathReport, pathSave)
   else message("Wrong forward input")
 
