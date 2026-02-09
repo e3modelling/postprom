@@ -20,12 +20,15 @@
 #' @export
 reportFinalEnergy <- function(path, regions, years) {
   # read GAMS set used for reporting of Final Energy
-  
+  library(postprom)
+  library(gdx)
+  library(dplyr)
+  library(stringr)
+path <- "C:/Users/baka/Desktop/Run/blabla.gdx" 
   energy_codes <- data.frame(
     Code = c(
       "HCL","LGN","CRO","LPG","GSL","KRS","GDO","RFO","OLQ","NGS","OGS","NUC","STE",
-      "HYD","WND","SOL","BMSWAS","GEO","MET","ETH","BGDO","BGSL","H2F","ELC",
-      "HTDAC","H2DAC","LTDAC","EWDAC"
+      "HYD","WND","SOL","BMSWAS","GEO","MET","ETH","BGDO","BGSL","H2F","ELC"
     ),
     Description = c(
       "Hard Coal-Coke-Other Solids",
@@ -51,11 +54,7 @@ reportFinalEnergy <- function(path, regions, years) {
       "Biodiesel",
       "Biogasoline",
       "Hydrogen",
-      "Electricity",
-      "High-Temperature DAC",
-      "High-Temperature H2-fueled DAC",
-      "Low-Temperature DAC",
-      "Enhanced-Weathering DAC"
+      "Electricity"
     ),
     stringsAsFactors = FALSE
   )
@@ -65,7 +64,49 @@ reportFinalEnergy <- function(path, regions, years) {
   names(sets) <- c("BAL", "EF")
   sets[["BAL"]] <- gsub("Gas fuels", "Gases", sets[["BAL"]])
   sets[["BAL"]] <- gsub("Steam", "Heat", sets[["BAL"]])
+  
+  rename_subsectors <- c(
+  "IS" = "Iron & Steel",
+  "NF" = "Non Ferrous Metals",
+  "CH" = "Chemicals",
+  "BM" = "Non Metallic Minerals",
+  "PP" = "Paper & Pulp",
+  "FD" = "Food Drink & Tobacco",
+  "EN" = "Engineering",
+  "TX" = "Textiles",
+  "OE" = "Ore Extraction",
+  "OI" = "Other Industries",
+  "HOU" = "Households",
+  "SE" = "Services",
+  "AG" = "Agriculture",
+  "BU" = "Bunkers",
+  "PCH" = "Petrochemicals",
+  "NEN" = "Non energy uses"
+  ) %>% as.data.frame()
+  blabla_var <- "VmConsFuel"
+  SecToEF <- readGDX(path, "SECtoEF")
+  # names(rename_subsectors) <- c("PROM","REPORT")
+  # INDUSTRY
+  industry <- "INDSE"
+  industry_name <- "Industry"
+  industrySectors <- readGDX(path, industry) %>% as.data.frame()
+  names(industrySectors) <- "Names"
+  
+  VmConsFuel <- readGDX(path, blabla_var, field = "l")[regions, years, ]
+  VmConsFuel_INDSE <- VmConsFuel[,,industrySectors[["Names"]]]
+  VmConsFuel_INDSE_EF <- VmConsFuel_INDSE[, , 
+  getItems(VmConsFuel_INDSE, 3) %in% paste0(SecToEF[,1], ".", SecToEF[,2])]
 
+
+
+  sets <- paste0(SecToEF[,1],".",SecToEF[,2])
+  sets2 <- sets %in% getItems(VmConsFuel_INDSE,3)
+  sets <- sets[sets2]
+
+  VmConsFuel_INDSE_EF <- VmConsFuel_INDSE[, , sets]
+
+
+ 
   # add model OPEN-PROM data Total final energy consumnption (Mtoe)
   VConsFinEneCountry <- readGDX(path, name = c("VmConsFinEneCountry", "VConsFinEneCountry"),
                                 field = "l", format = "first_found")[regions, years, ]
