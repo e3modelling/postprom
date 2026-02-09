@@ -25,6 +25,7 @@
 #' @importFrom dplyr filter arrange %>% anti_join
 #' @importFrom quitte as.quitte
 #' @importFrom magclass getSets getNames getItems
+#' @importFrom grDevices dev.off pdf
 #' @export
 plotReport <- function(magpie_obj, plot_style = "bar",
                        label = NULL, save_name = NULL) {
@@ -62,66 +63,94 @@ plotReport <- function(magpie_obj, plot_style = "bar",
   
   if (!is.null(save_name)) {
     print(paste0("Saving plot to ", save_name))
-    ggsave(save_name, plot, units = "in", width = 5.5, height = 4, dpi = 1200)
+    ggsave(save_name, plot, units = "in", width = 10, height = 12, dpi = 1200)
   }
+  
   return(plot)
 }
 # Helpers -------------------------------------------------------------
 plotTool <- function(data, colors_vars, variable, plot_style,
-                     label = NULL, text_size = 12,
+                     label = NULL, text_size = 15,
                      legend_key_size = 0.5, legend_key_width = 0.5,
-                     x_label = "period", y_label = NULL) {
+                     x_label = "period", y_label = NULL,
+                     n_regions_per_plot = 8) {
+  
   if (is.null(label)) label <- "Labels"
   if (is.null(y_label)) {
     y_label <- paste0("[", unique(data[["unit"]]), "]")
   }
-  #colors_vars$legend <- sapply(strsplit(colors_vars$X, "\\|"), tail, 1)
-
-  plot <- ggplot(data, aes(y = value, x = period, color = .data[[variable]])) +
-    scale_fill_manual(
-      values = colors_vars$color,
-      limits = colors_vars$X,
-      labels = colors_vars$legend
-    ) +
-    scale_color_manual(
-      values = as.character(colors_vars[, 3]),
-      limits = as.character(colors_vars[, 1]),
-      labels = as.character(colors_vars[, 2])
-    ) +
-    facet_wrap("region", scales = "free_y") +
-    labs(
-      x = x_label,
-      y = y_label,
-      color = label,
-      fill = label
-    ) +
-    theme_bw() +
-    theme(
-      text = element_text(size = text_size),
-      #strip.text.x = element_text(margin = margin(0.05, 0, 0.05, 0, "cm")),
-      legend.position = "right",
-      axis.text.x = element_text(angle = 90)
-      #aspect.ratio = 1.5 / 2,
-      #plot.title = element_text(size = text_size),
-      #legend.key.size = unit(legend_key_size, "cm"),
-      #legend.key.width = unit(legend_key_width, "cm")
-    )
-
-  # Ensure that the draw order is bars/areas first, lines last
-  style_order <- intersect(c("bar", "area", "dLine"), unique(colors_vars$style))
-
-  for (style in style_order) {
-    vars_per_style <- colors_vars$X[colors_vars$style == style]
-    data_sub <- data %>% filter(.data[[variable]] %in% vars_per_style)
-    plot <- plot + switch(style,
-      "area" = geom_area(data = data_sub, stat = "identity", aes(fill = .data[[variable]])),
-      "bar" = geom_bar(data = data_sub, stat = "identity", aes(fill = .data[[variable]])),
-      "dLine" = geom_line(data = data_sub, aes(color = .data[[variable]]),
-                          linetype = "twodash"),
-      stop("Invalid plot_type.")
-    )
+  
+  # Split regions into chunks
+  unique_regions <- unique(data$region)
+  region_chunks <- split(unique_regions, ceiling(seq_along(unique_regions) / n_regions_per_plot))
+  
+  # List to store plots
+  plots <- list()
+  
+  for (i in seq_along(region_chunks)) {
+    chunk_regions <- region_chunks[[i]]
+    
+    # Filter data for this chunk
+    chunk_data <- data %>% filter(region %in% chunk_regions)
+    
+    # Skip this chunk if there’s no data
+    if (nrow(chunk_data) == 0) next
+    
+    # Base plot for this chunk
+    plot_chunk <- ggplot(chunk_data,
+                         aes(y = value, x = period, color = .data[[variable]])) +
+      scale_fill_manual(
+        values = colors_vars$color,
+        limits = colors_vars$X,
+        labels = colors_vars$legend
+      ) +
+      scale_color_manual(
+        values = as.character(colors_vars[, 3]),
+        limits = as.character(colors_vars[, 1]),
+        labels = as.character(colors_vars[, 2])
+      ) +
+      facet_wrap(~region, scales = "free_y") +
+      labs(
+        x = x_label,
+        y = y_label,
+        color = label,
+        fill = label
+      ) +
+      theme_bw() +
+      theme(
+        text = element_text(size = text_size),
+        #strip.text.x = element_text(margin = margin(0.05, 0, 0.05, 0, "cm")),
+        legend.position = "right",
+        axis.text.x = element_text(angle = 90)
+        #aspect.ratio = 1.5 / 2,
+        #plot.title = element_text(size = text_size),
+        #legend.key.size = unit(legend_key_size, "cm"),
+        #legend.key.width = unit(legend_key_width, "cm")
+      )
+    
+    # Ensure that the draw order is bars/areas first, lines last
+    style_order <- intersect(c("bar", "area", "dLine", "solidLine"), unique(colors_vars$style))
+    
+    for (style in style_order) {
+      vars_per_style <- colors_vars$X[colors_vars$style == style]
+      data_sub <- chunk_data %>% filter(.data[[variable]] %in% vars_per_style)
+      
+      # Skip this geom if there’s no data
+      if (nrow(data_sub) == 0) next
+      
+      plot_chunk <- plot_chunk + switch(style,
+                                        "area"       = geom_area(data = data_sub, stat = "identity", aes(fill = .data[[variable]])),
+                                        "bar"        = geom_bar(data = data_sub, stat = "identity", aes(fill = .data[[variable]])),
+                                        "dLine"      = geom_line(data = data_sub, aes(color = .data[[variable]]), linetype = "twodash"),
+                                        "solidLine"  = geom_line(data = data_sub, aes(color = .data[[variable]]), linetype = "solid"),
+                                        stop("Invalid plot_type.")
+      )
+    }
+    
+    plots[[i]] <- plot_chunk
   }
-  return(plot)
+  
+  return(plots)
 }
 
 getColorMappings <- function(new_mappings = NULL) {
