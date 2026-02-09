@@ -147,7 +147,7 @@ reportEmissions <- function(path, regions, years, AFOLU = NULL, sLink2MAgPIE = 0
   if (sLink2MAgPIE == 1) {
     remind_Industrial_Processes <- Navigate_Emissions[, , c("Emissions|CO2|Industrial Processes")]
     remind_Industrial_Processes <- dimSums(remind_Industrial_Processes, 3, na.rm = TRUE)
-    Magpie_remind <- mbind(remind_Industrial_Processes, AFOLU)
+    Magpie_remind <- mbind(remind_Industrial_Processes, AFOLU[,years,])
     remind <- dimSums(Magpie_remind, 3, na.rm = TRUE)
     
   } else {
@@ -608,6 +608,24 @@ reportEmissions <- function(path, regions, years, AFOLU = NULL, sLink2MAgPIE = 0
   
   magpie_object <- mbind(magpie_object, emissionsNonCO2)
 
+  # Create Emissions|Kyoto Gases
+  emissionsCO2eq <- calculateGhg(mbind(emissionsNonCO2, magpie_object[, , "Emissions|N2O|AFOLU|Land.kt N2O/yr"]))
+
+  # Define the categories you want to aggregate
+  # Comment: If we add all the categories here, the "Total" will not be the sum since 
+  # F-gases are not included in the category breakdowns.
+
+  # categories <- c("Energy|Supply", "Energy|Demand", "AFOLU", "Industrial Processes")
+  # kyotoGases <- mbind(emissionsCO2eqTotal, mbind(lapply(categories, calcKyoto)))
+
+  # Calculate Total "Emissions|Kyoto Gases" (Special case: sum of everything)
+  emissionsCO2eqTotal <- dimSums(emissionsCO2eq, dim = 3)
+  emissionsCO2eqTotal <- emissionsCO2eqTotal + magpie_object[ , ,'Emissions|CO2.Mt CO2/yr']
+  getItems(emissionsCO2eqTotal, 3) <- "Emissions|Kyoto Gases"
+  emissionsCO2eqTotal <- add_dimension(emissionsCO2eqTotal, dim = 3.2, add = "unit", nm = "Mt CO2-equiv/yr") 
+  
+  magpie_object <- mbind(magpie_object, emissionsCO2eqTotal)
+
   # Emissions|CO2|Cumulated
 
   Cumulated <- as.quitte(total_CO2)
@@ -645,6 +663,89 @@ getUnit <- function(varName) {
     # Return the kt unit
     return(paste0("kt ", gasName, "/yr"))
   }
+}
+# Sum CO2 and Non-CO2 for a specific category - to be used in the future
+calcKyoto <- function(cat) {
+  # A. Find CO2 Aggregate
+  #    Regex: Matches "Emissions|CO2|<cat>" exactly (or with .unit suffix)
+  safeCat <- gsub("|", "\\|", cat, fixed = TRUE)
+  patCo2 <- paste0("^Emissions\\|CO2\\|", safeCat, "($|\\.)")
+  varsCo2 <- grep(patCo2, getItems(magpie_object, 3), value = TRUE)
+  valCo2 <- if (length(varsCo2) > 0) dimSums(magpie_object[, , varsCo2], dim = 3) else 0
+  
+  # B. Find Non-CO2 Components (CH4 or N2O only)
+  #    Regex: Matches "Emissions|CH4|<cat>..." OR "Emissions|N2O|<cat>..."
+  patNonCo2 <- paste0("^Emissions\\|(CH4|N2O)\\|", safeCat, "($|\\.|\\|)")
+  varsNonCo2 <- grep(patNonCo2, getItems(emissionsCO2eq, 3), value = TRUE)
+  
+  if (length(varsNonCo2) > 0) {
+    valNonCo2 <- dimSums(emissionsCO2eq[, , varsNonCo2], dim = 3)
+  } else {
+    valNonCo2 <- 0
+  }
+
+  # C. Sum and Rename
+  result <- valCo2 + valNonCo2
+  result <- setNames(result, paste0("Emissions|Kyoto Gases|", cat))
+  return(result)
+}
+# Get CO2 Equivalent Factor
+getCo2EqFactor <- function(varName) {
+  # Define GWP Factors (AR4 100-year values standard for reporting)
+  gwpMap <- c(
+    "CH4"        = 25,
+    "N2O"        = 298,
+    "SF6"        = 22800,
+    "HFC125"     = 3500,
+    "HFC134a"    = 1430,
+    "HFC143a"    = 4470,
+    "HFC152a"    = 124,
+    "HFC227ea"   = 3220,
+    "HFC23"      = 14800,
+    "HFC32"      = 675,
+    "HFC43-10"   = 1640,
+    "HFC245fa"   = 693,
+    "HFC236fa"  = 9810,
+    "PFC"        = 7390,
+    "CF4"        = 7390,
+    "C2F6"       = 12200,
+    "C6F14"      = 9300
+  )
+  
+  cleanName <- sub("(\\s*\\(.*\\)|\\.[^.]*)$", "", varName)
+  
+  if (grepl("CH4", cleanName)) {
+    return(gwpMap[["CH4"]])
+  } else if (grepl("N2O", cleanName)) {
+    return(gwpMap[["N2O"]] / 1000)
+  } else {
+    gasLeaf <- sub(".*\\|", "", cleanName)
+    if (gasLeaf %in% names(gwpMap)) {
+      return(gwpMap[[gasLeaf]] / 1000)
+    } else {
+      warning(paste("GWP not found for:", varName))
+      return(0)
+    }
+  }
+}
+# Calculate GHG Emissions (Mt CO2eq) from a magpie object
+calculateGhg <- function(dataMagpie) {
+
+  # --- Apply Conversion ---
+  allVars <- getNames(dataMagpie)
+  targetVars <- grep("Emissions\\|", allVars, value = TRUE)
+  
+  totalCo2Eq <- NULL
+  
+  for (var in targetVars) {
+    factor <- getCo2EqFactor(var)
+    
+    if (factor != 0) {
+      currentGas <- dataMagpie[, , var] * factor
+      totalCo2Eq <- mbind(totalCo2Eq, currentGas)
+    }
+  }
+  return(totalCo2Eq)
 }
 extractAggregatedData <- function(scenario,x,years, ...) {
 

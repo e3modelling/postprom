@@ -123,7 +123,7 @@ convertGDXtoMIF_single <- function(.path, path_mif, append, regions = NULL,
     # remove AFOLU emissions from Magpie
     reportEmissions <- reportEmissions[,,setdiff(getItems(reportEmissions,3.1), new_row[,"Emissions"])]
     
-    reportEmissions <- mbind(reportEmissions, reportEmissionsMagpie)
+    reportEmissions <- mbind(reportEmissions, reportEmissionsMagpie[,years,])
     
   } else {
     reportEmissions <- reportEmissions(path_gdx, regions, years)
