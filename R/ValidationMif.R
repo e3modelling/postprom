@@ -18,8 +18,8 @@
 #' @importFrom quitte as.quitte
 #' @importFrom dplyr filter %>% mutate select rename collapse
 #' @export
-ValidationMif <- function(.path, mif_name = "fullValidation2.mif", Validation_data_for_plots = TRUE, 
-                          reportOPEN_PROM = reports, metadata_run = metadata_run, Validation2050 = TRUE) {
+ValidationMif <- function(.path, mif_name = "fullValidation2.mif", Validation_data_for_plots = Validation_data_for_plots, 
+                          reportOPEN_PROM = reports, metadata_run = metadata_run, Validation2050 = Validation2050) {
   
   if (Validation_data_for_plots == TRUE) {
     val_data <- ValidationMif2(.path[1], mif_name)[[1]]

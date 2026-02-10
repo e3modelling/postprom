@@ -7,10 +7,10 @@
 ValidationMif(
   .path,
   mif_name = "fullValidation2.mif",
-  Validation_data_for_plots = TRUE,
+  Validation_data_for_plots = Validation_data_for_plots,
   reportOPEN_PROM = reports,
   metadata_run = metadata_run,
-  Validation2050 = TRUE
+  Validation2050 = Validation2050
 )
 }
 \arguments{
