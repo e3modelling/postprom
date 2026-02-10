@@ -537,7 +537,7 @@ call_functions <- function() {
   # Ask user to input numbers (all at once, like Python input)
   cat("\nEnter the numbers of the subfolders (e.g., 1 2 3): ")
   # choices <- scan(what = integer(), quiet = TRUE)
-  input <- readline()
+  input <- readLines("stdin", n = 1)
   choices <- as.integer(strsplit(input, "\\s+")[[1]])
   
   # Validate selections
