@@ -6,7 +6,7 @@ helperRenameItems <- function(magpie, mapping, prefix, dim = 3.1) {
   # and aggregate in case of duplicates (Coal from lignite and Hard coal to single Coal)
   magpie <- toolAggregate(
     magpie,
-    dim = 3, rel = mapping, from = "Tech", to = "EF"
+    dim = dim, rel = mapping, from = "Tech", to = "EF"
   )
 
   name <- getItems(magpie, dim)
