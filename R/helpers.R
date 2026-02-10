@@ -439,9 +439,7 @@ list_subfolders <- function(subfolder_status_list) {
     return(list())
   }
   
-  cat(yellow("Recently started runs might be listed as FAILED, "),
-      yellow("wait 15 seconds before running the script.\n"))
-  cat(yellow("Checking all subfolders...\n\n"))
+  cat(yellow("List of subfolders...\n\n"))
   
   n <- length(subfolder_status_list)
   
@@ -550,9 +548,6 @@ call_functions <- function() {
   # Select subfolders based on user input
   n <- length(selected_subfolders)
   chosen <- lapply(choices, function(choice) selected_subfolders[[n - choice + 1]])
-  
-  cat("\nSelected subfolders:\n")
-  print(lapply(chosen, `[[`, "folder"))
   
   return(chosen)
 }
