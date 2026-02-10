@@ -1,7 +1,7 @@
 Package: postprom
 Type: Package
 Title: A Tool for Comparative Analysis of OPEN-PROM Data
-Version: 0.11.05
+Version: 0.11.6
 Authors@R: c(
     person(
       "Michael", "Madianos",
@@ -28,7 +28,8 @@ Depends:
     mrprom
 Imports: gdx, madrat, magclass, stringr, quitte, rlang, 
          tidyr, dplyr, purrr, ggplot2, rmarkdown, knitr, mip,
-         piamValidation, rmarkdown, pandoc, grDevices, grid, gridExtra
+         piamValidation, rmarkdown, pandoc, grDevices, grid, gridExtra, crayon,
+         fs, rstudioapi
 RoxygenNote: 7.3.3
 Suggests: 
     testthat (>= 3.0.0),
