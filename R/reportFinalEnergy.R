@@ -19,10 +19,22 @@
 #' @importFrom stringr str_replace_all
 #' @export
 reportFinalEnergy <- function(path, regions, years) {
-  DSBStoSBS <- data.frame(
-    DSBS = "IS",
-    SBS = "Industry"
-  )
+  DSBS_Industry <- readGDX(path, "INDSE") %>%
+    as.data.frame() %>% 
+    mutate(SBS = "Industry") 
+  DSBS_Transport <- readGDX(path, "TRANSE") %>%
+    as.data.frame() %>%
+    mutate(SBS = "Transportation")
+  DSBS_NonEnergy <- readGDX(path,"NENSE") %>%
+    as.data.frame() %>%
+    filter(. != "BU") %>%
+    mutate(SBS = "Non-Energy Use")
+  DSBS_Rest <- data.frame(
+    DSBS = c("HOU","AG", "SE", "BU", "DAC")) %>%
+    mutate(SBS = "Temp")
+  DSBS_SBS = bind_rows(DSBS_Industry, DSBS_Transport, DSBS_NonEnergy) %>%
+    rename(DSBS = 1)
+  DSBStoSBS = bind_rows(DSBS_SBS,DSBS_Rest)
   lookup <- setNames(DSBStoSBS$SBS, DSBStoSBS$DSBS)
 
   rel <- data.frame(
@@ -71,6 +83,7 @@ reportFinalEnergy <- function(path, regions, years) {
     "^[^|]+",
     paste0(lookup[str_extract(name, "^[^|]+")], "|\\0")
   ) # prepend SBS (e.g., IS|HCL -> Industry|IS|HCL)
+  name <- str_replace(name,"Temp\\|", "")
   prefix <- "Final Energy|"
   title <- if (!is.null(prefix)) paste0(prefix, name) else name
   getItems(fuel, 3) <- title
