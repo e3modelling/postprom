@@ -20,633 +20,72 @@
 
 #' @export
 reportEmissions <- function(path, regions, years) {
-
-  magpie_object <- NULL
-
-  reg_map <- jsonlite::read_json(paste0(dirname(path),"/metadata.json"))[["Model Information"]][["Region Mapping"]][[1]]
-
-  ########## SBS
-  desc_map <- c(
-    IS = "Iron and Steel",
-    NF = "Non Ferrous Metals",
-    CH = "Chemicals",
-    BM = "Non Metallic Minerals",
-    PP = "Paper and Pulp",
-    FD = "Food Drink and Tobacco",
-    EN = "Engineering",
-    TX = "Textiles",
-    OE = "Ore Extraction",
-    OI = "Other Industrial sectors",
-    SE = "Services and Trade",
-    AG = "Agriculture - Fishing - Forestry",
-    HOU = "Households",
-    PC = "Passenger Transport - Cars",
-    PB = "Passenger Transport - Busses",
-    PT = "Passenger Transport - Rail",
-    PN = "Passenger Transport - Inland Navigation",
-    PA = "Passenger Transport - Aviation",
-    GU = "Goods Transport - Trucks",
-    GT = "Goods Transport - Rail",
-    GN = "Goods Transport - Inland Navigation",
-    BU = "Bunkers",
-    PCH = "Petrochemicals Industry",
-    NEN = "Other Non Energy Uses",
-    PG = "Power and Steam Generation",
-    H2P = "Hydrogen Production",
-    H2INFR = "Hydrogen storage and delivery"
-  )
-
-  # Convert to a data frame
-  df_SBS <- data.frame(
-    Code = names(desc_map),
-    Description = unname(desc_map),
-    stringsAsFactors = FALSE
-  )
-  #################
-
-  fscenario <- readGDX(path, "fscenario")
-  # Get supplementary emissions from NAVIGATE through mrprom
-  Navigate_Emissions <- calcOutput("NavigateEmissions", aggregate = TRUE, regionmapping = reg_map)
-
-  if ("RWO" %in% regions) {
-    Navigate_Emissions_RWO <- calcOutput("NavigateEmissions", aggregate = TRUE, regionmapping = "regionmappingOPDEV4.csv")
-    Navigate_Emissions_RWO <- Navigate_Emissions_RWO["RWO",,]
-    Navigate_Emissions <- mbind(Navigate_Emissions, Navigate_Emissions_RWO)
-    }
-
-  if (fscenario %in% c(0, 1)) {
-    Navigate_Emissions <- Navigate_Emissions[, , "SUP_NPi_Default"][regions, years, ]
-    Land_Use_raw <- readSource("Navigate", subtype = "SUP_NPi_Default")
-  } else if (fscenario %in% c(2, 5, 6)) {
-    Navigate_Emissions <- Navigate_Emissions[, , "SUP_1p5C_Default"][regions, years, ]
-    Land_Use_raw <- readSource("Navigate", subtype = "SUP_1p5C_Default")
-  } else if (fscenario == 3) {
-    Navigate_Emissions <- Navigate_Emissions[, , "SUP_2C_Default"][regions, years, ]
-    Land_Use_raw <- readSource("Navigate", subtype = "SUP_2C_Default")
-  }
-
-  ####################  Carbon Capture
-  Land_Use <- Land_Use_raw[,,c("Carbon Removal|Land Use")]
-  Land_Use <- Land_Use[,,"REMIND-MAgPIE 3_2-4_6"]
-
-  mapping <- toolGetMapping(reg_map,
-                            type = "regional",
-                            where = "mrprom")
-
-  Land_Use[is.na(Land_Use)] <- 10^-6
-  Land_Use <- toolAggregate(Land_Use,rel  = mapping,from = "ISO3.Code",to   = "Region.Code")
-
-  Land_Use <- as.quitte(Land_Use)
-
-  Land_Use <- interpolate_missing_periods(Land_Use, 2010:2100, expand.values = TRUE)
-
-  Land_Use <- as.magpie(Land_Use)
-
-  if ("RWO" %in% regions) {
-    Land_Use2 <- Land_Use_raw[,,c("Carbon Removal|Land Use")]
-    Land_Use2 <- Land_Use2[,,"REMIND-MAgPIE 3_2-4_6"]
-
-    mapping <- toolGetMapping("regionmappingOPDEV4.csv",
-                              type = "regional",
-                              where = "mrprom")
-
-    Land_Use2[is.na(Land_Use2)] <- 10^-6
-    Land_Use2 <- toolAggregate(Land_Use2,rel  = mapping,from = "ISO3.Code",to   = "Region.Code")
-
-    Land_Use2 <- as.quitte(Land_Use2)
-
-    Land_Use2 <- interpolate_missing_periods(Land_Use2, 2010:2100, expand.values = TRUE)
-
-    Land_Use2 <- as.magpie(Land_Use2)
-    Land_Use2 <- Land_Use2["RWO",,]
-    Land_Use <- mbind(Land_Use2, Land_Use)
-  }
-
-  Land_Use <- Land_Use[,years,]
-
-  # set NA to 0
-  Land_Use[is.na(Land_Use)] <- 10^-6
-
-  Land_Use <- Land_Use[regions, years, ]
-
-  Navigate_Emissions <- mbind(Navigate_Emissions, Land_Use)
-
-  Navigate_Emissions <- extractAggregatedData(fscenario, Navigate_Emissions, years)
-
-  Navigate_Emissions <- collapseDim(Navigate_Emissions, 3.1)
-  Navigate_Emissions <- collapseDim(Navigate_Emissions, 3.1)
-
-  Carbon_Removal_Land_Use <- Navigate_Emissions[,,"Carbon Removal|Land Use.Mt CO2/yr"]
-  getItems(Carbon_Removal_Land_Use, 3) <- NULL
-
-  l <- getItems(Navigate_Emissions,3.1) == "Carbon Removal|Land Use"
-
-  getItems(Navigate_Emissions,3.1)[l] <- "Carbon Capture|Land Use"
-
-  remind_AFOLU_Industrial_Processes <- Navigate_Emissions[, , c("Emissions|CO2|AFOLU", "Emissions|CO2|Industrial Processes")]
-  remind <- dimSums(remind_AFOLU_Industrial_Processes, 3, na.rm = TRUE)
-
-  iCo2EmiFac <- readGDX(path, "imCo2EmiFac")[regions, years, ]
-  VConsFuel <- readGDX(path, "VmConsFuel", field = 'l')[regions, years, ]
-  VDemFinEneTranspPerFuel <- readGDX(path, "VmDemFinEneTranspPerFuel", field = 'l')[regions, years, ]
-  VProdElec <- readGDX(path, "VmProdElec", field = 'l')[regions, years, ]
-  iPlantEffByType <- readGDX(path, "imPlantEffByType")[regions, years, ]
-  v04CO2CaptRate <- readGDX(path, name = c("V04CO2CaptRate", "imCO2CaptRate"),
-                            field = "l", format = "first_found")[regions, years, ]
-  VConsFuelTechH2Prod <- readGDX(path, "VmConsFuelTechH2Prod", field = 'l')[regions, years, ]
-  emissionsNonCO2 <- readGDX(path, "V07EmiActBySrcRegTim",field = "l")[regions, years, ]
-
-  if (is.null(emissionsNonCO2)) {
-    message("V07EmiActBySrcRegTim not found – creating empty emissionsNonCO2 placeholder")
-    # Zero placeholder for nonCO2 emissions with a single variable
-    emissionsNonCO2 <- new.magpie(regions, years, "CH4_manure", fill = 0)
-  }
-  
-  # Link between Model Subsectors and Fuels
-  sets4 <- readGDX(path, "SECtoEF")
-
-  EFtoEFS <- readGDX(path, "EFtoEFS")
-
-  IND <- readGDX(path, "INDDOM")
-  IND <- as.data.frame(IND)
-
-  map_INDDOM <- sets4 %>% filter(SBS %in% IND[, 1], EF!= "")
-
-  qINDDOM <- map_INDDOM %>%
-    left_join(EFtoEFS, by = "EF") %>%
-    select(-c("EF")) %>%
-    unique()
-  names(qINDDOM) <- sub("EFS", "SECtoEF", names(qINDDOM))
-
-  qINDDOM <- paste0(qINDDOM[["SBS"]], ".", qINDDOM[["SECtoEF"]])
-  INDDOM <- as.data.frame(qINDDOM)
-
-  PGEF <- readGDX(path, "PGEF") %>% as.data.frame()
-
-  TRANSE <- readGDX(path, "TRANSE") %>% as.data.frame()
-
-  map_TRANSECTOR <- sets4 %>% filter(SBS %in% TRANSE[, 1])
-  map_TRANSECTOR <- paste0(map_TRANSECTOR[["SBS"]], ".", map_TRANSECTOR[["EF"]])
-  map_TRANSECTOR <- as.data.frame(map_TRANSECTOR)
-
-  sum5 <- VDemFinEneTranspPerFuel[, , map_TRANSECTOR[, 1]] * iCo2EmiFac[, , map_TRANSECTOR[, 1]]
-
-  ############## transport by sector
-  TRANSE_by_sector <- dimSums(sum5, 3.2, na.rm = TRUE)
-
-  items_TRANSE <- df_SBS[df_SBS[,"Code"] %in% getItems(TRANSE_by_sector, 3),]
-  TRANSE_by_sector <- toolAggregate(TRANSE_by_sector[,,items_TRANSE[,"Code"]], dim = 3, rel = items_TRANSE, from = "Code", to = "Description")
-
-  getItems(TRANSE_by_sector, 3) <- paste0("Emissions|CO2|Energy|Demand|Transportation|",getItems(TRANSE_by_sector, 3))
-
-  TRANSE_by_sector <- add_dimension(TRANSE_by_sector, dim = 3.2, add = "unit", nm = "Mt CO2/yr")
-  magpie_object <- mbind(magpie_object, TRANSE_by_sector)
-  ##############
-
-  # transport
-  sum5 <- dimSums(sum5, 3, na.rm = TRUE)
-
-  PGALLtoEF <- readGDX(path, "PGALLtoEF") %>% as.data.frame()
-  names(PGALLtoEF) <- c("PGALL", "EF")
-
-  CCS <- readGDX(path, "CCS")
-  CCS <- as.data.frame(CCS)
-
-  CCS <- PGALLtoEF[PGALLtoEF$PGALL %in% CCS$CCS, ]
-
-  iCo2EmiFac_PG <- iCo2EmiFac[, , "PG"][, , CCS[, 2]]
-  iCo2EmiFac_PG <- collapseDim(iCo2EmiFac_PG, 3.1)
-  getItems(iCo2EmiFac_PG, 3) <- getItems(VProdElec[, , CCS[, 1]], 3)
-
-  # CO2 captured by CCS plants in power generation
-  var_16 <- VProdElec[, , CCS[, 1]] * 0.086 / iPlantEffByType[, , CCS[, 1]] * iCo2EmiFac_PG * v04CO2CaptRate[, , CCS[, 1]]
-  emi_factor_ATHBMSCCS <- 4.1868
-  ATHBMSCCS <- VProdElec[, , "ATHBMSCCS"] * 0.086 / iPlantEffByType[, ,  "ATHBMSCCS"] * emi_factor_ATHBMSCCS * v04CO2CaptRate[, ,  "ATHBMSCCS"]
-
-  car_capt_other_sources <- dimSums(var_16[,,c("ATHCOALCCS","ATHLGNCCS","ATHGASCCS")], dim = 3, na.rm = TRUE)
-
-  # CO2 captured by CCS plants
-  sum6 <- dimSums(var_16, dim = 3, na.rm = TRUE) + ATHBMSCCS
-
-  ######################  Energy|Supply  #######################
-  emissionsCO2Supply <- readGDX(path, "V07EmissCO2Supply",
-    field = "l"
-  )[regions, years, ]
-
-  mapping <- data.frame(
-    variable = c("PG", "CHP", "H2P", "STEAMP", "H2INFR", "LQD", "SLD", "GAS"),
-    combined  = c("ELC", "ELC", "H2", "HEAT", "H2", "LQD", "SLD", "GAS"),
-    stringsAsFactors = FALSE
-  )
-
-  emissionsCO2Supply <- toolAggregate(
-    emissionsCO2Supply,
-    dim  = 3,
-    rel  = mapping,
-    from = "variable",
-    to   = "combined"
-  )
-
-  renameMap <- c(
-    "ELC" = "Emissions|CO2|Energy|Supply|Electricity",
-    "H2" = "Emissions|CO2|Energy|Supply|Hydrogen",
-    "HEAT" = "Emissions|CO2|Energy|Supply|Heat",
-    "LQD" = "Emissions|CO2|Energy|Supply|Liquids",
-    "SLD" = "Emissions|CO2|Energy|Supply|Solids",
-    "GAS" = "Emissions|CO2|Energy|Supply|Gases"
-  )
-
-  names <- getItems(emissionsCO2Supply, 3)
-  matched <- intersect(names, names(renameMap))
-  names[names %in% matched] <- renameMap[names[names %in% matched]]
-  getItems(emissionsCO2Supply, 3) <- names
-
-  emissionsCO2SupplyAll <- helperAggregateLevel(emissionsCO2Supply, level = 4, recursive = TRUE)
-  emissionsCO2SupplyAll <- add_dimension(emissionsCO2SupplyAll, dim = 3.2, add = "unit", nm = "Mt CO2/yr")
-  magpie_object <- mbind(magpie_object, emissionsCO2SupplyAll)
-
-  ###########################
-
-  # input hydrogen_CCS
-  H2CCS <- readGDX(path, "H2CCS")
-  V05CaptRateH2 <- readGDX(path, "V05CaptRateH2", field = 'l')[,,H2CCS][regions, years, ]
-
-  if (is.null(V05CaptRateH2)) {
-    message("V05CaptRateH2 not found – creating empty V05CaptRateH2 placeholder")
-    # Zero placeholder for Carbon Capture
-    V05CaptRateH2 <- new.magpie(regions, years, "V05CaptRateH2", fill = 0)
-  }
-
-  iCo2EmiFac[, , "H2P"][, , "BMSWAS"] <- emi_factor_ATHBMSCCS
-  iCo2EmiFac_hydrogen <- collapseDim(iCo2EmiFac[, , "H2P"][, , PGEF[, 1]],3.1)
-  tech_hydrogen <- dimSums(VConsFuelTechH2Prod[, , PGEF[, 1]][,,H2CCS] * iCo2EmiFac_hydrogen,3.2)
-  hydrogen_CCS <- tech_hydrogen * V05CaptRateH2
-  iCo2EmiFac[, , "H2P"][, , "BMSWAS"] <- 0
-  hydrogen_CCS <- dimSums(hydrogen_CCS, 3, na.rm = TRUE)
-
-  SECTTECH2 <- sets4 %>% filter(SBS %in% c("BU"))
-  SECTTECH2 <- paste0(SECTTECH2[["SBS"]], ".", SECTTECH2[["EF"]])
-  SECTTECH2 <- as.data.frame(SECTTECH2)
-  # Bunkers
-  sum7 <- iCo2EmiFac[, , SECTTECH2[, 1]] * VConsFuel[, , SECTTECH2[, 1]]
-
-  ############## Bunkers by sector
-  Bunkers_by_sector <- dimSums(sum7, 3.2, na.rm = TRUE)
-
-  items_Bunkers <- df_SBS[df_SBS[,"Code"] %in% getItems(Bunkers_by_sector, 3),]
-  Bunkers_by_sector <- toolAggregate(Bunkers_by_sector[,,items_Bunkers[,"Code"]], dim = 3, rel = items_Bunkers, from = "Code", to = "Description")
-
-  getItems(Bunkers_by_sector, 3) <- paste0("Emissions|CO2|Energy|Demand|Bunkers|",getItems(Bunkers_by_sector, 3))
-
-  Bunkers_by_sector <- add_dimension(Bunkers_by_sector, dim = 3.2, add = "unit", nm = "Mt CO2/yr")
-  magpie_object <- mbind(magpie_object, Bunkers_by_sector)
-  ##############
-
-  sum7 <- dimSums(sum7, dim = 3, na.rm = TRUE)
-
-  ################# INDUSTRY SECTOR ##################
-
-  # CO2 captured by CCS plants in INDUSTRY SECTOR
-  Industry_CCS <- readGDX(path, "V06CapCO2ElecHydr", field = 'l')[regions, years, ]
-
-  if (!is.null(getItems(Industry_CCS,3)) & ("IND" %in% getItems(Industry_CCS,3))) {
-    Industry_CCS <- Industry_CCS[,,"IND"]
-    Industry_CCS <- Industry_CCS
-    Industry_CCS <- dimSums(Industry_CCS, 3, na.rm = TRUE)
-
-    Industry_CCS_plot_in_mif <- Industry_CCS
-    getItems(Industry_CCS_plot_in_mif, 3) <- "Carbon Capture|Industry"
-    Industry_CCS_plot_in_mif <- add_dimension(Industry_CCS_plot_in_mif, dim = 3.2, add = "unit", nm = "Mt CO2/yr")
-    magpie_object <- mbind(magpie_object, Industry_CCS_plot_in_mif)
-
-  } else {
-    Industry_CCS <- new.magpie(regions, years, fill = 0)
-  }
-
-  #########       DAC     #################
-
-  DAC <- NULL
-  VCapDAC <- readGDX(path, "V06CapDAC", field = "l")[regions, years, ]
-
-  if (is.null(VCapDAC)) {
-    message("V06CapDAC not found – creating empty DAC placeholder")
-
-    # Zero placeholder for Carbon Capture
-    VCapDAC_total     <- new.magpie(regions, years, "Carbon Capture", fill = 0)
-    Enhanced_Weathering <- new.magpie(regions, years, "Carbon Capture|Enhanced Weathering", fill = 0)
-    LTDAC             <- new.magpie(regions, years, "Carbon Capture|Direct Air Capture|LTDAC", fill = 0)
-    HTDAC             <- new.magpie(regions, years, "Carbon Capture|Direct Air Capture|HTDAC", fill = 0)
-    H2DAC             <- new.magpie(regions, years, "Carbon Capture|Direct Air Capture|H2DAC", fill = 0)
-    Direct_Air_Capture<- new.magpie(regions, years, "Carbon Capture|Direct Air Capture", fill = 0)
-
-    DAC <- mbind(VCapDAC_total, Enhanced_Weathering, LTDAC, HTDAC, Direct_Air_Capture, H2DAC)
-    DAC <- add_dimension(DAC, dim = 3.2, add = "unit", nm = "Mt CO2/yr")
-
-    CDR<- new.magpie(regions, years, "Emissions|CO2|Other Capture and Removal", fill = 0)
-    CDR <- add_dimension(CDR, dim = 3.2, add = "unit", nm = "Mt CO2/yr")
-    magpie_object <- mbind(magpie_object, CDR)
-
-    ###############################################
-
-  } else {
-    VCapDAC <- VCapDAC[regions, years, ]
-
-    VCapDAC_total <- dimSums(VCapDAC, dim = 3)
-    VCap_total_plot <- VCapDAC_total / 1e6 + Industry_CCS + sum6 + hydrogen_CCS + Carbon_Removal_Land_Use
-    getItems(VCap_total_plot, 3) <- "Carbon Capture"
-
-    Carbon_Geological_Storage <- dimSums(VCapDAC[,,c("HTDAC","H2DAC","LTDAC")], dim = 3) / 1e6 + Industry_CCS + sum6 + hydrogen_CCS
-    getItems(Carbon_Geological_Storage, 3) <- "Carbon Capture|Geological Storage"
-
-    other_sources <- car_capt_other_sources + Industry_CCS + hydrogen_CCS
-    getItems(other_sources, 3) <- "Carbon Capture|Geological Storage|Other Sources"
-
-    biom_car_capture <- ATHBMSCCS
-    getItems(biom_car_capture, 3) <- "Carbon Capture|Geological Storage|Biomass"
-
-    Enhanced_Weathering <- VCapDAC[,,"EWDAC"]
-    getItems(Enhanced_Weathering, 3) <- "Carbon Capture|Enhanced Weathering"
-
-    LTDAC <- VCapDAC[,,"LTDAC"]
-    getItems(LTDAC, 3) <- "Carbon Capture|Geological Storage|Direct Air Capture|LTDAC"
-
-    HTDAC <- VCapDAC[,,"HTDAC"]
-    getItems(HTDAC, 3) <- "Carbon Capture|Geological Storage|Direct Air Capture|HTDAC"
-
-
-    H2DAC <- VCapDAC[,,"H2DAC"]
-    getItems(H2DAC, 3) <- "Carbon Capture|Geological Storage|Direct Air Capture|H2DAC"
-
-    Direct_Air_Capture <- dimSums(VCapDAC[,,c("HTDAC","LTDAC","H2DAC")], dim = 3)
-    getItems(Direct_Air_Capture, 3) <- "Carbon Capture|Geological Storage|Direct Air Capture"
-
-    DAC <- mbind(Enhanced_Weathering, LTDAC, HTDAC, Direct_Air_Capture, H2DAC)
-    DAC <- DAC / 1e6
-    DAC <- add_dimension(DAC, dim = 3.2, add = "unit", nm = "Mt CO2/yr")
-
-    VCap_total_plot <- add_dimension(VCap_total_plot, dim = 3.2, add = "unit", nm = "Mt CO2/yr")
-    magpie_object <- mbind(magpie_object, VCap_total_plot)
-
-    Carbon_Geological_Storage <- add_dimension(Carbon_Geological_Storage, dim = 3.2, add = "unit", nm = "Mt CO2/yr")
-    other_sources <- add_dimension(other_sources, dim = 3.2, add = "unit", nm = "Mt CO2/yr")
-    biom_car_capture <- add_dimension(biom_car_capture, dim = 3.2, add = "unit", nm = "Mt CO2/yr")
-
-    magpie_object <- mbind(magpie_object, Carbon_Geological_Storage,other_sources,biom_car_capture)
-
-    #######################################
-    #cdr for plotting
-    CDR <- - dimSums(VCapDAC, dim = 3) / 10^6
-    CDR <- dimSums(CDR, dim = 3)
-    getItems(CDR, 3) <- "Emissions|CO2|Other Capture and Removal"
-    CDR <- add_dimension(CDR, dim = 3.2, add = "unit", nm = "Mt CO2/yr")
-    magpie_object <- mbind(magpie_object, CDR)
-
-    ###############################################
-  }
-
-  magpie_object <- mbind(magpie_object, DAC)
-
-  getItems(VCapDAC_total, 3) <- NULL
-
-  VCapDAC_total <- VCapDAC_total * (-1)
-
-  #################################################
-
-  ############## TOTAL  ##############
-
-  # hydrogen_CCS for plotting
-  hydrogen_CCS_plot <- hydrogen_CCS
-
-  getItems(hydrogen_CCS_plot, 3) <- "Carbon Capture|Hydrogen"
-
-  hydrogen_CCS_plot <- add_dimension(hydrogen_CCS_plot, dim = 3.2, add = "unit", nm = "Mt CO2/yr")
-
-  magpie_object <- mbind(magpie_object, hydrogen_CCS_plot)
-  ##############
-
-  # Extra Emissions
-  # Emissions|CO2|Energy|Demand|Industry
-
-  INDSE <- readGDX(path, "INDSE")
-  INDSE <- as.data.frame(INDSE)
-
-  map_INDSE <- sets4 %>% filter(SBS %in% INDSE[, 1], EF != "")
-
-  qINDSE <- map_INDSE %>%
-    left_join(EFtoEFS, by = "EF") %>%
-    select(-c("EF")) %>%
-    unique()
-  names(qINDSE) <- sub("EFS", "SECtoEF", names(qINDSE))
-
-  qINDSE <- paste0(qINDSE[["SBS"]], ".", qINDSE[["SECtoEF"]])
-  INDSE <- as.data.frame(qINDSE)
-
-  # final consumption
-  sum_INDSE <- iCo2EmiFac[, , INDSE[, 1]] * VConsFuel[, , INDSE[, 1]]
-
-  ############## Industry by sector
-  INDSE_by_sector <- dimSums(sum_INDSE, 3.2, na.rm = TRUE)
-
-  items_INDSE <- df_SBS[df_SBS[,"Code"] %in% getItems(INDSE_by_sector, 3),]
-  INDSE_by_sector <- toolAggregate(INDSE_by_sector[,,items_INDSE[,"Code"]], dim = 3, rel = items_INDSE, from = "Code", to = "Description")
-
-  getItems(INDSE_by_sector, 3) <- paste0("Emissions|CO2|Energy|Demand|Industry|",getItems(INDSE_by_sector, 3))
-
-  INDSE_by_sector <- add_dimension(INDSE_by_sector, dim = 3.2, add = "unit", nm = "Mt CO2/yr")
-  magpie_object <- mbind(magpie_object, INDSE_by_sector)
-  ##############
-
-  sum_INDSE <- dimSums(sum_INDSE, 3, na.rm = TRUE)
-
-  sum_INDSE <- sum_INDSE - Industry_CCS
-
-  getItems(sum_INDSE, 3) <- "Emissions|CO2|Energy|Demand|Industry"
-
-  sum_INDSE <- add_dimension(sum_INDSE, dim = 3.2, add = "unit", nm = "Mt CO2/yr")
-  magpie_object <- mbind(magpie_object, sum_INDSE)
-
-  # Emissions|CO2|Energy|Demand|Residential and Commercial
-
-  DOMSE <- readGDX(path, "DOMSE")
-  DOMSE <- as.data.frame(DOMSE)
-
-  map_DOMSE <- sets4 %>% filter(SBS %in% DOMSE[, 1], EF != "")
-
-  qDOMSE <- map_DOMSE %>%
-    left_join(EFtoEFS, by = "EF") %>%
-    select(-c("EF")) %>%
-    unique()
-  names(qDOMSE) <- sub("EFS", "SECtoEF", names(qDOMSE))
-
-  qDOMSE <- paste0(qDOMSE[["SBS"]], ".", qDOMSE[["SECtoEF"]])
-  DOMSE <- as.data.frame(qDOMSE)
-
-  # final consumption
-  sum_DOMSE <- iCo2EmiFac[, , DOMSE[, 1]] * VConsFuel[, , DOMSE[, 1]]
-
-  ############## DOMSE by sector
-  DOMSE_by_sector <- dimSums(sum_DOMSE, 3.2, na.rm = TRUE)
-
-  items_DOMSE <- df_SBS[df_SBS[,"Code"] %in% getItems(DOMSE_by_sector, 3),]
-  DOMSE_by_sector <- toolAggregate(DOMSE_by_sector[,,items_DOMSE[,"Code"]], dim = 3, rel = items_DOMSE, from = "Code", to = "Description")
-
-  getItems(DOMSE_by_sector, 3) <- paste0("Emissions|CO2|Energy|Demand|Residential and Commercial|",getItems(DOMSE_by_sector, 3))
-
-  DOMSE_by_sector <- add_dimension(DOMSE_by_sector, dim = 3.2, add = "unit", nm = "Mt CO2/yr")
-  magpie_object <- mbind(magpie_object, DOMSE_by_sector)
-  ##############
-
-  sum_DOMSE <- dimSums(sum_DOMSE, 3, na.rm = TRUE)
-
-  getItems(sum_DOMSE, 3) <- "Emissions|CO2|Energy|Demand|Residential and Commercial"
-
-  sum_DOMSE <- add_dimension(sum_DOMSE, dim = 3.2, add = "unit", nm = "Mt CO2/yr")
-  magpie_object <- mbind(magpie_object, sum_DOMSE)
-
-  # Emissions|CO2|Energy|Demand|Transportation
-  sum_TRANSE <- sum5 # transport
-
-  getItems(sum_TRANSE, 3) <- "Emissions|CO2|Energy|Demand|Transportation"
-
-  sum_TRANSE <- add_dimension(sum_TRANSE, dim = 3.2, add = "unit", nm = "Mt CO2/yr")
-  magpie_object <- mbind(magpie_object, sum_TRANSE)
-
-  # Emissions|CO2|Energy|Demand|Bunkers
-  sum_Bunkers <- sum7 # Bunkers
-
-  getItems(sum_Bunkers, 3) <- "Emissions|CO2|Energy|Demand|Bunkers"
-
-  sum_Bunkers <- add_dimension(sum_Bunkers, dim = 3.2, add = "unit", nm = "Mt CO2/yr")
-  magpie_object <- mbind(magpie_object, sum_Bunkers)
-
-  # Emissions|CO2|Energy|Demand
-  # Emissions|CO2|Energy|Demand|Bunkers, sum_Bunkers
-  # Emissions|CO2|Energy|Demand|Transportation, sum_TRANSE
-  # Emissions|CO2|Energy|Demand|Residential and Commercial, sum_DOMSE
-  # Emissions|CO2|Energy|Demand|Industry, sum_INDSE
-  sum_Demand <- sum_Bunkers + sum_TRANSE + sum_DOMSE + sum_INDSE
-
-  getItems(sum_Demand, 3) <- "Emissions|CO2|Energy|Demand"
-
-  sum_Demand <- add_dimension(sum_Demand, dim = 3.2, add = "unit", nm = "Mt CO2/yr")
-  magpie_object <- mbind(magpie_object, sum_Demand)
-
-  carbon_capture_electricity <- sum6
-
-  getItems(carbon_capture_electricity, 3) <- "Carbon Capture|Electricity"
-  carbon_capture_electricity <- add_dimension(carbon_capture_electricity, dim = 3.2, add = "unit", nm = "Mt CO2/yr")
-  magpie_object <- mbind(magpie_object, carbon_capture_electricity)
-
-  # Emissions|CO2|Energy
-  # Emissions|CO2|Energy|Demand, sum_Demand
-  # Emissions|CO2|Energy|Supply, sum_Supply
-  sum_Energy <- magpie_object[,,'Emissions|CO2|Energy|Demand'] + magpie_object[,,'Emissions|CO2|Energy|Supply']
-
-  getItems(sum_Energy, 3) <- "Emissions|CO2|Energy"
-
-  sum_Energy <- add_dimension(sum_Energy, dim = 3.2, add = "unit", nm = "Mt CO2/yr")
-  magpie_object <- mbind(magpie_object, sum_Energy)
-
-  # Emissions|CO2
-  total_CO2 <- sum_Energy + remind + (VCapDAC_total / 10^6)
-  getItems(total_CO2, 3) <- "Emissions|CO2"
-
-  total_CO2 <- add_dimension(total_CO2, dim = 3.2, add = "unit", nm = "Mt CO2/yr")
-  magpie_object <- mbind(magpie_object, total_CO2, Navigate_Emissions)
-
-  ####################################
-  # Add Emissions|CO2|Energy + Emissions|CO2|Industrial processes to create Emissions|CO2|Industrial Processes
-  sumIPEnergy <- magpie_object[, ,c("Emissions|CO2|Energy.Mt CO2/yr","Emissions|CO2|Industrial Processes.Mt CO2/yr")]
-  sumIPEnergy <- dimSums(sumIPEnergy, dim = 3, na.rm = TRUE)
-  getItems(sumIPEnergy,3) <- "Emissions|CO2|Energy and Industrial Processes.Mt CO2/yr"
-  # Fix separator "p" to "."
-  dimnames(sumIPEnergy)$d3 <- gsub("pMt", ".Mt", dimnames(sumIPEnergy)$d3)
-
-  magpie_object <- mbind(magpie_object, sumIPEnergy)
-
-  # Add non-CO2 gases from OPEN-PROM
-  nonCO2mapping <- toolGetMapping("open-prom-emissions-mapping.csv",
-                          type = "sectoral",
-                          where = "postprom")
-
-  emissionsNonCO2 <- toolAggregate(
-    emissionsNonCO2,
-    dim  = 3,
-    rel  = nonCO2mapping,
-    partrel = TRUE
-  )
-  # Convert CH4 and N20 from Mt Ceq to "Mt CH4/yr" or "kt N2O/yr"
-  allVariables <- getNames(emissionsNonCO2)
-  ch4Vars <- grep("CH4", allVariables, value = TRUE)
-  n2oVars <- grep("N2O", allVariables, value = TRUE)
-
-  # Factor = (C -> CO2) / GWP * (Mt -> kt) for N2O
-  # Constants: C_TO_CO2 = 44/12, GWP_CH4 = 25, GWP_N2O = 298
-  conversionFactorCh4 <- (44/12) / 25   
-  conversionFactorN2o <- (44/12) / 298 * 1e3 
-
-  emissionsNonCO2[,,ch4Vars] <- emissionsNonCO2[,,ch4Vars] * conversionFactorCh4
-  emissionsNonCO2[,,n2oVars] <- emissionsNonCO2[,,n2oVars] * conversionFactorN2o
-  
-  # Add appropriate units for each gas
-  currentNames <- getNames(emissionsNonCO2)
-  unitVector <- sapply(currentNames, getUnit)
-  getNames(emissionsNonCO2) <- paste(currentNames, unitVector, sep = ".")
-
-  # Make emissionsNonCO2 override any same-named variables already in magpie_object
-  incoming <- getItems(emissionsNonCO2, 3)
-  magpie_object <- magpie_object[, , !getItems(magpie_object, 3) %in% incoming, drop = FALSE]
-  
-  magpie_object <- mbind(magpie_object, emissionsNonCO2)
-
-  # Create Emissions|Kyoto Gases
-  emissionsCO2eq <- calculateGhg(mbind(emissionsNonCO2, magpie_object[, , "Emissions|N2O|AFOLU|Land.kt N2O/yr"]))
-
-  # Define the categories you want to aggregate
-  # Comment: If we add all the categories here, the "Total" will not be the sum since 
-  # F-gases are not included in the category breakdowns.
-
-  # categories <- c("Energy|Supply", "Energy|Demand", "AFOLU", "Industrial Processes")
-  # kyotoGases <- mbind(emissionsCO2eqTotal, mbind(lapply(categories, calcKyoto)))
-
-  # Calculate Total "Emissions|Kyoto Gases" (Special case: sum of everything)
-  emissionsCO2eqTotal <- dimSums(emissionsCO2eq, dim = 3)
-  emissionsCO2eqTotal <- emissionsCO2eqTotal + magpie_object[ , ,'Emissions|CO2.Mt CO2/yr']
-  getItems(emissionsCO2eqTotal, 3) <- "Emissions|Kyoto Gases"
-  emissionsCO2eqTotal <- add_dimension(emissionsCO2eqTotal, dim = 3.2, add = "unit", nm = "Mt CO2-equiv/yr") 
-  
-  magpie_object <- mbind(magpie_object, emissionsCO2eqTotal)
-
-  # Emissions|CO2|Cumulated
-
-  Cumulated <- as.quitte(total_CO2)
-
-  Cumulated <- Cumulated %>%
-    group_by(region) %>%
-    mutate(value = cumsum(value)) %>%
+  # ====================== Energy ====================================
+  DSBSTable <- rgdx.set(path, "DSBS", te = TRUE)
+  SSBSTable <- rgdx.set(path, "SSBS", te = TRUE)
+  TotalTable <- bind_rows(DSBSTable, SSBSTable)
+
+  #---------- Create a DSBS TO SBS mapping (e.g., Iron & Steel -> Industry) -----
+  DSBS_Industry <- readGDX(path, "INDSE") %>%
     as.data.frame() %>%
-    as.quitte() %>%
-    as.magpie()
-  getItems(Cumulated, 3) <- "Emissions|CO2|Cumulated"
+    mutate(SBS = "Industry")
+  DSBS_Transport <- readGDX(path, "TRANSE") %>%
+    as.data.frame() %>%
+    mutate(SBS = "Transportation")
+  DSBS_NonEnergy <- readGDX(path, "NENSE") %>%
+    as.data.frame() %>%
+    filter(. != "BU") %>%
+    mutate(SBS = "Non-Energy Use")
+  DSBS_SBS <- bind_rows(DSBS_Industry, DSBS_Transport, DSBS_NonEnergy) %>%
+    rename(DSBS = 1) %>%
+    left_join(DSBSTable, by = c("DSBS" = "SBS")) %>%
+    select(-DSBS) %>%
+    rename(DSBS = .te)
+  lookup <- setNames(DSBStoSBS$SBS, DSBStoSBS$DSBS)
+  # ----------------------------------------------------------------------
+  variables <- readGDX(
+    path,
+    c("V07GrossEmissCO2Demand", "V06CapCO2ElecHydr", "V07EmissCO2Supply"),
+    field = "l"
+  )
+  # ------------- Demand -------------------------
+  grossDemand <- variables$V07GrossEmissCO2Demand[regions, years, ]
+  name <- DSBSTable$.te[match(getItems(grossDemand, 3.1), DSBSTable$SBS)]
+  key <- str_extract(name, "^[^|]+")
+  mapped <- lookup[key]
+  name <- if_else(
+    !is.na(mapped),
+    str_replace(name, "^[^|]+", paste0(mapped, "|\\0")),
+    name
+  )
+  getItems(grossDemand, 3.1) <- paste0("Gross Emissions|CO2|Energy|Demand|", name)
 
-  Cumulated <- Cumulated / 1000
-  Cumulated <- add_dimension(Cumulated, dim = 3.2, add = "unit", nm = "Gt CO2")
-  magpie_object <- mbind(magpie_object, Cumulated)
+  # ------------- Supply ---------------------------------
+  grossSupply <- variables$V07EmissCO2Supply[regions, years, ]
+  name <- SSBSTable$.te[match(getItems(grossSupply, 3.1), SSBSTable$SBS)]
+  getItems(grossSupply, 3.1) <- paste0("Gross Emissions|CO2|Energy|Supply|", name)
 
+  # -------------------------- Carbon Capture -----------------------------
+  captured <- variables$V06CapCO2ElecHydr[regions, years, ]
+  side <- ifelse(getItems(captured, 3.1) %in% SSBSTable$SBS, "Supply", "Demand")
+  name <- TotalTable$.te[match(getItems(captured, 3.1), TotalTable$SBS)]
+  getItems(captured, 3.1) <- paste0("Carbon Capture|Energy|", side, "|", name)
+  # ========================================================================
+
+  magpie_object <- mbind(grossDemand, grossSupply, captured)
+  magpie_object <- helperAggregateLevel(magpie_object, level = 1, recursive = TRUE)
   return(magpie_object)
 }
+
 # Helpers -------------------------------------------------------------
 # Define a function to generate the unit for a single variable name - nonCO2
 getUnit <- function(varName) {
-  
   if (grepl("CH4", varName)) {
     # CH4 is always Mt
     return("Mt CH4/yr")
-
   } else if (grepl("N2O", varName)) {
-  # N2O is kt
-  return("kt N2O/yr")
-
+    # N2O is kt
+    return("kt N2O/yr")
   } else {
     # Extract the "leaf" (everything after the last '|')
     # Example: "Emissions|HFC|HFC152a" -> "HFC152a"
@@ -663,12 +102,12 @@ calcKyoto <- function(cat) {
   patCo2 <- paste0("^Emissions\\|CO2\\|", safeCat, "($|\\.)")
   varsCo2 <- grep(patCo2, getItems(magpie_object, 3), value = TRUE)
   valCo2 <- if (length(varsCo2) > 0) dimSums(magpie_object[, , varsCo2], dim = 3) else 0
-  
+
   # B. Find Non-CO2 Components (CH4 or N2O only)
   #    Regex: Matches "Emissions|CH4|<cat>..." OR "Emissions|N2O|<cat>..."
   patNonCo2 <- paste0("^Emissions\\|(CH4|N2O)\\|", safeCat, "($|\\.|\\|)")
   varsNonCo2 <- grep(patNonCo2, getItems(emissionsCO2eq, 3), value = TRUE)
-  
+
   if (length(varsNonCo2) > 0) {
     valNonCo2 <- dimSums(emissionsCO2eq[, , varsNonCo2], dim = 3)
   } else {
@@ -684,27 +123,27 @@ calcKyoto <- function(cat) {
 getCo2EqFactor <- function(varName) {
   # Define GWP Factors (AR4 100-year values standard for reporting)
   gwpMap <- c(
-    "CH4"        = 25,
-    "N2O"        = 298,
-    "SF6"        = 22800,
-    "HFC125"     = 3500,
-    "HFC134a"    = 1430,
-    "HFC143a"    = 4470,
-    "HFC152a"    = 124,
-    "HFC227ea"   = 3220,
-    "HFC23"      = 14800,
-    "HFC32"      = 675,
-    "HFC43-10"   = 1640,
-    "HFC245fa"   = 693,
-    "HFC236fa"  = 9810,
-    "PFC"        = 7390,
-    "CF4"        = 7390,
-    "C2F6"       = 12200,
-    "C6F14"      = 9300
+    "CH4" = 25,
+    "N2O" = 298,
+    "SF6" = 22800,
+    "HFC125" = 3500,
+    "HFC134a" = 1430,
+    "HFC143a" = 4470,
+    "HFC152a" = 124,
+    "HFC227ea" = 3220,
+    "HFC23" = 14800,
+    "HFC32" = 675,
+    "HFC43-10" = 1640,
+    "HFC245fa" = 693,
+    "HFC236fa" = 9810,
+    "PFC" = 7390,
+    "CF4" = 7390,
+    "C2F6" = 12200,
+    "C6F14" = 9300
   )
-  
+
   cleanName <- sub("(\\s*\\(.*\\)|\\.[^.]*)$", "", varName)
-  
+
   if (grepl("CH4", cleanName)) {
     return(gwpMap[["CH4"]])
   } else if (grepl("N2O", cleanName)) {
@@ -721,16 +160,15 @@ getCo2EqFactor <- function(varName) {
 }
 # Calculate GHG Emissions (Mt CO2eq) from a magpie object
 calculateGhg <- function(dataMagpie) {
-
   # --- Apply Conversion ---
   allVars <- getNames(dataMagpie)
   targetVars <- grep("Emissions\\|", allVars, value = TRUE)
-  
+
   totalCo2Eq <- NULL
-  
+
   for (var in targetVars) {
     factor <- getCo2EqFactor(var)
-    
+
     if (factor != 0) {
       currentGas <- dataMagpie[, , var] * factor
       totalCo2Eq <- mbind(totalCo2Eq, currentGas)
@@ -738,11 +176,12 @@ calculateGhg <- function(dataMagpie) {
   }
   return(totalCo2Eq)
 }
-extractAggregatedData <- function(scenario,x,years, ...) {
-
-  map <- toolGetMapping(name = "NavigateEmissions.csv",
-                      type = "sectoral",
-                      where = "mrprom")
+extractAggregatedData <- function(scenario, x, years, ...) {
+  map <- toolGetMapping(
+    name = "NavigateEmissions.csv",
+    type = "sectoral",
+    where = "mrprom"
+  )
 
   new_row <- data.frame(
     Emissions = "Carbon Removal|Land Use",
@@ -761,59 +200,57 @@ extractAggregatedData <- function(scenario,x,years, ...) {
     xa <- readSource("Navigate", subtype = "SUP_2C_Default", convert = FALSE)
   }
 
-  xa <- xa[,,map[,"Emissions"]]
-  xa <- xa[,years,"REMIND-MAgPIE 3_2-4_6"]
+  xa <- xa[, , map[, "Emissions"]]
+  xa <- xa[, years, "REMIND-MAgPIE 3_2-4_6"]
   xa <- as.quitte(xa)
   xa <- interpolate_missing_periods(xa, 2010:2100, expand.values = TRUE)
   xa <- as.magpie(xa)
-  xa <- xa[,years,"REMIND-MAgPIE 3_2-4_6"]
+  xa <- xa[, years, "REMIND-MAgPIE 3_2-4_6"]
 
   desiredRegions <- c(
-  "REMIND 3_2|Canada, Australia, New Zealand",
-  "REMIND 3_2|Latin America and the Caribbean",
-  "REMIND 3_2|Middle East and North Africa",
-  "REMIND 3_2|Non-EU28 Europe",
-  "REMIND 3_2|Other Asia",
-  "REMIND 3_2|Russia and Reforming Economies",
-  "REMIND 3_2|Sub-Saharan Africa",
-  "World"
+    "REMIND 3_2|Canada, Australia, New Zealand",
+    "REMIND 3_2|Latin America and the Caribbean",
+    "REMIND 3_2|Middle East and North Africa",
+    "REMIND 3_2|Non-EU28 Europe",
+    "REMIND 3_2|Other Asia",
+    "REMIND 3_2|Russia and Reforming Economies",
+    "REMIND 3_2|Sub-Saharan Africa",
+    "World"
   )
 
   # If only RWO is needed (e.g., DEV mode), then substract the regions (e.g., USA) from the world.
 
-    xa<- xa[desiredRegions,,]
-    # Mapping
-    RegionMap <- c(
+  xa <- xa[desiredRegions, , ]
+  # Mapping
+  RegionMap <- c(
     "REMIND 3_2|Canada, Australia, New Zealand" = "CAZ",
-    "REMIND 3_2|EU 28"                           = "ELL",
+    "REMIND 3_2|EU 28" = "ELL",
     "REMIND 3_2|Latin America and the Caribbean" = "LAM",
-    "REMIND 3_2|Middle East and North Africa"   = "MEA",
-    "REMIND 3_2|Non-EU28 Europe"                = "NEU",
-    "REMIND 3_2|Other Asia"                      = "OAS",
-    "REMIND 3_2|Russia and Reforming Economies"  = "REF",
-    "REMIND 3_2|Sub-Saharan Africa"             = "SSA"
-    )
+    "REMIND 3_2|Middle East and North Africa" = "MEA",
+    "REMIND 3_2|Non-EU28 Europe" = "NEU",
+    "REMIND 3_2|Other Asia" = "OAS",
+    "REMIND 3_2|Russia and Reforming Economies" = "REF",
+    "REMIND 3_2|Sub-Saharan Africa" = "SSA"
+  )
 
-    commonRegions <- intersect(RegionMap[getRegions(xa)], getRegions(x))
-    xaRegions <- names(RegionMap)[RegionMap %in% commonRegions]
-    matchRegions <- RegionMap[xaRegions]
+  commonRegions <- intersect(RegionMap[getRegions(xa)], getRegions(x))
+  xaRegions <- names(RegionMap)[RegionMap %in% commonRegions]
+  matchRegions <- RegionMap[xaRegions]
 
-    for (i in seq_along(matchRegions)) {
-      x[matchRegions[i], , ] <- xa[xaRegions[i], , ]
-    }
+  for (i in seq_along(matchRegions)) {
+    x[matchRegions[i], , ] <- xa[xaRegions[i], , ]
+  }
 
-    # Check if 'RWO' exists as a region and then compute RWO as World - sum of countries
-    if ("RWO" %in% getItems(x,1)) {
+  # Check if 'RWO' exists as a region and then compute RWO as World - sum of countries
+  if ("RWO" %in% getItems(x, 1)) {
+    extracted <- xa["World", , ]
+    withoutRWO <- x[!getItems(x, 1) %in% "RWO", , ]
+    mainCountriesSum <- dimSums(withoutRWO, dim = 1)
+    newRWO <- extracted - mainCountriesSum
+    getItems(newRWO, 1) <- "RWO"
 
-      extracted <- xa['World',,]
-      withoutRWO <- x[!getItems(x,1) %in% "RWO", , ]
-      mainCountriesSum <- dimSums(withoutRWO, dim = 1)
-      newRWO <- extracted - mainCountriesSum
-      getItems(newRWO,1) <- "RWO"
-
-      x <- mbind(withoutRWO, newRWO)
-
-    }
+    x <- mbind(withoutRWO, newRWO)
+  }
 
 
   # set NA to 0
