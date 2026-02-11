@@ -632,7 +632,56 @@ reportEmissions <- function(path, regions, years) {
   Cumulated <- Cumulated / 1000
   Cumulated <- add_dimension(Cumulated, dim = 3.2, add = "unit", nm = "Gt CO2")
   magpie_object <- mbind(magpie_object, Cumulated)
+  
+  # Add MAGPIE run
+  MAGPIE_runs <- readSource("MAGPIE_runs")
+  
+  # Filter MAGPIE by scenario
+  if (fscenario %in% c(0, 1)) {
+    MAGPIE_runs <- MAGPIE_runs[, , "MAGPIE_NPI"]
+  } else if (fscenario %in% c(2, 5, 6)) {
+    MAGPIE_runs <- MAGPIE_runs[, , "MAGPIE_1P5C"]
+  } else if (fscenario == 3) {
+    MAGPIE_runs <- MAGPIE_runs[, , "MAGPIE_2C"]
+  }
+  
+  # Check if 'RWO' exists as a region and then compute RWO as World - sum of countries
+  if ("RWO" %in% getItems(magpie_object,1)) {
+    
+    World_MAGPIE <- dimSums(MAGPIE_runs, 1)
+    withoutRWO_MAGPIE <- MAGPIE_runs[!getItems(magpie_object,1) %in% "RWO", , ]
+    mainCountriesSum_MAGPIE <- dimSums(withoutRWO_MAGPIE, dim = 1)
+    newRWO_MAGPIE <- World_MAGPIE - mainCountriesSum_MAGPIE
+    getItems(newRWO_MAGPIE,1) <- "RWO"
+    
+    MAGPIE_runs <- mbind(withoutRWO_MAGPIE, newRWO_MAGPIE)
+    
+  }
 
+  # interpolate years
+  MAGPIE_runs <- as.quitte(MAGPIE_runs) %>% select(-scenario) %>%
+    interpolate_missing_periods(period = getYears(magpie_object, as.integer = T), expand.values = TRUE) %>%
+      as.quitte() %>% as.magpie()
+  
+  MAGPIE_runs <- MAGPIE_runs[regions, years, ]
+  
+  # calculate AFOLU emissions of Magpie
+  AFOLU <- MAGPIE_runs[,,c("Emissions|CO2|AFOLU|Agriculture", "Emissions|CO2|Land")]
+  AFOLU <- dimSums(AFOLU, 3)
+  
+  # Take AFOLU emissions from Magpie, together with other emissions
+  getItems(AFOLU, 3) <- "Emissions|CO2|AFOLU"
+  AFOLU_unit <- add_dimension(AFOLU, dim = 3.2, add = "unit", nm = "Mt CO2/yr")
+  MAGPIE_runs <- mbind(MAGPIE_runs, AFOLU_unit)
+  # remove AFOLU from Navigate
+  new_row <- data.frame(
+    Emissions = "Emissions|CO2|AFOLU",
+    stringsAsFactors = FALSE
+  )
+  magpie_object <- magpie_object[,,setdiff(getItems(magpie_object,3.1), new_row[,"Emissions"])]
+  
+  magpie_object <- mbind(magpie_object, MAGPIE_runs)
+  
   return(magpie_object)
 }
 # Helpers -------------------------------------------------------------
