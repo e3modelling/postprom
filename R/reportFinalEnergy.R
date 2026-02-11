@@ -21,6 +21,7 @@
 reportFinalEnergy <- function(path, regions, years) {
   EFSTable <- rgdx.set(path, "EFS", te = TRUE)
   DSBSTable <- rgdx.set(path, "DSBS", te = TRUE)
+  # DSBSTable[12,".te"] <- "Agriculture, Fishing, Forestry, etc"
 
   #---------- Create a DSBS TO SBS mapping (e.g., Iron & Steel -> Industry) -----
   DSBS_Industry <- readGDX(path, "INDSE") %>%
@@ -49,6 +50,9 @@ reportFinalEnergy <- function(path, regions, years) {
   fuel <- readGDX(path, "VmConsFuel", field = "l")[regions, years, ]
   VFuelTransport <- readGDX(path, "VmDemFinEneTranspPerFuel", field = "l")[regions, years, ]
   fuel[, , getItems(VFuelTransport, 3)] <- VFuelTransport[, , getItems(VFuelTransport, 3)]
+  VFuelDAC <-readGDX(path,"VmConsFuelDACProd", field = "l")[regions, years, ]
+  dimnames(VFuelDAC)[[3]] <- paste0("DAC.", getItems(VFuelDAC, 3))
+  fuel[, , getItems(VFuelDAC, 3)] <- VFuelDAC[, , getItems(VFuelDAC, 3)]
   fuel <- fuel[, , EFSTable$EF]
 
   # Rename Sectors
