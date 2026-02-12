@@ -110,18 +110,19 @@ reportEmissions <- function(path, regions, years) {
 
   emissionsNonCO2[, , ch4Vars] <- emissionsNonCO2[, , ch4Vars] * conversionFactorCh4
   emissionsNonCO2[, , n2oVars] <- emissionsNonCO2[, , n2oVars] * conversionFactorN2o
-  # Add appropriate units for each gas
-  currentNames <- getNames(emissionsNonCO2)
-  unitVector <- sapply(currentNames, getUnit)
-  getNames(emissionsNonCO2) <- paste(currentNames, unitVector, sep = ".")
-
+  names(dimnames(emissionsNonCO2))[3] <- "SBS"
   # -------------------------- Kyoto Gases ------------------------------------
   emissionsCO2eq <- calculateGhg(emissionsNonCO2)
   kyotoGases <- dimSums(emissionsCO2eq, dim = 3)[, , ] + EmissionsCo2[, , "Emissions|CO2"]
   getItems(kyotoGases, 3.1) <- "Emissions|Kyoto Gases"
-
-  # ===========================================================================
-
+  names(dimnames(kyotoGases))[3] <- "SBS"
+  # ===============================Add Dimensions =======================================
+  emissionsNonCO2 <- add_dimension(
+    emissionsNonCO2,
+    dim = 3.2,
+    add = "unit",
+    nm = unname(sapply(getNames(emissionsNonCO2), getUnit)) %>% as.vector()
+  )
   EmissionsCo2 <- add_dimension(EmissionsCo2, dim = 3.2, add = "unit", nm = "Mt CO2/yr")
   kyotoGases <- add_dimension(kyotoGases, dim = 3.2, add = "unit", nm = "Mt CO2-equiv/yr")
   magpie_object <- mbind(emissionsNonCO2, EmissionsCo2, kyotoGases)
