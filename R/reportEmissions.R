@@ -124,9 +124,15 @@ reportEmissions <- function(path, regions, years) {
     nm = unname(sapply(getNames(emissionsNonCO2), getUnit)),
     expand = FALSE
   )
+
   EmissionsCo2 <- add_dimension(EmissionsCo2, dim = 3.2, add = "unit", nm = "Mt CO2/yr")
   kyotoGases <- add_dimension(kyotoGases, dim = 3.2, add = "unit", nm = "Mt CO2-equiv/yr")
   magpie_object <- mbind(emissionsNonCO2, EmissionsCo2, kyotoGases)
+  
+  # MAGPIE_runs <- getMAGPIE(EmissionsCo2)
+  # MAGPIE_runs <- MAGPIE_runs[regions, years, ]
+  GLOBIOMEU <- getGLOBIOMEU(EmissionsCo2)[, years, ]
+    
   return(magpie_object)
 }
 
@@ -311,3 +317,88 @@ extractAggregatedData <- function(scenario, x, years, ...) {
 
   return(x)
 }
+
+# getMAGPIE function to generate AFOLU and Land_CDR
+getMAGPIE <- function(magpie_object) {
+  
+  fscenario <- readGDX(path, "fscenario")
+  
+  # Add MAGPIE run
+  MAGPIE_runs <- readSource("MAGPIE_runs")
+  
+  # Filter MAGPIE by scenario
+  if (fscenario %in% c(0, 1)) {
+    MAGPIE_runs <- MAGPIE_runs[, , "MAGPIE_NPI"]
+  } else if (fscenario %in% c(2, 5, 6)) {
+    MAGPIE_runs <- MAGPIE_runs[, , "MAGPIE_1P5C"]
+  } else if (fscenario == 3) {
+    MAGPIE_runs <- MAGPIE_runs[, , "MAGPIE_2C"]
+  }
+  
+  # Filter with variables
+  MAGPIE_runs <- MAGPIE_runs[,,c("Emissions|CO2|AFOLU|Agriculture", "Emissions|CO2|Land",
+                              "Emissions|CO2|Land|Land-use Change|+|Deforestation",
+                              "Emissions|CO2|Land Carbon Sink|Grassi|Managed Land|Managed Forest",
+                              "Emissions|CO2|Land|Land-use Change|Soil|+|Land Conversion")]
+  
+  # Check if 'RWO' exists as a region and then compute RWO as World - sum of countries
+  if ("RWO" %in% getItems(magpie_object,1)) {
+    
+    World_MAGPIE <- dimSums(MAGPIE_runs, 1)
+    withoutRWO_MAGPIE <- MAGPIE_runs[!getItems(magpie_object,1) %in% "RWO", , ]
+    mainCountriesSum_MAGPIE <- dimSums(withoutRWO_MAGPIE, dim = 1)
+    newRWO_MAGPIE <- World_MAGPIE - mainCountriesSum_MAGPIE
+    getItems(newRWO_MAGPIE,1) <- "RWO"
+    
+    MAGPIE_runs <- mbind(withoutRWO_MAGPIE, newRWO_MAGPIE)
+    
+  }
+    # interpolate years
+    MAGPIE_runs <- as.quitte(MAGPIE_runs) %>% select(-scenario) %>%
+      interpolate_missing_periods(period = getYears(magpie_object, as.integer = T), expand.values = TRUE) %>%
+      as.quitte() %>% as.magpie()
+    
+    # calculate AFOLU emissions of Magpie
+    AFOLU <- MAGPIE_runs[,,c("Emissions|CO2|AFOLU|Agriculture", "Emissions|CO2|Land")]
+    AFOLU <- dimSums(AFOLU, 3)
+    
+    # calculate Land_CDR emissions of Magpie
+    Land_CDR <- MAGPIE_runs[,,c("Emissions|CO2|Land|Land-use Change|+|Deforestation",
+                                "Emissions|CO2|Land Carbon Sink|Grassi|Managed Land|Managed Forest",
+                                "Emissions|CO2|Land|Land-use Change|Soil|+|Land Conversion")]
+    Land_CDR <- dimSums(Land_CDR, 3)
+    
+    # Take AFOLU emissions from Magpie
+    getItems(AFOLU, 3) <- "Emissions|CO2|AFOLU"
+    AFOLU_unit <- add_dimension(AFOLU, dim = 3.2, add = "unit", nm = "Mt CO2/yr")
+    
+    # Take Land_CDR emissions from Magpie
+    getItems(Land_CDR, 3) <- "Carbon Removal|Land Use"
+    Land_CDR_unit <- add_dimension(Land_CDR, dim = 3.2, add = "unit", nm = "Mt CO2/yr")
+    
+    MAGPIE <- mbind(AFOLU_unit, Land_CDR_unit)
+    
+    return(MAGPIE)
+}
+
+# getGLOBIOMEU function to generate AFOLU and Land_CDR from GLOBIOMEU
+getGLOBIOMEU <- function(magpie_object) {
+  
+  # Add Globiom
+  GLOBIOMEU <- readSource("GLOBIOMEU", convert = FALSE)
+  GLOBIOMEU_LAND <- readSource("GLOBIOMEU_LAND")
+  GLOBIOMEU_LAND <- GLOBIOMEU_LAND[,,"Total Forest Land"]
+  getItems(GLOBIOMEU_LAND,3.1) <- "Carbon Removal|Land Use"
+  
+  Globiom <- mbind(GLOBIOMEU, GLOBIOMEU_LAND)
+  
+  Globiom <- Globiom[getRegions(Globiom)[getRegions(Globiom) %in% getRegions(magpie_object)],,]
+  
+  # interpolate years
+  Globiom <- as.quitte(Globiom) %>% select(-scenario) %>%
+    interpolate_missing_periods(period = getYears(magpie_object, as.integer = T), expand.values = TRUE) %>%
+    as.quitte() %>% as.magpie()
+  
+  return(Globiom)
+}
+
