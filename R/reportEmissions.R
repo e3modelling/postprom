@@ -78,11 +78,17 @@ reportEmissions <- function(path, regions, years) {
   getItems(captured, 3.1) <- paste0("Carbon Capture|Energy|", side, "|", name)
   # ========================= AFOLU & Land Use ===============================
   AFOLU_CDR <- mbind(
-    getGLOBIOMEU(magpie_object)[, years, ], 
-    getREMIND_MAgPIE_SoCDR(magpie_object)[, years, ]
+    getGLOBIOMEU(grossCO2Demand)[, years, ], 
+    getREMIND_MAgPIE_SoCDR(grossCO2Demand)[, years, ]
   )[regions,, ]
   # -----------------------------------------------------------------------
-  EmissionsCo2 <- mbind(grossCO2Demand, netCO2Demand, grossCO2Supply, netCO2Supply, captured, AFOLU_CDR)
+  # ========================= Industrial Processes ===============================
+  IndustrialProcesses <- (
+    getIndustrialProcesses(grossCO2Demand)[, years, ]
+    )[regions,, ]
+  # -----------------------------------------------------------------------
+  EmissionsCo2 <- mbind(grossCO2Demand, netCO2Demand, grossCO2Supply, 
+                        netCO2Supply, captured, AFOLU_CDR, IndustrialProcesses)
   EmissionsCo2 <- helperAggregateLevel(EmissionsCo2, level = 2, recursive = TRUE)
 
   # =============================== Non-CO2===================================
@@ -455,4 +461,47 @@ getREMIND_MAgPIE_SoCDR <- function(magpie_object) {
   
   return(AFOLU_CDR)
 }
+
+# getIndustrialProcesses function from IEAPrimes
+getIndustrialProcesses <- function(magpie_object) {
+  
+  # Add IndustrialProcesses
+  IndustrialProcesses <-readSource("IndustrialProcessesEmissionsIEAPrimes")
+  
+  fscenario <- readGDX(path, "fscenario")
+  
+  # Filter REMIND_MAgPIE_SoCDR by scenario
+  if (fscenario %in% c(0)) {
+    IndustrialProcesses <- IndustrialProcesses[, , "CurrentPolicies"]
+  } else if (fscenario %in% c(1)) {
+    IndustrialProcesses <- IndustrialProcesses[, , "STEPS-LTT"]
+  } else if (fscenario %in% c(2, 5, 6)) {
+    IndustrialProcesses <- IndustrialProcesses[, , "NT-Zero2050"]
+  } else if (fscenario == 3) {
+    IndustrialProcesses <- IndustrialProcesses[, , "STEPS-LTT"]
+  }
+  
+  # Check if 'RWO' exists as a region and then compute RWO as World - sum of countries
+  if ("RWO" %in% getItems(magpie_object,1)) {
+    
+    World_IndustrialProcesses <- IndustrialProcesses["World",,]
+    withoutRWO_IndustrialProcesses <- IndustrialProcesses[!getItems(IndustrialProcesses,1) %in% "World", , ]
+    mainCountriesSum_IndustrialProcesses <- dimSums(withoutRWO_IndustrialProcesses, dim = 1)
+    newRWO_IndustrialProcesses <- World_IndustrialProcesses - mainCountriesSum_IndustrialProcesses
+    getItems(newRWO_IndustrialProcesses,1) <- "RWO"
+    
+    IndustrialProcesses <- mbind(withoutRWO_IndustrialProcesses, newRWO_IndustrialProcesses)
+    
+  }
+  
+  # interpolate years
+  IndustrialProcesses <- as.quitte(IndustrialProcesses) %>% select(-c(scenario, model, unit)) %>%
+    interpolate_missing_periods(period = getYears(magpie_object, as.integer = T), expand.values = TRUE) %>%
+    as.quitte() %>% as.magpie()
+  
+  IndustrialProcesses <- IndustrialProcesses[getRegions(IndustrialProcesses)[getRegions(IndustrialProcesses) %in% getRegions(magpie_object)],,]
+  
+  return(IndustrialProcesses)
+}
+
 
