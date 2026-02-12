@@ -22,12 +22,25 @@
 #' @export
 reportEmissions <- function(path, regions, years) {
   # ====================== Energy ====================================
-  # ------------------------- CO2 -------------------------------
+  # ------------------------- CO2 ------------------------------------
+  variables <- readGDX(
+    path,
+    c("V07GrossEmissCO2Demand", "V06CapCO2ElecHydr", "V07EmissCO2Supply"),
+    field = "l"
+  )
+  grossCO2Demand <- variables$V07GrossEmissCO2Demand[regions, years, ]
+  names(dimnames(grossCO2Demand))[3] <- "SBS"
+  grossCO2Supply <- variables$V07EmissCO2Supply[regions, years, ]
+  names(dimnames(grossCO2Supply))[3] <- "SBS"
+  captured <- variables$V06CapCO2ElecHydr[regions, years, ]
+  netCO2Demand <- grossCO2Demand - captured[, , getItems(grossCO2Demand, 3.1)]
+  netCO2Supply <- grossCO2Supply - captured[, , getItems(grossCO2Supply, 3.1)]
+  # ------------------------ Renamings --------------------------------
   DSBSTable <- rgdx.set(path, "DSBS", te = TRUE)
   SSBSTable <- rgdx.set(path, "SSBS", te = TRUE)
   TotalTable <- bind_rows(DSBSTable, SSBSTable)
 
-  #---------- Create a DSBS TO SBS mapping (e.g., Iron & Steel -> Industry) -----
+  # -------- Create a DSBS TO SBS mapping (e.g., Iron & Steel -> Industry) ---
   DSBS_Industry <- readGDX(path, "INDSE") %>%
     as.data.frame() %>%
     mutate(SBS = "Industry")
@@ -44,15 +57,8 @@ reportEmissions <- function(path, regions, years) {
     select(-DSBS) %>%
     rename(DSBS = .te)
   lookup <- setNames(DSBS_SBS$SBS, DSBS_SBS$DSBS)
-  # ----------------------------------------------------------------------
-  variables <- readGDX(
-    path,
-    c("V07GrossEmissCO2Demand", "V06CapCO2ElecHydr", "V07EmissCO2Supply"),
-    field = "l"
-  )
   # ------------- Demand -------------------------
-  grossDemand <- variables$V07GrossEmissCO2Demand[regions, years, ]
-  name <- DSBSTable$.te[match(getItems(grossDemand, 3.1), DSBSTable$SBS)]
+  name <- DSBSTable$.te[match(getItems(grossCO2Demand, 3.1), DSBSTable$SBS)]
   key <- str_extract(name, "^[^|]+")
   mapped <- lookup[key]
   name <- if_else(
@@ -60,21 +66,20 @@ reportEmissions <- function(path, regions, years) {
     str_replace(name, "^[^|]+", paste0(mapped, "|\\0")),
     name
   )
-  getItems(grossDemand, 3.1) <- paste0("Gross Emissions|CO2|Energy|Demand|", name)
-
+  getItems(grossCO2Demand, 3.1) <- paste0("Gross Emissions|CO2|Energy|Demand|", name)
+  getItems(netCO2Demand, 3.1) <- paste0("Emissions|CO2|Energy|Demand|", name)
   # ------------- --------------Supply ---------------------------------
-  grossSupply <- variables$V07EmissCO2Supply[regions, years, ]
-  name <- SSBSTable$.te[match(getItems(grossSupply, 3.1), SSBSTable$SBS)]
-  getItems(grossSupply, 3.1) <- paste0("Gross Emissions|CO2|Energy|Supply|", name)
-
+  name <- SSBSTable$.te[match(getItems(grossCO2Supply, 3.1), SSBSTable$SBS)]
+  getItems(grossCO2Supply, 3.1) <- paste0("Gross Emissions|CO2|Energy|Supply|", name)
+  getItems(netCO2Supply, 3.1) <- paste0("Emissions|CO2|Energy|Supply|", name)
   # -------------------------- Carbon Capture -----------------------------
-  captured <- variables$V06CapCO2ElecHydr[regions, years, ]
   side <- ifelse(getItems(captured, 3.1) %in% SSBSTable$SBS, "Supply", "Demand")
   name <- TotalTable$.te[match(getItems(captured, 3.1), TotalTable$SBS)]
   getItems(captured, 3.1) <- paste0("Carbon Capture|Energy|", side, "|", name)
+  # -----------------------------------------------------------------------
+  EmissionsCo2 <- mbind(grossCO2Demand, netCO2Demand, grossCO2Supply, netCO2Supply, captured)
+  EmissionsCo2 <- helperAggregateLevel(EmissionsCo2, level = 2, recursive = TRUE)
 
-  EmissionsCo2 <- mbind(grossDemand, grossSupply, captured)
-  EmissionsCo2 <- add_dimension(EmissionsCo2, dim = 3.2, add = "unit", nm = "Mt CO2/yr")
   # =============================== Non-CO2===================================
   emissionsNonCO2 <- readGDX(path, "V07EmiActBySrcRegTim", field = "l")[regions, years, ]
   if (is.null(emissionsNonCO2)) {
@@ -110,18 +115,16 @@ reportEmissions <- function(path, regions, years) {
   unitVector <- sapply(currentNames, getUnit)
   getNames(emissionsNonCO2) <- paste(currentNames, unitVector, sep = ".")
 
+  # -------------------------- Kyoto Gases ------------------------------------
   emissionsCO2eq <- calculateGhg(emissionsNonCO2)
+  kyotoGases <- dimSums(emissionsCO2eq, dim = 3)[, , ] + EmissionsCo2[, , "Emissions|CO2"]
+  getItems(kyotoGases, 3.1) <- "Emissions|Kyoto Gases"
 
-  # Calculate Total "Emissions|Kyoto Gases" (Special case: sum of everything)
-  # FIXME
-  # emissionsCO2eqTotal <- dimSums(emissionsCO2eq, dim = 3)
-  # emissionsCO2eqTotal <- emissionsCO2eqTotal + magpie_object[ , ,'Emissions|CO2.Mt CO2/yr']
-  # getItems(emissionsCO2eqTotal, 3) <- "Emissions|Kyoto Gases"
-  # emissionsCO2eqTotal <- add_dimension(emissionsCO2eqTotal, dim = 3.2, add = "unit", nm = "Mt CO2-equiv/yr")
   # ===========================================================================
-  EmissionsCo2 <- helperAggregateLevel(EmissionsCo2, level = 2, recursive = TRUE)
-  magpie_object <- mbind(emissionsNonCO2, EmissionsCo2)
 
+  EmissionsCo2 <- add_dimension(EmissionsCo2, dim = 3.2, add = "unit", nm = "Mt CO2/yr")
+  kyotoGases <- add_dimension(kyotoGases, dim = 3.2, add = "unit", nm = "Mt CO2-equiv/yr")
+  magpie_object <- mbind(emissionsNonCO2, EmissionsCo2, kyotoGases)
   return(magpie_object)
 }
 
