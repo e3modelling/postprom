@@ -121,7 +121,8 @@ reportEmissions <- function(path, regions, years) {
     emissionsNonCO2,
     dim = 3.2,
     add = "unit",
-    nm = unname(sapply(getNames(emissionsNonCO2), getUnit)) %>% as.vector()
+    nm = unname(sapply(getNames(emissionsNonCO2), getUnit)),
+    expand = FALSE
   )
   EmissionsCo2 <- add_dimension(EmissionsCo2, dim = 3.2, add = "unit", nm = "Mt CO2/yr")
   kyotoGases <- add_dimension(kyotoGases, dim = 3.2, add = "unit", nm = "Mt CO2-equiv/yr")
