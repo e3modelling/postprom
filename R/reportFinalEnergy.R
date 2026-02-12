@@ -68,5 +68,7 @@ reportFinalEnergy <- function(path, regions, years) {
   getItems(fuel, 3) <- paste0("Final Energy|", name)
 
   magpie_object <- helperAggregateLevel(fuel, level = 1, recursive = TRUE)
+  magpie_object <- add_dimension(magpie_object, dim = 3.2, add = "unit", nm = "Mtoe")
+  
   return(magpie_object)
 }
