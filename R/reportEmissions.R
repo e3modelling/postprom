@@ -76,8 +76,13 @@ reportEmissions <- function(path, regions, years) {
   side <- ifelse(getItems(captured, 3.1) %in% SSBSTable$SBS, "Supply", "Demand")
   name <- TotalTable$.te[match(getItems(captured, 3.1), TotalTable$SBS)]
   getItems(captured, 3.1) <- paste0("Carbon Capture|Energy|", side, "|", name)
+  # ========================= AFOLU & Land Use ===============================
+  AFOLU_CDR <- mbind(
+    getGLOBIOMEU(magpie_object)[, years, ], 
+    getREMIND_MAgPIE_SoCDR(magpie_object)[, years, ]
+  )[regions,, ]
   # -----------------------------------------------------------------------
-  EmissionsCo2 <- mbind(grossCO2Demand, netCO2Demand, grossCO2Supply, netCO2Supply, captured)
+  EmissionsCo2 <- mbind(grossCO2Demand, netCO2Demand, grossCO2Supply, netCO2Supply, captured, AFOLU_CDR)
   EmissionsCo2 <- helperAggregateLevel(EmissionsCo2, level = 2, recursive = TRUE)
 
   # =============================== Non-CO2===================================
@@ -129,10 +134,6 @@ reportEmissions <- function(path, regions, years) {
   kyotoGases <- add_dimension(kyotoGases, dim = 3.2, add = "unit", nm = "Mt CO2-equiv/yr")
   magpie_object <- mbind(emissionsNonCO2, EmissionsCo2, kyotoGases)
   
-  # MAGPIE_runs <- getMAGPIE(EmissionsCo2)
-  # MAGPIE_runs <- MAGPIE_runs[regions, years, ]
-  GLOBIOMEU <- getGLOBIOMEU(EmissionsCo2)[, years, ]
-    
   return(magpie_object)
 }
 
@@ -395,10 +396,63 @@ getGLOBIOMEU <- function(magpie_object) {
   Globiom <- Globiom[getRegions(Globiom)[getRegions(Globiom) %in% getRegions(magpie_object)],,]
   
   # interpolate years
-  Globiom <- as.quitte(Globiom) %>% select(-scenario) %>%
+  Globiom <- as.quitte(Globiom) %>% select(-c(scenario, unit)) %>%
     interpolate_missing_periods(period = getYears(magpie_object, as.integer = T), expand.values = TRUE) %>%
     as.quitte() %>% as.magpie()
   
   return(Globiom)
+}
+
+# getREMIND_MAgPIE_SoCDR function to generate AFOLU and Land_CDR from REMIND_MAgPIE_SoCDR
+getREMIND_MAgPIE_SoCDR <- function(magpie_object) {
+  
+  fscenario <- readGDX(path, "fscenario")
+  
+  # Add REMIND_MAgPIE_SoCDR run
+  REMIND_MAgPIE_SoCDR <- readSource("REMIND_MAgPIE_SoCDR")
+  
+  # Filter REMIND_MAgPIE_SoCDR by scenario
+  if (fscenario %in% c(0, 1)) {
+    REMIND_MAgPIE_SoCDR <- REMIND_MAgPIE_SoCDR[, , "SoCDR_Ed3_CurrentTargets"]
+  } else if (fscenario %in% c(2, 5, 6)) {
+    REMIND_MAgPIE_SoCDR <- REMIND_MAgPIE_SoCDR[, , "SoCDR_Ed3_HighestAmbition"]
+  } else if (fscenario == 3) {
+    REMIND_MAgPIE_SoCDR <- REMIND_MAgPIE_SoCDR[, , "SoCDR_Ed3_DelayedAction"]
+  }
+  
+  # Check if 'RWO' exists as a region and then compute RWO as World - sum of countries
+  if ("RWO" %in% getItems(magpie_object,1)) {
+    
+    World_REMIND_MAgPIE_SoCDR <- REMIND_MAgPIE_SoCDR["GLO",,]
+    withoutRWO_REMIND_MAgPIE_SoCDR <- REMIND_MAgPIE_SoCDR[!getItems(REMIND_MAgPIE_SoCDR,1) %in% "GLO", , ]
+    mainCountriesSum_REMIND_MAgPIE_SoCDR <- dimSums(withoutRWO_REMIND_MAgPIE_SoCDR, dim = 1)
+    newRWO_REMIND_MAgPIE_SoCDR <- World_REMIND_MAgPIE_SoCDR - mainCountriesSum_REMIND_MAgPIE_SoCDR
+    getItems(newRWO_REMIND_MAgPIE_SoCDR,1) <- "RWO"
+    
+    REMIND_MAgPIE_SoCDR <- mbind(withoutRWO_REMIND_MAgPIE_SoCDR, newRWO_REMIND_MAgPIE_SoCDR)
+    
+  }
+  
+  # interpolate years
+  REMIND_MAgPIE_SoCDR <- as.quitte(REMIND_MAgPIE_SoCDR) %>% select(-c(scenario, model, unit)) %>%
+    interpolate_missing_periods(period = getYears(magpie_object, as.integer = T), expand.values = TRUE) %>%
+    as.quitte() %>% as.magpie()
+  
+  weight_EMI_CO2 <- readSource("PIK", convert = TRUE)
+  weight_EMI_CO2 <- weight_EMI_CO2[, 2020, "Energy.MtCO2.CO2"]
+  weight_EMI_CO2[is.na(weight_EMI_CO2)] <- 0
+  
+  EU28 <- toolGetMapping(name = "EU28.csv",
+                         type = "regional",
+                         where = "mrprom")
+  
+  EU28[["ISO3.Code"]] <- "EU28"
+  
+  GBR <- toolAggregate(REMIND_MAgPIE_SoCDR["EU28",,], weight = weight_EMI_CO2[EU28[["Region.Code"]],,], rel = EU28, from = "ISO3.Code", to = "Region.Code")
+  GBR <- GBR["GBR",,]
+  
+  AFOLU_CDR <- mbind(REMIND_MAgPIE_SoCDR, GBR)
+  
+  return(AFOLU_CDR)
 }
 
