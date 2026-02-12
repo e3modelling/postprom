@@ -15,12 +15,14 @@
 #'
 #' @importFrom gdx readGDX
 #' @importFrom magclass getItems dimSums add_dimension mbind collapseDim
+#' @importFrom stringr str_replace
 #' @importFrom quitte as.quitte
 #' @importFrom dplyr filter left_join mutate select group_by %>%
-
+#' @importFrom gdxrrw rgdx.set
 #' @export
 reportEmissions <- function(path, regions, years) {
   # ====================== Energy ====================================
+  # ------------------------- CO2 -------------------------------
   DSBSTable <- rgdx.set(path, "DSBS", te = TRUE)
   SSBSTable <- rgdx.set(path, "SSBS", te = TRUE)
   TotalTable <- bind_rows(DSBSTable, SSBSTable)
@@ -41,7 +43,7 @@ reportEmissions <- function(path, regions, years) {
     left_join(DSBSTable, by = c("DSBS" = "SBS")) %>%
     select(-DSBS) %>%
     rename(DSBS = .te)
-  lookup <- setNames(DSBStoSBS$SBS, DSBStoSBS$DSBS)
+  lookup <- setNames(DSBS_SBS$SBS, DSBS_SBS$DSBS)
   # ----------------------------------------------------------------------
   variables <- readGDX(
     path,
@@ -60,7 +62,7 @@ reportEmissions <- function(path, regions, years) {
   )
   getItems(grossDemand, 3.1) <- paste0("Gross Emissions|CO2|Energy|Demand|", name)
 
-  # ------------- Supply ---------------------------------
+  # ------------- --------------Supply ---------------------------------
   grossSupply <- variables$V07EmissCO2Supply[regions, years, ]
   name <- SSBSTable$.te[match(getItems(grossSupply, 3.1), SSBSTable$SBS)]
   getItems(grossSupply, 3.1) <- paste0("Gross Emissions|CO2|Energy|Supply|", name)
@@ -70,10 +72,56 @@ reportEmissions <- function(path, regions, years) {
   side <- ifelse(getItems(captured, 3.1) %in% SSBSTable$SBS, "Supply", "Demand")
   name <- TotalTable$.te[match(getItems(captured, 3.1), TotalTable$SBS)]
   getItems(captured, 3.1) <- paste0("Carbon Capture|Energy|", side, "|", name)
-  # ========================================================================
 
-  magpie_object <- mbind(grossDemand, grossSupply, captured)
-  magpie_object <- helperAggregateLevel(magpie_object, level = 1, recursive = TRUE)
+  EmissionsCo2 <- mbind(grossDemand, grossSupply, captured)
+  EmissionsCo2 <- add_dimension(EmissionsCo2, dim = 3.2, add = "unit", nm = "Mt CO2/yr")
+  # =============================== Non-CO2===================================
+  emissionsNonCO2 <- readGDX(path, "V07EmiActBySrcRegTim", field = "l")[regions, years, ]
+  if (is.null(emissionsNonCO2)) {
+    message("V07EmiActBySrcRegTim not found – creating empty emissionsNonCO2 placeholder")
+    # Zero placeholder for nonCO2 emissions with a single variable
+    emissionsNonCO2 <- new.magpie(regions, years, "CH4_manure", fill = 0)
+  }
+  nonCO2mapping <- toolGetMapping("open-prom-emissions-mapping.csv",
+    type = "sectoral",
+    where = "postprom"
+  )
+
+  emissionsNonCO2 <- toolAggregate(
+    emissionsNonCO2,
+    dim = 3,
+    rel = nonCO2mapping,
+    partrel = TRUE
+  )
+  # Convert CH4 and N20 from Mt Ceq to "Mt CH4/yr" or "kt N2O/yr"
+  allVariables <- getNames(emissionsNonCO2)
+  ch4Vars <- grep("CH4", allVariables, value = TRUE)
+  n2oVars <- grep("N2O", allVariables, value = TRUE)
+
+  # Factor = (C -> CO2) / GWP * (Mt -> kt) for N2O
+  # Constants: C_TO_CO2 = 44/12, GWP_CH4 = 25, GWP_N2O = 298
+  conversionFactorCh4 <- (44 / 12) / 25
+  conversionFactorN2o <- (44 / 12) / 298 * 1e3
+
+  emissionsNonCO2[, , ch4Vars] <- emissionsNonCO2[, , ch4Vars] * conversionFactorCh4
+  emissionsNonCO2[, , n2oVars] <- emissionsNonCO2[, , n2oVars] * conversionFactorN2o
+  # Add appropriate units for each gas
+  currentNames <- getNames(emissionsNonCO2)
+  unitVector <- sapply(currentNames, getUnit)
+  getNames(emissionsNonCO2) <- paste(currentNames, unitVector, sep = ".")
+
+  emissionsCO2eq <- calculateGhg(emissionsNonCO2)
+
+  # Calculate Total "Emissions|Kyoto Gases" (Special case: sum of everything)
+  # FIXME
+  # emissionsCO2eqTotal <- dimSums(emissionsCO2eq, dim = 3)
+  # emissionsCO2eqTotal <- emissionsCO2eqTotal + magpie_object[ , ,'Emissions|CO2.Mt CO2/yr']
+  # getItems(emissionsCO2eqTotal, 3) <- "Emissions|Kyoto Gases"
+  # emissionsCO2eqTotal <- add_dimension(emissionsCO2eqTotal, dim = 3.2, add = "unit", nm = "Mt CO2-equiv/yr")
+  # ===========================================================================
+  EmissionsCo2 <- helperAggregateLevel(EmissionsCo2, level = 2, recursive = TRUE)
+  magpie_object <- mbind(emissionsNonCO2, EmissionsCo2)
+
   return(magpie_object)
 }
 

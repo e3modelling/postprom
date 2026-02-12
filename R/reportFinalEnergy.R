@@ -16,13 +16,14 @@
 #' @importFrom madrat toolAggregate
 #' @importFrom magclass getItems add_dimension mbind dimSums
 #' @importFrom dplyr select filter arrange bind_rows %>%
-#' @importFrom stringr str_replace_all
+#' @importFrom stringr str_replace
+#' @importFrom gdxrrw rgdx.set
 #' @export
 reportFinalEnergy <- function(path, regions, years) {
   EFSTable <- rgdx.set(path, "EFS", te = TRUE)
   DSBSTable <- rgdx.set(path, "DSBS", te = TRUE)
 
-  #---------- Create a DSBS TO SBS mapping (e.g., Iron & Steel -> Industry) -----
+  #---------- Create a DSBS TO SBS mapping (e.g., Iron & Steel -> Industry)
   DSBS_Industry <- readGDX(path, "INDSE") %>%
     as.data.frame() %>%
     mutate(SBS = "Industry")
@@ -38,7 +39,7 @@ reportFinalEnergy <- function(path, regions, years) {
     left_join(DSBSTable, by = c("DSBS" = "SBS")) %>%
     select(-DSBS) %>%
     rename(DSBS = .te)
-  lookup <- setNames(DSBStoSBS$SBS, DSBStoSBS$DSBS)
+  lookup <- setNames(DSBS_SBS$SBS, DSBS_SBS$DSBS)
   # -------------------------- Prepare data --------------------------------------
   fuel <- readGDX(path, "VmConsFuel", field = "l")[regions, years, ]
   VFuelTransport <- readGDX(path, "VmDemFinEneTranspPerFuel", field = "l")[regions, years, ]
