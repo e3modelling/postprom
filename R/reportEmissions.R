@@ -25,12 +25,12 @@ reportEmissions <- function(path, regions, years) {
   # ------------------------- CO2 ------------------------------------
   variables <- readGDX(
     path,
-    c("V07GrossEmissCO2Demand", "V06CapCO2ElecHydr", "V07EmissCO2Supply"),
+    c("V07GrossEmissCO2Demand", "V06CapCO2ElecHydr", "V07GrossEmissCO2Supply"),
     field = "l"
   )
   grossCO2Demand <- variables$V07GrossEmissCO2Demand[regions, years, ]
   names(dimnames(grossCO2Demand))[3] <- "SBS"
-  grossCO2Supply <- variables$V07EmissCO2Supply[regions, years, ]
+  grossCO2Supply <- variables$V07GrossEmissCO2Supply[regions, years, ]
   names(dimnames(grossCO2Supply))[3] <- "SBS"
   captured <- variables$V06CapCO2ElecHydr[regions, years, ]
   netCO2Demand <- grossCO2Demand - captured[, , getItems(grossCO2Demand, 3.1)]
@@ -78,17 +78,19 @@ reportEmissions <- function(path, regions, years) {
   getItems(captured, 3.1) <- paste0("Carbon Capture|Energy|", side, "|", name)
   # ========================= AFOLU & Land Use ===============================
   AFOLU_CDR <- mbind(
-    getGLOBIOMEU(grossCO2Demand)[, years, ], 
+    getGLOBIOMEU(grossCO2Demand)[, years, ],
     getREMIND_MAgPIE_SoCDR(grossCO2Demand)[, years, ]
-  )[regions,, ]
+  )[regions, , ]
   # -----------------------------------------------------------------------
   # ========================= Industrial Processes ===============================
   IndustrialProcesses <- (
     getIndustrialProcesses(grossCO2Demand)[, years, ]
-    )[regions,, ]
+  )[regions, , ]
   # -----------------------------------------------------------------------
-  EmissionsCo2 <- mbind(grossCO2Demand, netCO2Demand, grossCO2Supply, 
-                        netCO2Supply, captured, AFOLU_CDR, IndustrialProcesses)
+  EmissionsCo2 <- mbind(
+    grossCO2Demand, netCO2Demand, grossCO2Supply,
+    netCO2Supply, captured, AFOLU_CDR, IndustrialProcesses
+  )
   EmissionsCo2 <- helperAggregateLevel(EmissionsCo2, level = 2, recursive = TRUE)
 
   # =============================== Non-CO2===================================
@@ -139,7 +141,7 @@ reportEmissions <- function(path, regions, years) {
   EmissionsCo2 <- add_dimension(EmissionsCo2, dim = 3.2, add = "unit", nm = "Mt CO2/yr")
   kyotoGases <- add_dimension(kyotoGases, dim = 3.2, add = "unit", nm = "Mt CO2-equiv/yr")
   magpie_object <- mbind(emissionsNonCO2, EmissionsCo2, kyotoGases)
-  
+
   return(magpie_object)
 }
 
@@ -327,12 +329,11 @@ extractAggregatedData <- function(scenario, x, years, ...) {
 
 # getMAGPIE function to generate AFOLU and Land_CDR
 getMAGPIE <- function(magpie_object) {
-  
   fscenario <- readGDX(path, "fscenario")
-  
+
   # Add MAGPIE run
   MAGPIE_runs <- readSource("MAGPIE_runs")
-  
+
   # Filter MAGPIE by scenario
   if (fscenario %in% c(0, 1)) {
     MAGPIE_runs <- MAGPIE_runs[, , "MAGPIE_NPI"]
@@ -341,82 +342,86 @@ getMAGPIE <- function(magpie_object) {
   } else if (fscenario == 3) {
     MAGPIE_runs <- MAGPIE_runs[, , "MAGPIE_2C"]
   }
-  
+
   # Filter with variables
-  MAGPIE_runs <- MAGPIE_runs[,,c("Emissions|CO2|AFOLU|Agriculture", "Emissions|CO2|Land",
-                              "Emissions|CO2|Land|Land-use Change|+|Deforestation",
-                              "Emissions|CO2|Land Carbon Sink|Grassi|Managed Land|Managed Forest",
-                              "Emissions|CO2|Land|Land-use Change|Soil|+|Land Conversion")]
-  
+  MAGPIE_runs <- MAGPIE_runs[, , c(
+    "Emissions|CO2|AFOLU|Agriculture", "Emissions|CO2|Land",
+    "Emissions|CO2|Land|Land-use Change|+|Deforestation",
+    "Emissions|CO2|Land Carbon Sink|Grassi|Managed Land|Managed Forest",
+    "Emissions|CO2|Land|Land-use Change|Soil|+|Land Conversion"
+  )]
+
   # Check if 'RWO' exists as a region and then compute RWO as World - sum of countries
-  if ("RWO" %in% getItems(magpie_object,1)) {
-    
+  if ("RWO" %in% getItems(magpie_object, 1)) {
     World_MAGPIE <- dimSums(MAGPIE_runs, 1)
-    withoutRWO_MAGPIE <- MAGPIE_runs[!getItems(magpie_object,1) %in% "RWO", , ]
+    withoutRWO_MAGPIE <- MAGPIE_runs[!getItems(magpie_object, 1) %in% "RWO", , ]
     mainCountriesSum_MAGPIE <- dimSums(withoutRWO_MAGPIE, dim = 1)
     newRWO_MAGPIE <- World_MAGPIE - mainCountriesSum_MAGPIE
-    getItems(newRWO_MAGPIE,1) <- "RWO"
-    
+    getItems(newRWO_MAGPIE, 1) <- "RWO"
+
     MAGPIE_runs <- mbind(withoutRWO_MAGPIE, newRWO_MAGPIE)
-    
   }
-    # interpolate years
-    MAGPIE_runs <- as.quitte(MAGPIE_runs) %>% select(-scenario) %>%
-      interpolate_missing_periods(period = getYears(magpie_object, as.integer = T), expand.values = TRUE) %>%
-      as.quitte() %>% as.magpie()
-    
-    # calculate AFOLU emissions of Magpie
-    AFOLU <- MAGPIE_runs[,,c("Emissions|CO2|AFOLU|Agriculture", "Emissions|CO2|Land")]
-    AFOLU <- dimSums(AFOLU, 3)
-    
-    # calculate Land_CDR emissions of Magpie
-    Land_CDR <- MAGPIE_runs[,,c("Emissions|CO2|Land|Land-use Change|+|Deforestation",
-                                "Emissions|CO2|Land Carbon Sink|Grassi|Managed Land|Managed Forest",
-                                "Emissions|CO2|Land|Land-use Change|Soil|+|Land Conversion")]
-    Land_CDR <- dimSums(Land_CDR, 3)
-    
-    # Take AFOLU emissions from Magpie
-    getItems(AFOLU, 3) <- "Emissions|CO2|AFOLU"
-    AFOLU_unit <- add_dimension(AFOLU, dim = 3.2, add = "unit", nm = "Mt CO2/yr")
-    
-    # Take Land_CDR emissions from Magpie
-    getItems(Land_CDR, 3) <- "Carbon Removal|Land Use"
-    Land_CDR_unit <- add_dimension(Land_CDR, dim = 3.2, add = "unit", nm = "Mt CO2/yr")
-    
-    MAGPIE <- mbind(AFOLU_unit, Land_CDR_unit)
-    
-    return(MAGPIE)
+  # interpolate years
+  MAGPIE_runs <- as.quitte(MAGPIE_runs) %>%
+    select(-scenario) %>%
+    interpolate_missing_periods(period = getYears(magpie_object, as.integer = T), expand.values = TRUE) %>%
+    as.quitte() %>%
+    as.magpie()
+
+  # calculate AFOLU emissions of Magpie
+  AFOLU <- MAGPIE_runs[, , c("Emissions|CO2|AFOLU|Agriculture", "Emissions|CO2|Land")]
+  AFOLU <- dimSums(AFOLU, 3)
+
+  # calculate Land_CDR emissions of Magpie
+  Land_CDR <- MAGPIE_runs[, , c(
+    "Emissions|CO2|Land|Land-use Change|+|Deforestation",
+    "Emissions|CO2|Land Carbon Sink|Grassi|Managed Land|Managed Forest",
+    "Emissions|CO2|Land|Land-use Change|Soil|+|Land Conversion"
+  )]
+  Land_CDR <- dimSums(Land_CDR, 3)
+
+  # Take AFOLU emissions from Magpie
+  getItems(AFOLU, 3) <- "Emissions|CO2|AFOLU"
+  AFOLU_unit <- add_dimension(AFOLU, dim = 3.2, add = "unit", nm = "Mt CO2/yr")
+
+  # Take Land_CDR emissions from Magpie
+  getItems(Land_CDR, 3) <- "Carbon Removal|Land Use"
+  Land_CDR_unit <- add_dimension(Land_CDR, dim = 3.2, add = "unit", nm = "Mt CO2/yr")
+
+  MAGPIE <- mbind(AFOLU_unit, Land_CDR_unit)
+
+  return(MAGPIE)
 }
 
 # getGLOBIOMEU function to generate AFOLU and Land_CDR from GLOBIOMEU
 getGLOBIOMEU <- function(magpie_object) {
-  
   # Add Globiom
   GLOBIOMEU <- readSource("GLOBIOMEU", convert = FALSE)
   GLOBIOMEU_LAND <- readSource("GLOBIOMEU_LAND")
-  GLOBIOMEU_LAND <- GLOBIOMEU_LAND[,,"Total Forest Land"]
-  getItems(GLOBIOMEU_LAND,3.1) <- "Carbon Removal|Land Use"
-  
+  GLOBIOMEU_LAND <- GLOBIOMEU_LAND[, , "Total Forest Land"]
+  getItems(GLOBIOMEU_LAND, 3.1) <- "Carbon Removal|Land Use"
+
   Globiom <- mbind(GLOBIOMEU, GLOBIOMEU_LAND)
-  
-  Globiom <- Globiom[getRegions(Globiom)[getRegions(Globiom) %in% getRegions(magpie_object)],,]
-  
+
+  Globiom <- Globiom[getRegions(Globiom)[getRegions(Globiom) %in% getRegions(magpie_object)], , ]
+
   # interpolate years
-  Globiom <- as.quitte(Globiom) %>% select(-c(scenario, unit)) %>%
+  Globiom <- as.quitte(Globiom) %>%
+    select(-c(scenario, unit)) %>%
     interpolate_missing_periods(period = getYears(magpie_object, as.integer = T), expand.values = TRUE) %>%
-    as.quitte() %>% as.magpie()
-  
+    as.quitte() %>%
+    as.magpie()
+
   return(Globiom)
 }
 
 # getREMIND_MAgPIE_SoCDR function to generate AFOLU and Land_CDR from REMIND_MAgPIE_SoCDR
 getREMIND_MAgPIE_SoCDR <- function(magpie_object) {
-  
   fscenario <- readGDX(path, "fscenario")
-  
+
   # Add REMIND_MAgPIE_SoCDR run
   REMIND_MAgPIE_SoCDR <- readSource("REMIND_MAgPIE_SoCDR")
-  
+
   # Filter REMIND_MAgPIE_SoCDR by scenario
   if (fscenario %in% c(0, 1)) {
     REMIND_MAgPIE_SoCDR <- REMIND_MAgPIE_SoCDR[, , "SoCDR_Ed3_CurrentTargets"]
@@ -425,51 +430,52 @@ getREMIND_MAgPIE_SoCDR <- function(magpie_object) {
   } else if (fscenario == 3) {
     REMIND_MAgPIE_SoCDR <- REMIND_MAgPIE_SoCDR[, , "SoCDR_Ed3_DelayedAction"]
   }
-  
+
   # Check if 'RWO' exists as a region and then compute RWO as World - sum of countries
-  if ("RWO" %in% getItems(magpie_object,1)) {
-    
-    World_REMIND_MAgPIE_SoCDR <- REMIND_MAgPIE_SoCDR["GLO",,]
-    withoutRWO_REMIND_MAgPIE_SoCDR <- REMIND_MAgPIE_SoCDR[!getItems(REMIND_MAgPIE_SoCDR,1) %in% "GLO", , ]
+  if ("RWO" %in% getItems(magpie_object, 1)) {
+    World_REMIND_MAgPIE_SoCDR <- REMIND_MAgPIE_SoCDR["GLO", , ]
+    withoutRWO_REMIND_MAgPIE_SoCDR <- REMIND_MAgPIE_SoCDR[!getItems(REMIND_MAgPIE_SoCDR, 1) %in% "GLO", , ]
     mainCountriesSum_REMIND_MAgPIE_SoCDR <- dimSums(withoutRWO_REMIND_MAgPIE_SoCDR, dim = 1)
     newRWO_REMIND_MAgPIE_SoCDR <- World_REMIND_MAgPIE_SoCDR - mainCountriesSum_REMIND_MAgPIE_SoCDR
-    getItems(newRWO_REMIND_MAgPIE_SoCDR,1) <- "RWO"
-    
+    getItems(newRWO_REMIND_MAgPIE_SoCDR, 1) <- "RWO"
+
     REMIND_MAgPIE_SoCDR <- mbind(withoutRWO_REMIND_MAgPIE_SoCDR, newRWO_REMIND_MAgPIE_SoCDR)
-    
   }
-  
+
   # interpolate years
-  REMIND_MAgPIE_SoCDR <- as.quitte(REMIND_MAgPIE_SoCDR) %>% select(-c(scenario, model, unit)) %>%
+  REMIND_MAgPIE_SoCDR <- as.quitte(REMIND_MAgPIE_SoCDR) %>%
+    select(-c(scenario, model, unit)) %>%
     interpolate_missing_periods(period = getYears(magpie_object, as.integer = T), expand.values = TRUE) %>%
-    as.quitte() %>% as.magpie()
-  
+    as.quitte() %>%
+    as.magpie()
+
   weight_EMI_CO2 <- readSource("PIK", convert = TRUE)
   weight_EMI_CO2 <- weight_EMI_CO2[, 2020, "Energy.MtCO2.CO2"]
   weight_EMI_CO2[is.na(weight_EMI_CO2)] <- 0
-  
-  EU28 <- toolGetMapping(name = "EU28.csv",
-                         type = "regional",
-                         where = "mrprom")
-  
+
+  EU28 <- toolGetMapping(
+    name = "EU28.csv",
+    type = "regional",
+    where = "mrprom"
+  )
+
   EU28[["ISO3.Code"]] <- "EU28"
-  
-  GBR <- toolAggregate(REMIND_MAgPIE_SoCDR["EU28",,], weight = weight_EMI_CO2[EU28[["Region.Code"]],,], rel = EU28, from = "ISO3.Code", to = "Region.Code")
-  GBR <- GBR["GBR",,]
-  
+
+  GBR <- toolAggregate(REMIND_MAgPIE_SoCDR["EU28", , ], weight = weight_EMI_CO2[EU28[["Region.Code"]], , ], rel = EU28, from = "ISO3.Code", to = "Region.Code")
+  GBR <- GBR["GBR", , ]
+
   AFOLU_CDR <- mbind(REMIND_MAgPIE_SoCDR, GBR)
-  
+
   return(AFOLU_CDR)
 }
 
 # getIndustrialProcesses function from IEAPrimes
 getIndustrialProcesses <- function(magpie_object) {
-  
   # Add IndustrialProcesses
-  IndustrialProcesses <-readSource("IndustrialProcessesEmissionsIEAPrimes")
-  
+  IndustrialProcesses <- readSource("IndustrialProcessesEmissionsIEAPrimes")
+
   fscenario <- readGDX(path, "fscenario")
-  
+
   # Filter REMIND_MAgPIE_SoCDR by scenario
   if (fscenario %in% c(0)) {
     IndustrialProcesses <- IndustrialProcesses[, , "CurrentPolicies"]
@@ -480,28 +486,26 @@ getIndustrialProcesses <- function(magpie_object) {
   } else if (fscenario == 3) {
     IndustrialProcesses <- IndustrialProcesses[, , "STEPS-LTT"]
   }
-  
+
   # Check if 'RWO' exists as a region and then compute RWO as World - sum of countries
-  if ("RWO" %in% getItems(magpie_object,1)) {
-    
-    World_IndustrialProcesses <- IndustrialProcesses["World",,]
-    withoutRWO_IndustrialProcesses <- IndustrialProcesses[!getItems(IndustrialProcesses,1) %in% "World", , ]
+  if ("RWO" %in% getItems(magpie_object, 1)) {
+    World_IndustrialProcesses <- IndustrialProcesses["World", , ]
+    withoutRWO_IndustrialProcesses <- IndustrialProcesses[!getItems(IndustrialProcesses, 1) %in% "World", , ]
     mainCountriesSum_IndustrialProcesses <- dimSums(withoutRWO_IndustrialProcesses, dim = 1)
     newRWO_IndustrialProcesses <- World_IndustrialProcesses - mainCountriesSum_IndustrialProcesses
-    getItems(newRWO_IndustrialProcesses,1) <- "RWO"
-    
+    getItems(newRWO_IndustrialProcesses, 1) <- "RWO"
+
     IndustrialProcesses <- mbind(withoutRWO_IndustrialProcesses, newRWO_IndustrialProcesses)
-    
   }
-  
+
   # interpolate years
-  IndustrialProcesses <- as.quitte(IndustrialProcesses) %>% select(-c(scenario, model, unit)) %>%
+  IndustrialProcesses <- as.quitte(IndustrialProcesses) %>%
+    select(-c(scenario, model, unit)) %>%
     interpolate_missing_periods(period = getYears(magpie_object, as.integer = T), expand.values = TRUE) %>%
-    as.quitte() %>% as.magpie()
-  
-  IndustrialProcesses <- IndustrialProcesses[getRegions(IndustrialProcesses)[getRegions(IndustrialProcesses) %in% getRegions(magpie_object)],,]
-  
+    as.quitte() %>%
+    as.magpie()
+
+  IndustrialProcesses <- IndustrialProcesses[getRegions(IndustrialProcesses)[getRegions(IndustrialProcesses) %in% getRegions(magpie_object)], , ]
+
   return(IndustrialProcesses)
 }
-
-
