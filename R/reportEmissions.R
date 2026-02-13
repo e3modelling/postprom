@@ -78,13 +78,13 @@ reportEmissions <- function(path, regions, years) {
   getItems(captured, 3.1) <- paste0("Carbon Capture|Energy|", side, "|", name)
   # ========================= AFOLU & Land Use ===============================
   AFOLU_CDR <- mbind(
-    getGLOBIOMEU(grossCO2Demand)[, years, ],
-    getREMIND_MAgPIE_SoCDR(grossCO2Demand)[, years, ]
+    getGLOBIOMEU(path, grossCO2Demand)[, years, ],
+    getREMIND_MAgPIE_SoCDR(path, grossCO2Demand)[, years, ]
   )[regions, , ]
   # -----------------------------------------------------------------------
   # ========================= Industrial Processes ===============================
   IndustrialProcesses <- (
-    getIndustrialProcesses(grossCO2Demand)[, years, ]
+    getIndustrialProcesses(path, grossCO2Demand)[, years, ]
   )[regions, , ]
   # -----------------------------------------------------------------------
   EmissionsCo2 <- mbind(
@@ -141,6 +141,22 @@ reportEmissions <- function(path, regions, years) {
   EmissionsCo2 <- add_dimension(EmissionsCo2, dim = 3.2, add = "unit", nm = "Mt CO2/yr")
   kyotoGases <- add_dimension(kyotoGases, dim = 3.2, add = "unit", nm = "Mt CO2-equiv/yr")
   magpie_object <- mbind(emissionsNonCO2, EmissionsCo2, kyotoGases)
+  
+  Cumulated <- as.quitte(magpie_object[, , "Emissions|CO2"])
+  
+  Cumulated <- Cumulated %>%
+    group_by(region) %>%
+    mutate(value = cumsum(value)) %>%
+    as.data.frame() %>%
+    as.quitte() %>%
+    as.magpie()
+  getItems(Cumulated, 3) <- "Emissions|CO2|Cumulated"
+  
+  Cumulated <- Cumulated / 1000
+  names(dimnames(Cumulated))[3] <- "SBS"
+  Cumulated <- add_dimension(Cumulated, dim = 3.2, add = "unit", nm = "Gt CO2")
+  
+  magpie_object <- mbind(magpie_object, Cumulated)
 
   return(magpie_object)
 }
@@ -328,7 +344,7 @@ extractAggregatedData <- function(scenario, x, years, ...) {
 }
 
 # getMAGPIE function to generate AFOLU and Land_CDR
-getMAGPIE <- function(magpie_object) {
+getMAGPIE <- function(path, magpie_object) {
   fscenario <- readGDX(path, "fscenario")
 
   # Add MAGPIE run
@@ -394,7 +410,7 @@ getMAGPIE <- function(magpie_object) {
 }
 
 # getGLOBIOMEU function to generate AFOLU and Land_CDR from GLOBIOMEU
-getGLOBIOMEU <- function(magpie_object) {
+getGLOBIOMEU <- function(path, magpie_object) {
   # Add Globiom
   GLOBIOMEU <- readSource("GLOBIOMEU", convert = FALSE)
   GLOBIOMEU_LAND <- readSource("GLOBIOMEU_LAND")
@@ -402,8 +418,6 @@ getGLOBIOMEU <- function(magpie_object) {
   getItems(GLOBIOMEU_LAND, 3.1) <- "Carbon Removal|Land Use"
 
   Globiom <- mbind(GLOBIOMEU, GLOBIOMEU_LAND)
-
-  Globiom <- Globiom[getRegions(Globiom)[getRegions(Globiom) %in% getRegions(magpie_object)], , ]
 
   # interpolate years
   Globiom <- as.quitte(Globiom) %>%
@@ -416,7 +430,7 @@ getGLOBIOMEU <- function(magpie_object) {
 }
 
 # getREMIND_MAgPIE_SoCDR function to generate AFOLU and Land_CDR from REMIND_MAgPIE_SoCDR
-getREMIND_MAgPIE_SoCDR <- function(magpie_object) {
+getREMIND_MAgPIE_SoCDR <- function(path, magpie_object) {
   fscenario <- readGDX(path, "fscenario")
 
   # Add REMIND_MAgPIE_SoCDR run
@@ -470,7 +484,7 @@ getREMIND_MAgPIE_SoCDR <- function(magpie_object) {
 }
 
 # getIndustrialProcesses function from IEAPrimes
-getIndustrialProcesses <- function(magpie_object) {
+getIndustrialProcesses <- function(path, magpie_object) {
   # Add IndustrialProcesses
   IndustrialProcesses <- readSource("IndustrialProcessesEmissionsIEAPrimes")
 
