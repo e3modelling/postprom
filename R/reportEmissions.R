@@ -158,6 +158,22 @@ reportEmissions <- function(path, regions, years) {
   
   magpie_object <- mbind(magpie_object, Cumulated)
 
+    # Emissions|CO2|Cumulated
+
+  Cumulated <- as.quitte(magpie_object[, , "Emissions|CO2"])
+
+  Cumulated <- Cumulated %>%
+    group_by(region) %>%
+    mutate(value = cumsum(value)) %>%
+    as.data.frame() %>%
+    as.quitte() %>%
+    as.magpie()
+  getItems(Cumulated, 3) <- "Emissions|CO2|Cumulated"
+
+  Cumulated <- Cumulated / 1000
+  Cumulated <- add_dimension(Cumulated, dim = 3.2, add = "unit", nm = "Gt CO2")
+  magpie_object <- mbind(magpie_object, Cumulated)
+
   return(magpie_object)
 }
 

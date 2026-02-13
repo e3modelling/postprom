@@ -90,7 +90,7 @@ convertGDXtoMIF_single <- function(.path, path_mif, append, regions = NULL,
   sLink2MAgPIE <- readGDX(path_gdx, "sLink2MAgPIE")
   
   #if (is.null(sLink2MAgPIE)) {
-    sLink2MAgPIE <- 1
+    sLink2MAgPIE <- 0
   #}
   
   if (sLink2MAgPIE == 1) {
@@ -157,8 +157,8 @@ convertGDXtoMIF_single <- function(.path, path_mif, append, regions = NULL,
   }
   reports <- mbind(reports, GrossInlandConsumption)
   reports <- mbind(reports, reportLearningCurve)
-  reports <- mbind(reports, reportBudget(magpieObject=reports,aggregate, budgetBaseYear = 2019,
-                       budget1p5= 400, budget2c= 1150, probLabel= "67%"))
+  # reports <- mbind(reports, reportBudget(magpieObject=reports,aggregate, budgetBaseYear = 2019,
+  #                      budget1p5= 400, budget2c= 1150, probLabel= "67%"))
 
   if (emissions == TRUE) generateEmissionsFile(.path, reports, years, scenario_name)
 
