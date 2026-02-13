@@ -140,8 +140,17 @@ convertGDXtoMIF_single <- function(.path, path_mif, append, regions = NULL,
 aggregateMIF <- function(report) {
   report_data <- report
   items <- getItems(report_data, 3)
-  get_items <- items[grep("^Price|^Activity growth rate", items)]
+
+  # exclude Price|Final Energy, Price|Carbon, Activity growth rate
   get_items_not <- items[!grepl("^Price|^Activity growth rate", items)]
+  
+  # take Price|Final Energy,Activity growth rate
+  get_items <- items[
+    grep("^(Price|Activity growth rate)(?!.*Carbon)", items, perl = TRUE)
+  ]
+  
+  # take Price|Carbon
+  PrCarbon <- report_data[, , "Price|Carbon"]
 
   # Calculate the sum for the 'not Price' items
   add_region_GLO <- dimSums(report_data[, , get_items_not], 1, na.rm = TRUE)
@@ -159,9 +168,17 @@ aggregateMIF <- function(report) {
     weight = gdp, rel = rmap_world, from = "Region.Code", to = "V2"
   )
   getItems(add_region_GLO_mean, 1) <- "World"
+  
+  # Aggregate the data for "Price|Carbom" items using the emissions as weights
+  Emissions <- report_data[, , "Emissions|CO2"]
+  add_region_GLO_mean_CarbonPrice <- toolAggregate(
+    PrCarbon,
+    weight = Emissions, rel = rmap_world, from = "Region.Code", to = "V2"
+  )
+  getItems(add_region_GLO_mean_CarbonPrice, 1) <- "World"
 
   # Combine the calculated regions
-  world_reg <- mbind(add_region_GLO, add_region_GLO_mean)
+  world_reg <- mbind(add_region_GLO, add_region_GLO_mean, add_region_GLO_mean_CarbonPrice)
 
   # Bind the new aggregated data with the original report
   report <- mbind(report_data, world_reg)
