@@ -129,7 +129,19 @@ reportEmissions <- function(path, regions, years) {
   kyotoGases <- dimSums(emissionsCO2eq, dim = 3)[, , ] + EmissionsCo2[, , "Emissions|CO2"]
   getItems(kyotoGases, 3.1) <- "Emissions|Kyoto Gases"
   names(dimnames(kyotoGases))[3] <- "SBS"
-  # ===============================Add Dimensions =======================================
+  # =========================== Cumulated CO2 ============================================
+  Cumulated <- as.quitte(EmissionsCo2[, , "Emissions|CO2"]) %>%
+    group_by(region) %>%
+    mutate(
+      value = cumsum(value),
+      value = value / 1000
+    ) %>%
+    as.data.frame() %>%
+    as.quitte() %>%
+    as.magpie()
+  getItems(Cumulated, 3) <- "Emissions|CO2|Cumulated"
+  names(dimnames(Cumulated))[3] <- "SBS"
+  # =============================== Add Dimensions ============================
   emissionsNonCO2 <- add_dimension(
     emissionsNonCO2,
     dim = 3.2,
@@ -137,43 +149,11 @@ reportEmissions <- function(path, regions, years) {
     nm = unname(sapply(getNames(emissionsNonCO2), getUnit)),
     expand = FALSE
   )
-
   EmissionsCo2 <- add_dimension(EmissionsCo2, dim = 3.2, add = "unit", nm = "Mt CO2/yr")
   kyotoGases <- add_dimension(kyotoGases, dim = 3.2, add = "unit", nm = "Mt CO2-equiv/yr")
-  magpie_object <- mbind(emissionsNonCO2, EmissionsCo2, kyotoGases)
-  
-  Cumulated <- as.quitte(magpie_object[, , "Emissions|CO2"])
-  
-  Cumulated <- Cumulated %>%
-    group_by(region) %>%
-    mutate(value = cumsum(value)) %>%
-    as.data.frame() %>%
-    as.quitte() %>%
-    as.magpie()
-  getItems(Cumulated, 3) <- "Emissions|CO2|Cumulated"
-  
-  Cumulated <- Cumulated / 1000
-  names(dimnames(Cumulated))[3] <- "SBS"
   Cumulated <- add_dimension(Cumulated, dim = 3.2, add = "unit", nm = "Gt CO2")
-  
-  magpie_object <- mbind(magpie_object, Cumulated)
 
-    # Emissions|CO2|Cumulated
-
-  Cumulated <- as.quitte(magpie_object[, , "Emissions|CO2"])
-
-  Cumulated <- Cumulated %>%
-    group_by(region) %>%
-    mutate(value = cumsum(value)) %>%
-    as.data.frame() %>%
-    as.quitte() %>%
-    as.magpie()
-  getItems(Cumulated, 3) <- "Emissions|CO2|Cumulated"
-
-  Cumulated <- Cumulated / 1000
-  Cumulated <- add_dimension(Cumulated, dim = 3.2, add = "unit", nm = "Gt CO2")
-  magpie_object <- mbind(magpie_object, Cumulated)
-
+  magpie_object <- mbind(emissionsNonCO2, EmissionsCo2, kyotoGases, Cumulated)
   return(magpie_object)
 }
 
