@@ -432,6 +432,10 @@ getGLOBIOMEU <- function(path, magpie_object) {
     interpolate_missing_periods(period = getYears(magpie_object, as.integer = T), expand.values = TRUE) %>%
     as.quitte() %>%
     as.magpie()
+  
+  # take absolute value
+  Globiom[, , "Carbon Removal|Land Use"] <-
+    abs(Globiom[, , "Carbon Removal|Land Use"])
 
   return(Globiom)
 }
@@ -486,6 +490,10 @@ getREMIND_MAgPIE_SoCDR <- function(path, magpie_object) {
   GBR <- GBR["GBR", , ]
 
   AFOLU_CDR <- mbind(REMIND_MAgPIE_SoCDR, GBR)
+  
+  # take absolute value
+  AFOLU_CDR[, , "Carbon Removal|Land Use"] <-
+    abs(AFOLU_CDR[, , "Carbon Removal|Land Use"])
 
   return(AFOLU_CDR)
 }
