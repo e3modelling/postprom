@@ -28,11 +28,14 @@ reportEmissions <- function(path, regions, years) {
     c("V07GrossEmissCO2Demand", "V06CapCO2ElecHydr", "V07GrossEmissCO2Supply"),
     field = "l"
   )
-  grossCO2Demand <- variables$V07GrossEmissCO2Demand[regions, years, ]
+  
+  grossCO2Demand <- variables$V07GrossEmissCO2Demand[regions, years]
+  grossCO2Demand <- grossCO2Demand[c("NEN", "PCH"), invert = TRUE]
   names(dimnames(grossCO2Demand))[3] <- "SBS"
   grossCO2Supply <- variables$V07GrossEmissCO2Supply[regions, years, ]
   names(dimnames(grossCO2Supply))[3] <- "SBS"
-  captured <- variables$V06CapCO2ElecHydr[regions, years, ]
+  captured <- variables$V06CapCO2ElecHydr[regions, years]
+  captured <- captured[c("NEN", "PCH"), invert = TRUE]
   netCO2Demand <- grossCO2Demand - captured[, , getItems(grossCO2Demand, 3.1)]
   netCO2Supply <- grossCO2Supply - captured[, , getItems(grossCO2Supply, 3.1)]
   # ------------------------ Renamings --------------------------------
@@ -47,11 +50,7 @@ reportEmissions <- function(path, regions, years) {
   DSBS_Transport <- readGDX(path, "TRANSE") %>%
     as.data.frame() %>%
     mutate(SBS = "Transportation")
-  DSBS_NonEnergy <- readGDX(path, "NENSE") %>%
-    as.data.frame() %>%
-    filter(. != "BU") %>%
-    mutate(SBS = "Non-Energy Use")
-  DSBS_SBS <- bind_rows(DSBS_Industry, DSBS_Transport, DSBS_NonEnergy) %>%
+  DSBS_SBS <- bind_rows(DSBS_Industry, DSBS_Transport) %>%
     rename(DSBS = 1) %>%
     left_join(DSBSTable, by = c("DSBS" = "SBS")) %>%
     select(-DSBS) %>%
@@ -83,9 +82,7 @@ reportEmissions <- function(path, regions, years) {
   )[regions, , ]
   # -----------------------------------------------------------------------
   # ========================= Industrial Processes ===============================
-  IndustrialProcesses <- (
-    getIndustrialProcesses(path, grossCO2Demand)[, years, ]
-  )[regions, , ]
+  IndustrialProcesses <- getIndustrialProcesses(path, grossCO2Demand)[regions, years, ]
   # -----------------------------------------------------------------------
   EmissionsCo2 <- mbind(
     grossCO2Demand, netCO2Demand, grossCO2Supply,
@@ -143,7 +140,7 @@ reportEmissions <- function(path, regions, years) {
   names(dimnames(Cumulated))[3] <- "SBS"
   # =============================== Auxiliary =================================
   #  ---------------- Emissions|CO2|Energy and Industrial Processes -----------
-  sumIPEnergy <- magpie_object[, , c("Emissions|CO2|Energy.Mt CO2/yr", "Emissions|CO2|Industrial Processes.Mt CO2/yr")]
+  sumIPEnergy <- EmissionsCo2[, , c("Emissions|CO2|Energy", "Emissions|CO2|Industrial Processes")]
   sumIPEnergy <- dimSums(sumIPEnergy, dim = 3, na.rm = TRUE)
   getItems(sumIPEnergy, 3) <- "Emissions|CO2|Energy and Industrial Processes"
   # =============================== Add Dimensions ============================
@@ -532,8 +529,6 @@ getIndustrialProcesses <- function(path, magpie_object) {
     interpolate_missing_periods(period = getYears(magpie_object, as.integer = T), expand.values = TRUE) %>%
     as.quitte() %>%
     as.magpie()
-
-  IndustrialProcesses <- IndustrialProcesses[getRegions(IndustrialProcesses)[getRegions(IndustrialProcesses) %in% getRegions(magpie_object)], , ]
-
+    
   return(IndustrialProcesses)
 }
