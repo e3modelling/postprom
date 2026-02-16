@@ -25,23 +25,19 @@ reportEmissions <- function(path, regions, years) {
   # ------------------------- CO2 ------------------------------------
   variables <- readGDX(
     path,
-    c(
-      "V07GrossEmissCO2Demand", "V06CapCO2ElecHydr",
-      "V07GrossEmissCO2Supply", "V06CapDAC"
-    ),
+    c("V07GrossEmissCO2Demand", "V06CapCO2ElecHydr", "V07GrossEmissCO2Supply"),
     field = "l"
   )
 
   grossCO2Demand <- variables$V07GrossEmissCO2Demand[regions, years]
   grossCO2Demand <- grossCO2Demand[c("NEN", "PCH"), invert = TRUE]
-  names(dimnames(grossCO2Demand))[3] <- "SBS"
+  #names(dimnames(grossCO2Demand))[3] <- "SBS"
   grossCO2Supply <- variables$V07GrossEmissCO2Supply[regions, years, ]
-  names(dimnames(grossCO2Supply))[3] <- "SBS"
+  #names(dimnames(grossCO2Supply))[3] <- "SBS"
   captured <- variables$V06CapCO2ElecHydr[regions, years]
   captured <- captured[c("NEN", "PCH"), invert = TRUE]
   netCO2Demand <- grossCO2Demand - captured[, , getItems(grossCO2Demand, 3.1)]
   netCO2Supply <- grossCO2Supply - captured[, , getItems(grossCO2Supply, 3.1)]
-  EW <- variables$V06CapDAC[regions, years, "EWDAC"] * 1e-6
   # ------------------------ Renamings --------------------------------
   DSBSTable <- rgdx.set(path, "DSBS", te = TRUE)
   SSBSTable <- rgdx.set(path, "SSBS", te = TRUE)
@@ -78,18 +74,23 @@ reportEmissions <- function(path, regions, years) {
   # -------------------------- Carbon Capture -----------------------------
   side <- ifelse(getItems(captured, 3.1) %in% SSBSTable$SBS, "Supply", "Demand")
   name <- TotalTable$.te[match(getItems(captured, 3.1), TotalTable$SBS)]
-  getItems(captured, 3.1) <- paste0("Carbon Capture|Energy|", side, "|", name)
-  captured <- helperAggregateLevel(captured, level = 2, recursive = TRUE)
+  prefix <- case_when(
+    name == "Direct Air Capture" ~ "Carbon Capture",
+    name == "Enhanced Weathering" ~ "Carbon Removal",
+    TRUE ~ paste0("Carbon Capture|Energy|", side)
+  )
 
-  getItems(EW, 3.1) <- paste0("Carbon Removal|Enhanced Weathering")
+  getItems(captured, 3.1) <- paste0(prefix, "|", name)
+  captured <- helperAggregateLevel(captured, level = 2, recursive = TRUE)
   # ========================= AFOLU & Land Use ===============================
   AFOLU_CDR <- mbind(
     getGLOBIOMEU(path, grossCO2Demand)[, years, ],
     getREMIND_MAgPIE_SoCDR(path, grossCO2Demand)[, years, ]
   )[regions, , ]
-  # -----------------------------------------------------------------------
-  # ========================= Industrial Processes ===============================
-  IndustrialProcesses <- getIndustrialProcesses(path, grossCO2Demand)[regions, years, ]
+  # ========================= Industrial Processes ===========================
+  IndustrialProcesses <- getIndustrialProcesses(
+    path, grossCO2Demand
+  )[regions, years, ]
   # -----------------------------------------------------------------------
   EmissionsCo2 <- mbind(
     grossCO2Demand, netCO2Demand, grossCO2Supply,
@@ -134,7 +135,7 @@ reportEmissions <- function(path, regions, years) {
   kyotoGases <- dimSums(emissionsCO2eq, dim = 3)[, , ] + EmissionsCo2[, , "Emissions|CO2"]
   getItems(kyotoGases, 3.1) <- "Emissions|Kyoto Gases"
   names(dimnames(kyotoGases))[3] <- "SBS"
-  # =========================== Cumulated CO2 ============================================
+  # =========================== Cumulated CO2 ==================================
   Cumulated <- as.quitte(EmissionsCo2[, , "Emissions|CO2"]) %>%
     group_by(region) %>%
     mutate(
@@ -163,13 +164,11 @@ reportEmissions <- function(path, regions, years) {
   kyotoGases <- add_dimension(kyotoGases, dim = 3.2, add = "unit", nm = "Mt CO2-equiv/yr")
   Cumulated <- add_dimension(Cumulated, dim = 3.2, add = "unit", nm = "Gt CO2")
   sumIPEnergy <- add_dimension(sumIPEnergy, dim = 3.2, add = "unit", nm = "Mt CO2/yr")
-  EW <- add_dimension(EW, dim = 3.2, add = "unit", nm = "Mt CO2/yr")
 
   magpie_object <- mbind(
     emissionsNonCO2, EmissionsCo2, kyotoGases,
-    Cumulated, sumIPEnergy, EW
+    Cumulated, sumIPEnergy
   )
-
   return(magpie_object)
 }
 
