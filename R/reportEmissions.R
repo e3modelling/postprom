@@ -131,6 +131,8 @@ reportEmissions <- function(path, regions, years) {
   names(dimnames(emissionsNonCO2))[3] <- "SBS"
   emissionsCO2eq <- calculateGhg(emissionsNonCO2)
   emissionsNonCO2 <- helperAggregateLevel(emissionsNonCO2, level = 2, recursive = TRUE)
+
+  emissionsNonCO2 <- emissionsNonCO2[ , , setdiff(getNames(emissionsNonCO2), c("Emissions|HFC","Emissions|PFC"))]
   # -------------------------- Kyoto Gases ------------------------------------
   kyotoGases <- dimSums(emissionsCO2eq, dim = 3)[, , ] + EmissionsCo2[, , "Emissions|CO2"]
   getItems(kyotoGases, 3.1) <- "Emissions|Kyoto Gases"

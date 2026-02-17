@@ -45,7 +45,6 @@ Final Energy|Non Energy,Non Energy,yellow,bar
 Final Energy|Bunkers,Bunkers,#970824ff,bar
 Final Energy|Industry,Industry,orange,bar
 Final Energy|Transportation,Transportation,black,bar
-Final Energy|Residential and Commercial,Res and Com,red,bar
 Final Energy|Biomass,Biomass,#00b219,bar
 Final Energy|Other Capture and Removal,CDR,blue,bar
 Final Energy|VAL,IEA,red,dLine
@@ -62,11 +61,9 @@ Emissions|CO2|Budget2C,Budget2C,red,dLine
 Emissions|CO2,Total,black,solidLine
 Emissions|CO2|VAL,EDGAR,red,dLine
 Emissions|CO2|Validation,IEA|Projections,green,solidLine
-Emissions|CO2|Other Capture and Removal,CDR,#87e6a4,bar
 Emissions|CO2|AFOLU,AFOLU,#595933,bar
 Emissions|CO2|Industrial Processes,Industrial Processes,#661a00,bar
 Emissions|CO2|Energy|Demand|Industry,Industry,orange,bar
-Emissions|CO2|Energy|Demand|Residential and Commercial,Res and Com,#0000FF,bar
 Emissions|CO2|Energy|Demand|Transportation,Transportation,#000000,bar
 Price|Carbon,Price|Carbon,#661a00,dLine
 Gross Inland Consumption|Biomass and Waste,Biomass,#661a01,dLine
