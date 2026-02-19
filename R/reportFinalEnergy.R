@@ -74,7 +74,10 @@ reportFinalEnergy <- function(path, regions, years) {
   getItems(fuel, 3) <- paste0("Final Energy|", name)
 
   fuel <- helperAggregateLevel(fuel, level = 1, recursive = TRUE)
-
+  # --------------------------- Residential & Comercial ------------------
+  resCom <- fuel[, , c("Final Energy|Residential", "Final Energy|Commercial")]
+  resCom <- dimSums(resCom, 3)
+  getItems(resCom, 3.1) <- "Final Energy|Residential and Commercial"
   # ------------------------------- Add units ----------------------------
   magpie_object <- mbind(fuel, fuelAggregated, fuelWOBunkers)
   magpie_object <- add_dimension(magpie_object, dim = 3.2, add = "unit", nm = "Mtoe")

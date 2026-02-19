@@ -153,7 +153,7 @@ reportEmissions <- function(path, regions, years) {
   sumIPEnergy <- dimSums(sumIPEnergy, dim = 3, na.rm = TRUE)
   getItems(sumIPEnergy, 3) <- "Emissions|CO2|Energy and Industrial Processes"
   # ------------ Emissions|CO2|Energy|Demand|Residential and Commercial -------
-  resCom <- EmissionsCo2[, , c("Emissions|CO2|Energy|Demand|Households", "Emissions|CO2|Energy|Demand|Services and Trade")]
+  resCom <- EmissionsCo2[, , c("Emissions|CO2|Energy|Demand|Residential", "Emissions|CO2|Energy|Demand|Commercial")]
   resCom <- dimSums(resCom, 3)
   getItems(resCom, 3.1) <- "Emissions|CO2|Energy|Demand|Residential and Commercial"
   # =============================== Add Dimensions ============================
