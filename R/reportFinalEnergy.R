@@ -21,6 +21,7 @@
 #' @export
 reportFinalEnergy <- function(path, regions, years) {
   EFSTable <- rgdx.set(path, "EFS", te = TRUE)
+  EFSTable$.te <- gsub("\\s*\\([^)]*\\)", "", EFSTable$.te)
   DSBSTable <- rgdx.set(path, "DSBS", te = TRUE)
 
   #---------- Create a DSBS TO SBS mapping (e.g., Iron & Steel -> Industry)
@@ -56,8 +57,8 @@ reportFinalEnergy <- function(path, regions, years) {
   # -------------------------- Fuel Aggregations ----------------------------------
   fuelAggregated <- dimSums(fuel, dim = 3.1)
   getItems(fuelAggregated, 3.1) <- paste0("Final Energy|", getItems(fuelAggregated, 3.1))
-  fuelWOBunkers <- dimSums(fuel[,,"Bunkers", invert = TRUE], dim = 3)
-  getItems(fuelWOBunkers, 3.1) <- paste0("Final Energy (w/o bunkers)", getItems(fuelWOBunkers, 3.1))
+  fuelWOBunkers <- dimSums(fuel[, , "Bunkers", invert = TRUE], dim = 3)
+  getItems(fuelWOBunkers, 3.1) <- paste0("Final Energy w/o bunkers", getItems(fuelWOBunkers, 3.1))
   # -------------------------------------------------------------------------------
   # Replace sep in dimensions and prepend the sector
   name <- gsub("\\.", "|", getItems(fuel, dim = 3)) # e.g., IS.HCL --> IS|HCL
@@ -74,11 +75,8 @@ reportFinalEnergy <- function(path, regions, years) {
 
   fuel <- helperAggregateLevel(fuel, level = 1, recursive = TRUE)
 
-  # ------------------------------- Add units --------------------------------------
-  fuel <- add_dimension(fuel, dim = 3.2, add = "unit", nm = "Mtoe")
-  fuelAggregated <- add_dimension(fuelAggregated, dim = 3.2, add = "unit", nm = "Mtoe")
-  fuelWOBunkers <- add_dimension(fuelWOBunkers, dim = 3.2, add = "unit", nm = "Mtoe")
-  
+  # ------------------------------- Add units ----------------------------
   magpie_object <- mbind(fuel, fuelAggregated, fuelWOBunkers)
+  magpie_object <- add_dimension(magpie_object, dim = 3.2, add = "unit", nm = "Mtoe")
   return(magpie_object)
 }
