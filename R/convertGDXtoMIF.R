@@ -20,16 +20,18 @@
 #'
 #' @examples
 #' \dontrun{
-#' convertGDXtoMIF(.path = c("path/to/gdx1", "path/to/gdx2"),
-#'                 mif_name = "output.mif",
-#'                 regions = c("runCYL", "World"),
-#'                 fullValidation = TRUE,
-#'                 scenario_name = c("Scenario1", "Scenario2"),
-#'                 aggregate = TRUE,
-#'                 emissions = TRUE,
-#'                 save = TRUE,
-#'                 htmlReport = FALSE,
-#'                 projectReport = FALSE)
+#' convertGDXtoMIF(
+#'   .path = c("path/to/gdx1", "path/to/gdx2"),
+#'   mif_name = "output.mif",
+#'   regions = c("runCYL", "World"),
+#'   fullValidation = TRUE,
+#'   scenario_name = c("Scenario1", "Scenario2"),
+#'   aggregate = TRUE,
+#'   emissions = TRUE,
+#'   save = TRUE,
+#'   htmlReport = FALSE,
+#'   projectReport = FALSE
+#' )
 #' }
 #' @importFrom magclass mbind dimSums getItems getRegions write.report read.report
 #' @importFrom gdx readGDX
@@ -46,23 +48,24 @@ convertGDXtoMIF <- function(.path, mif_name, regions = NULL, years = NULL,
     if (length(.path) > 1) paste0("comparison_", current_time, "_", mif_name) else mif_name
   )
 
-  scenarios_reports <- mapply(function(path, scenario) {
-    convertGDXtoMIF_single(
-      .path = path,
-      regions = regions,
-      years = years,
-      path_mif = path_mif,
-      scenario_name = scenario,
-      aggregate = aggregate,
-      append = append,
-      save = save,
-      emissions = emissions,
-      htmlReport = htmlReport,
-      projectReport = projectReport
-    )
-  },
-  .path, scenario_name,
-  SIMPLIFY = FALSE
+  scenarios_reports <- mapply(
+    function(path, scenario) {
+      convertGDXtoMIF_single(
+        .path = path,
+        regions = regions,
+        years = years,
+        path_mif = path_mif,
+        scenario_name = scenario,
+        aggregate = aggregate,
+        append = append,
+        save = save,
+        emissions = emissions,
+        htmlReport = htmlReport,
+        projectReport = projectReport
+      )
+    },
+    .path, scenario_name,
+    SIMPLIFY = FALSE
   )
 
   if (fullValidation == TRUE) appendValidationMIF(.path[1], path_mif)
@@ -72,7 +75,7 @@ convertGDXtoMIF <- function(.path, mif_name, regions = NULL, years = NULL,
 # Helpers -----------------------------------------------------------------
 convertGDXtoMIF_single <- function(.path, path_mif, append, regions = NULL,
                                    years = NULL, scenario_name = NULL,
-                                   aggregate = TRUE, emissions=TRUE, save = TRUE,
+                                   aggregate = TRUE, emissions = TRUE, save = TRUE,
                                    htmlReport = TRUE, projectReport = TRUE) {
   print(paste0("Region aggregation: ", aggregate))
   print(paste0("Processing path: ", .path))
@@ -141,19 +144,19 @@ convertGDXtoMIF_single <- function(.path, path_mif, append, regions = NULL,
   reports <- mbind(reports, reportCapacityAdditions(path_gdx, regions, years))
   reports <- mbind(reports, reportCostsPGtechnologies(path_gdx, regions, years))
   reports <- mbind(reports, reportVehicles(path_gdx, regions, years))
-  
-  reportLearningCurve <- reportLearningCurve(path_gdx, regions, years)
+
+  # reportLearningCurve <- reportLearningCurve(path_gdx, regions, years)
   GrossInlandConsumption <- reportGrossInlandConsumption(path_gdx, regions, years)
 
-  #add dummy NA values for all regions and years
-  GrossInlandConsumption <- add_columns(GrossInlandConsumption, addnm = setdiff(getRegions(reports),getRegions(GrossInlandConsumption)), dim = 1, fill = NA)
-  GrossInlandConsumption <- add_columns(GrossInlandConsumption, addnm = setdiff(getYears(reports),getYears(GrossInlandConsumption)), dim = 2, fill = NA)
-  reportLearningCurve <- add_columns(reportLearningCurve, addnm = setdiff(getRegions(reports),getRegions(reportLearningCurve)), dim = 1, fill = NA)
-  
+  # add dummy NA values for all regions and years
+  GrossInlandConsumption <- add_columns(GrossInlandConsumption, addnm = setdiff(getRegions(reports), getRegions(GrossInlandConsumption)), dim = 1, fill = NA)
+  GrossInlandConsumption <- add_columns(GrossInlandConsumption, addnm = setdiff(getYears(reports), getYears(GrossInlandConsumption)), dim = 2, fill = NA)
+  # reportLearningCurve <- add_columns(reportLearningCurve, addnm = setdiff(getRegions(reports),getRegions(reportLearningCurve)), dim = 1, fill = NA)
+
   if (aggregate == TRUE) {
-      reports <- aggregateMIF(report = reports)
+    reports <- aggregateMIF(report = reports)
   } else {
-    reports <- add_columns(reports, addnm = setdiff(getRegions(GrossInlandConsumption),getRegions(reports)), dim = 1, fill = NA)
+    reports <- add_columns(reports, addnm = setdiff(getRegions(GrossInlandConsumption), getRegions(reports)), dim = 1, fill = NA)
   }
   reports <- mbind(reports, GrossInlandConsumption)
   reports <- mbind(reports, reportLearningCurve)
@@ -162,7 +165,7 @@ convertGDXtoMIF_single <- function(.path, path_mif, append, regions = NULL,
 
   if (emissions == TRUE) generateEmissionsFile(.path, reports, years, scenario_name)
 
-  if(save == TRUE) {
+  if (save == TRUE) {
     write.report(
       reports,
       file = path_mif,
@@ -186,12 +189,12 @@ aggregateMIF <- function(report) {
 
   # exclude Price|Final Energy, Price|Carbon, Activity growth rate
   get_items_not <- items[!grepl("^Price|^Activity growth rate", items)]
-  
+
   # take Price|Final Energy,Activity growth rate
   get_items <- items[
     grep("^(Price|Activity growth rate)(?!.*Carbon)", items, perl = TRUE)
   ]
-  
+
   # take Price|Carbon
   PrCarbon <- report_data[, , "Price|Carbon"]
 
@@ -211,7 +214,7 @@ aggregateMIF <- function(report) {
     weight = gdp, rel = rmap_world, from = "Region.Code", to = "V2"
   )
   getItems(add_region_GLO_mean, 1) <- "World"
-  
+
   # Aggregate the data for "Price|Carbom" items using the emissions as weights
   Emissions <- report_data[, , "Emissions|CO2"]
   add_region_GLO_mean_CarbonPrice <- toolAggregate(

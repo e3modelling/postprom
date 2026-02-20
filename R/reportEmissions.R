@@ -154,6 +154,10 @@ reportEmissions <- function(path, regions, years) {
   sumIPEnergy <- EmissionsCo2[, , c("Emissions|CO2|Energy", "Emissions|CO2|Industrial Processes")]
   sumIPEnergy <- dimSums(sumIPEnergy, dim = 3, na.rm = TRUE)
   getItems(sumIPEnergy, 3) <- "Emissions|CO2|Energy and Industrial Processes"
+  # ------------ Emissions|CO2|Energy|Demand|Residential and Commercial -------
+  resCom <- EmissionsCo2[, , c("Emissions|CO2|Energy|Demand|Residential", "Emissions|CO2|Energy|Demand|Commercial")]
+  resCom <- dimSums(resCom, 3)
+  getItems(resCom, 3.1) <- "Emissions|CO2|Energy|Demand|Residential and Commercial"
   # =============================== Add Dimensions ============================
   emissionsNonCO2 <- add_dimension(
     emissionsNonCO2,
@@ -166,11 +170,13 @@ reportEmissions <- function(path, regions, years) {
   kyotoGases <- add_dimension(kyotoGases, dim = 3.2, add = "unit", nm = "Mt CO2-equiv/yr")
   Cumulated <- add_dimension(Cumulated, dim = 3.2, add = "unit", nm = "Gt CO2")
   sumIPEnergy <- add_dimension(sumIPEnergy, dim = 3.2, add = "unit", nm = "Mt CO2/yr")
+  resCom <- add_dimension(resCom, dim = 3.2, add = "unit", nm = "Mt CO2/yr")
 
   magpie_object <- mbind(
     emissionsNonCO2, EmissionsCo2, kyotoGases,
-    Cumulated, sumIPEnergy
+    Cumulated, sumIPEnergy, resCom
   )
+
   return(magpie_object)
 }
 

@@ -21,6 +21,7 @@
 #' @export
 reportFinalEnergy <- function(path, regions, years) {
   EFSTable <- rgdx.set(path, "EFS", te = TRUE)
+  EFSTable$.te <- gsub("\\s*\\([^)]*\\)", "", EFSTable$.te)
   DSBSTable <- rgdx.set(path, "DSBS", te = TRUE)
 
   #---------- Create a DSBS TO SBS mapping (e.g., Iron & Steel -> Industry)
@@ -53,7 +54,12 @@ reportFinalEnergy <- function(path, regions, years) {
   getItems(fuel, 3.1) <- DSBSTable$.te[match(getItems(fuel, 3.1), DSBSTable$SBS)]
   # Rename Fuels
   getItems(fuel, 3.2) <- EFSTable$.te[match(getItems(fuel, 3.2), EFSTable$EF)]
-
+  # -------------------------- Fuel Aggregations ----------------------------------
+  fuelAggregated <- dimSums(fuel, dim = 3.1)
+  getItems(fuelAggregated, 3.1) <- paste0("Final Energy|", getItems(fuelAggregated, 3.1))
+  fuelWOBunkers <- dimSums(fuel[, , "Bunkers", invert = TRUE], dim = 3)
+  getItems(fuelWOBunkers, 3.1) <- paste0("Final Energy w/o bunkers", getItems(fuelWOBunkers, 3.1))
+  # -------------------------------------------------------------------------------
   # Replace sep in dimensions and prepend the sector
   name <- gsub("\\.", "|", getItems(fuel, dim = 3)) # IS.HCL --> IS|HCL
   key <- str_extract(name, "^[^|]+")
@@ -67,8 +73,13 @@ reportFinalEnergy <- function(path, regions, years) {
 
   getItems(fuel, 3) <- paste0("Final Energy|", name)
 
-  magpie_object <- helperAggregateLevel(fuel, level = 1, recursive = TRUE)
+  fuel <- helperAggregateLevel(fuel, level = 1, recursive = TRUE)
+  # --------------------------- Residential & Comercial ------------------
+  resCom <- fuel[, , c("Final Energy|Residential", "Final Energy|Commercial")]
+  resCom <- dimSums(resCom, 3)
+  getItems(resCom, 3.1) <- "Final Energy|Residential and Commercial"
+  # ------------------------------- Add units ----------------------------
+  magpie_object <- mbind(fuel, fuelAggregated, fuelWOBunkers)
   magpie_object <- add_dimension(magpie_object, dim = 3.2, add = "unit", nm = "Mtoe")
-  
   return(magpie_object)
 }
