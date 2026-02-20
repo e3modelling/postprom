@@ -6,7 +6,7 @@ Emissions|CO2|Total,Energy|Demand|Transportation
 Emissions|CO2|Total,Energy|Supply
 Emissions|CO2|Total,AFOLU
 Emissions|CO2|Total,Industrial Processes
-Emissions|CO2|Total,Other Capture and Removal
+Emissions|CO2|Total,Energy|Demand|Direct Air Capture
 Emissions|CO2|Total,Validation
 Emissions|CO2|Total,
 Emissions|CO2|Total,VAL
@@ -23,17 +23,18 @@ Final Energy|Sector,Industry|VAL
 Final Energy|Sector,Transportation|VAL
 Final Energy|Sector,Industry|Validation
 Final Energy|Sector,Transportation|Validation
-Final Energy|Sector,Non Energy
+Final Energy|Sector,Non-Energy Use
 Final Energy|Sector,Bunkers
 Final Energy|Fuel,Solids
 Final Energy|Fuel,Hydrogen
 Final Energy|Fuel,Gases
 Final Energy|Fuel,Electricity
-Final Energy|Fuel,Liquids
+Final Energy|Fuel,Fossil Liquids
 Final Energy|Fuel,Heat
-Final Energy|Fuel,Biomass
+Final Energy|Fuel,Other Fuels
 Final Energy|Fuel,Validation
 Final Energy|Fuel,VAL
+Final Energy|Fuel,Biofuels
 Secondary Energy|Electricity|Total,Solar
 Secondary Energy|Electricity|Total,Oil
 Secondary Energy|Electricity|Total,Wind
