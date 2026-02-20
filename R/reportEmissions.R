@@ -31,9 +31,9 @@ reportEmissions <- function(path, regions, years) {
 
   grossCO2Demand <- variables$V07GrossEmissCO2Demand[regions, years]
   grossCO2Demand <- grossCO2Demand[c("NEN", "PCH"), invert = TRUE]
-  #names(dimnames(grossCO2Demand))[3] <- "SBS"
+  # names(dimnames(grossCO2Demand))[3] <- "SBS"
   grossCO2Supply <- variables$V07GrossEmissCO2Supply[regions, years, ]
-  #names(dimnames(grossCO2Supply))[3] <- "SBS"
+  # names(dimnames(grossCO2Supply))[3] <- "SBS"
   captured <- variables$V06CapCO2ElecHydr[regions, years]
   captured <- captured[c("NEN", "PCH"), invert = TRUE]
   netCO2Demand <- grossCO2Demand - captured[, , getItems(grossCO2Demand, 3.1)]
@@ -153,7 +153,7 @@ reportEmissions <- function(path, regions, years) {
   sumIPEnergy <- dimSums(sumIPEnergy, dim = 3, na.rm = TRUE)
   getItems(sumIPEnergy, 3) <- "Emissions|CO2|Energy and Industrial Processes"
   # ------------ Emissions|CO2|Energy|Demand|Residential and Commercial -------
-  resCom <- EmissionsCo2[, , c("Emissions|CO2|Energy|Demand|Residential", "Emissions|CO2|Energy|Demand|Commercial")]
+  resCom <- EmissionsCo2[, , c("Emissions|CO2|Energy|Demand|Residential", "Emissions|CO2|Energy|Demand|Commercial", "Emissions|CO2|Energy|Demand|Agriculture, Fishing, Forestry")]
   resCom <- dimSums(resCom, 3)
   getItems(resCom, 3.1) <- "Emissions|CO2|Energy|Demand|Residential and Commercial"
   # =============================== Add Dimensions ============================

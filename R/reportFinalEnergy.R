@@ -50,16 +50,28 @@ reportFinalEnergy <- function(path, regions, years) {
   fuel[, , getItems(VFuelCDR, 3)] <- VFuelCDR[, , getItems(VFuelCDR, 3)]
   fuel <- fuel[, , EFSTable$EF]
 
-  # -------------------------- Rename Variables -----------------------------------
+  # -------------------------- Rename Variables -------------------------------
   getItems(fuel, 3.1) <- DSBSTable$.te[match(getItems(fuel, 3.1), DSBSTable$SBS)]
   # Rename Fuels
   getItems(fuel, 3.2) <- EFSTable$.te[match(getItems(fuel, 3.2), EFSTable$EF)]
-  # -------------------------- Fuel Aggregations ----------------------------------
-  fuelAggregated <- dimSums(fuel, dim = 3.1)
-  getItems(fuelAggregated, 3.1) <- paste0("Final Energy|", getItems(fuelAggregated, 3.1))
+  # -------------------------- Fuel Aggregations ------------------------------
+  BALEF2EFS <- rgdx.set(path, "BALEF2EFS") %>%
+    left_join(EFSTable, by = c("EFS" = "EF")) %>%
+    filter(BALEF %in% c("Solids", "Liquids", "Gasses", "Heat", "Electricity", "Hydrogen", "Other Fuels")) %>%
+    select(BALEF, .te)
+
+  finalPerFuel <- dimSums(fuel, dim = 3.1)
+  finalPerFuelAggregated <- toolAggregate(finalPerFuel,
+    dim = 3, rel = BALEF2EFS,
+    from = ".te", to = "BALEF", partrel = TRUE
+  )
+  finalPerFuelAggregated <- finalPerFuelAggregated[, , setdiff(unique(BALEF2EFS$BALEF), getItems(finalPerFuel, 3.1))]
   fuelWOBunkers <- dimSums(fuel[, , "Bunkers", invert = TRUE], dim = 3)
+
+  getItems(finalPerFuel, 3.1) <- paste0("Final Energy|", getItems(finalPerFuel, 3.1))
   getItems(fuelWOBunkers, 3.1) <- paste0("Final Energy w/o bunkers", getItems(fuelWOBunkers, 3.1))
-  # -------------------------------------------------------------------------------
+  getItems(finalPerFuelAggregated, 3.1) <- paste0("Final Energy|", getItems(finalPerFuelAggregated, 3.1))
+  # ---------------------------------------------------------------------------
   # Replace sep in dimensions and prepend the sector
   name <- gsub("\\.", "|", getItems(fuel, dim = 3)) # e.g., IS.HCL --> IS|HCL
   key <- str_extract(name, "^[^|]+")
@@ -75,11 +87,18 @@ reportFinalEnergy <- function(path, regions, years) {
 
   fuel <- helperAggregateLevel(fuel, level = 1, recursive = TRUE)
   # --------------------------- Residential & Comercial ------------------
-  resCom <- fuel[, , c("Final Energy|Residential", "Final Energy|Commercial")]
+  resCom <- fuel[, , c("Final Energy|Residential", "Final Energy|Commercial", "Final Energy|Agriculture, Fishing, Forestry")]
   resCom <- dimSums(resCom, 3)
   getItems(resCom, 3.1) <- "Final Energy|Residential and Commercial"
+  # --------------------------- Other Capture and Removal ------------------
+  otherCap <- fuel[, , c("Final Energy|Direct Air Capture", "Final Energy|Enhanced Weathering")]
+  otherCap <- dimSums(otherCap, 3)
+  getItems(otherCap, 3.1) <- "Final Energy|Other Capture and Removal"
   # ------------------------------- Add units ----------------------------
-  magpie_object <- mbind(fuel, fuelAggregated, fuelWOBunkers)
+  magpie_object <- mbind(
+    fuel, finalPerFuel, fuelWOBunkers, resCom,
+    finalPerFuelAggregated, otherCap
+  )
   magpie_object <- add_dimension(magpie_object, dim = 3.2, add = "unit", nm = "Mtoe")
   return(magpie_object)
 }
