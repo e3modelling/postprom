@@ -27,14 +27,14 @@ Final Energy|Sector,Non-Energy Use
 Final Energy|Sector,Bunkers
 Final Energy|Fuel,Solids
 Final Energy|Fuel,Hydrogen
-Final Energy|Fuel,Gasses
+Final Energy|Fuel,Gases
 Final Energy|Fuel,Electricity
-Final Energy|Fuel,Liquids
+Final Energy|Fuel,Fossil Liquids
 Final Energy|Fuel,Heat
 Final Energy|Fuel,Other Fuels
 Final Energy|Fuel,Validation
 Final Energy|Fuel,VAL
-Final Energy|Fuel,Biomass and Waste
+Final Energy|Fuel,Biofuels
 Secondary Energy|Electricity|Total,Solar
 Secondary Energy|Electricity|Total,Oil
 Secondary Energy|Electricity|Total,Wind

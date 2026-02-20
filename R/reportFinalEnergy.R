@@ -57,7 +57,8 @@ reportFinalEnergy <- function(path, regions, years) {
   # -------------------------- Fuel Aggregations ------------------------------
   BALEF2EFS <- rgdx.set(path, "BALEF2EFS") %>%
     left_join(EFSTable, by = c("EFS" = "EF")) %>%
-    filter(BALEF %in% c("Solids", "Liquids", "Gasses", "Heat", "Electricity", "Hydrogen", "Other Fuels")) %>%
+    filter(BALEF %in% c("Solids", "Fossil Liquids", "Gases", "Heat",
+                        "Electricity", "Hydrogen", "Other Fuels", "Biofuels")) %>%
     select(BALEF, .te)
 
   finalPerFuel <- dimSums(fuel, dim = 3.1)

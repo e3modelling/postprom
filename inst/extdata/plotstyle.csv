@@ -56,9 +56,10 @@ Final Energy|Transportation|Validation,Transportation|IEA|Projections,#B0B0B0,so
 Final Energy|Biomass and Waste,Biomass,#005900,bar
 Final Energy|Solids,Solids,black,bar
 Final Energy|Hydrogen,Hydrogen,blue,bar
-Final Energy|Gasses,Gasses,#999959,bar
+Final Energy|Gases,Gases,#999959,bar
+Final Energy|Biofuels,Biofuels,#005900,bar
 Final Energy|Electricity,Electricity,yellow,bar
-Final Energy|Liquids,Liquids,grey,bar
+Final Energy|Fossil Liquids,Fossil Liquids,grey,bar
 Final Energy|Heat,Heat,firebrick2,bar
 Final Energy|Other Fuels,Other Fuels,darkorchid3,bar
 Emissions|CO2|Energy|Demand|Bunkers,Bunkers,yellow,bar
