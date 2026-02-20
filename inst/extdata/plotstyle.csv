@@ -46,7 +46,6 @@ Final Energy|Bunkers,Bunkers,#970824ff,bar
 Final Energy|Industry,Industry,orange,bar
 Final Energy|Transportation,Transportation,black,bar
 Final Energy|Residential and Commercial,Res and Com,red,bar
-Final Energy|Biomass and Waste,Biomass,#00b219,bar
 Final Energy|Other Capture and Removal,CDR,blue,bar
 Final Energy|VAL,IEA,red,dLine
 Final Energy|Industry|VAL,Industry|IEA,#FFE0B2,dLine
@@ -54,6 +53,14 @@ Final Energy|Transportation|VAL,Transportation|IEA,#CCCCCC,dLine
 Final Energy|Validation,IEA|Projections,green,solidLine
 Final Energy|Industry|Validation,Industry|IEA|Projections,#E65100,solidLine
 Final Energy|Transportation|Validation,Transportation|IEA|Projections,#B0B0B0,solidLine
+Final Energy|Biomass and Waste,Biomass,#005900,bar
+Final Energy|Solids,Solids,black,bar
+Final Energy|Hydrogen,Hydrogen,blue,bar
+Final Energy|Gasses,Gasses,#999959,bar
+Final Energy|Electricity,Electricity,yellow,bar
+Final Energy|Liquids,Liquids,grey,bar
+Final Energy|Heat,Heat,firebrick2,bar
+Final Energy|Other Fuels,Other Fuels,darkorchid3,bar
 Emissions|CO2|Energy|Demand|Bunkers,Bunkers,yellow,bar
 Emissions|CO2|Energy|Supply,Supply,#bcbc6d,bar
 Emissions|CO2|Cumulated,Cumulated,#661a00,bar
