@@ -26,15 +26,6 @@ generateEmissionsFile <- function(.path, openPromVariables,
 
   emissionVariableUnit <- read.csv(system.file(package = "postprom", file.path("extdata", "climate-assessment.csv")))
 
-  # Add Emissions|CO2|Energy + Emissions|CO2|Industrial processes to create Emissions|CO2|Industrial Processes
-  sum <- openPromVariables[, ,c("Emissions|CO2|Energy.Mt CO2/yr","Emissions|CO2|Industrial Processes.Mt CO2/yr")]
-  sum <- dimSums(sum, dim = 3, na.rm = TRUE)
-  getItems(sum,3) <- "Emissions|CO2|Energy and Industrial Processes.Mt CO2/yr"
-  # Fix separator "p" to "."
-  dimnames(sum)$d3 <- gsub("pMt", ".Mt", dimnames(sum)$d3)
-  
-  openPromVariables <- mbind(openPromVariables, sum)
-
   # Select columns that are numeric years and >= 2015 
   allYears <- getItems(openPromVariables, dim = 2)
   allYears <- allYears[as.numeric(sub("^y", "", allYears)) >= 2015]
