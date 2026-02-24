@@ -83,7 +83,7 @@ convertGDXtoMIF_single <- function(.path, path_mif, append, regions = NULL,
 
   if (is.null(regions)) regions <- readGDX(path_gdx, "runCYL")
   if (is.null(years)) {
-    years <- as.character(c(2010:2023))
+    years <- as.character(readGDX(path_gdx, "datay"))
     years <- c(years, as.character(readGDX(path_gdx, "an")))
     years <- paste0("y", years)
   }
