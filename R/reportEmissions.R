@@ -170,11 +170,30 @@ reportEmissions <- function(path, regions, years) {
   sumIPEnergy <- add_dimension(sumIPEnergy, dim = 3.2, add = "unit", nm = "Mt CO2/yr")
   resCom <- add_dimension(resCom, dim = 3.2, add = "unit", nm = "Mt CO2/yr")
 
-  magpie_object <- mbind(
+  magpie_object_int <- mbind(
     emissionsNonCO2, EmissionsCo2, kyotoGases,
     Cumulated, sumIPEnergy, resCom
   )
+  # =============================== Emission Growth Rates ===================================
+  EmissionsQ <- as.quitte(magpie_object_int)
+  EmissionsGrowthRate <- EmissionsQ %>%
+    arrange(SBS, unit, region, period) %>%
+    group_by(SBS, unit, region) %>%
+    mutate(
+      GrowthRate = ifelse(lag(value) == 0, NA, 100 * (value - lag(value)) / lag(value)),
+      unit = "%",
+      SBS = paste0("Growth Rate|", SBS)
+    ) %>%
+    ungroup()
+  EmissionsGrowthRate <- EmissionsGrowthRate[,c("region", "period", "SBS", "unit", "GrowthRate")]
+  EmissionsGrowthRate <- EmissionsGrowthRate %>%
+    rename(value = GrowthRate)
 
+  EmissionsGrowthRateMP <- as.magpie(EmissionsGrowthRate)
+
+  magpie_object <- mbind(
+    magpie_object_int, EmissionsGrowthRateMP
+  )
   return(magpie_object)
 }
 
