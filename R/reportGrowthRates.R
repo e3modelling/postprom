@@ -40,9 +40,7 @@ reportGrowthRates <- function(reports) {
   rename(value = GrowthRate)  %>%
   as.quitte() %>% as.magpie()
   
-  reports <- mbind(
-    reports, EmissionsGrowthRateMP
-  )
+  EmissionsGrowthRateMP[is.na(EmissionsGrowthRateMP)] <- 0
 
-  return(reports)
+  return(EmissionsGrowthRateMP)
 }
