@@ -121,6 +121,9 @@ convertGDXtoMIF_single <- function(.path, path_mif, append, regions = NULL,
     magpieObject = reports, aggregate, budgetBaseYear = 2019,
     budget1p5 = 400, budget2c = 1150, probLabel = "67%"
   ))
+  
+  GrowthRates <- reportGrowthRates(reports)
+  reports <- mbind(reports, GrowthRates)
 
   if (emissions == TRUE) generateEmissionsFile(.path, reports, years, scenario_name)
 
