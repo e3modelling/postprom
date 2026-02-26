@@ -1,8 +1,8 @@
 \documentclass{article}
 \usepackage[a4paper, margin=2cm]{geometry}
-\usepackage{hyperref} % Enables clickable TOC
-\usepackage{graphicx} % Handles images
-\usepackage{float} % Allows better placement of figures
+\usepackage{hyperref}
+\usepackage{graphicx}
+\usepackage{float}
 
 \title{OPEN-PROM: Plot report}
 \author{\textrm{\Sexpr{pdf_title}}}
@@ -11,7 +11,6 @@
 \begin{document}
 \maketitle
 
-% Metadata Table
 \section*{Metadata}
 \begin{tabular}{|l|l|}
 \hline
@@ -19,7 +18,6 @@
 \hline
 \end{tabular}
 
-% Creates TOC
 \tableofcontents
 
 <<setup, echo=FALSE, warning=FALSE, message=FALSE>>=
@@ -27,14 +25,19 @@ library(ggplot2)
 plot_list <- readRDS(plot_rds_path)
 @
 
-% Generate sections for each plot dynamically
 \newpage
 
-<<generate_plots, results='asis', echo=FALSE, fig.width=10, fig.height=12>>=
-for (i in seq_along(plot_list)) {
-    section_title <- names(plot_list)[i]
-    cat(sprintf("\\section{%s}\n", section_title))
-    print(plot_list[[i]])
+<<generate_plots, echo=FALSE, results='asis', fig.width=10, fig.height=12, fig.pos='H'>>=
+
+for (section_name in names(plot_list)) {
+
+  # new page + section title
+  cat(sprintf("\\newpage\n\\section{%s}\n\n", section_name))
+
+  # print each plot DIRECTLY (no inner chunk)
+  for (p in plot_list[[section_name]]) {
+    print(p)
+  }
 }
 @
 
