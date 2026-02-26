@@ -45,9 +45,9 @@ reportFinalEnergy <- function(path, regions, years) {
   fuel <- readGDX(path, "VmConsFuel", field = "l")[regions, years, ]
   VFuelTransport <- readGDX(path, "VmDemFinEneTranspPerFuel", field = "l")[regions, years, ]
   fuel[, , getItems(VFuelTransport, 3)] <- VFuelTransport[, , getItems(VFuelTransport, 3)]
-  VFuelDAC <- readGDX(path, "VmConsFuelDACProd", field = "l")[regions, years, ]
-  dimnames(VFuelDAC)[[3]] <- paste0("DAC.", getItems(VFuelDAC, 3))
-  fuel[, , getItems(VFuelDAC, 3)] <- VFuelDAC[, , getItems(VFuelDAC, 3)]
+  # VFuelDAC <- readGDX(path, "VmConsFuelDACProd", field = "l")[regions, years, ]
+  # dimnames(VFuelDAC)[[3]] <- paste0("DAC.", getItems(VFuelDAC, 3))
+  # fuel[, , getItems(VFuelDAC, 3)] <- VFuelDAC[, , getItems(VFuelDAC, 3)]
   fuel <- fuel[, , EFSTable$EF]
 
   # Rename Sectors
