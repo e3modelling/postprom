@@ -50,15 +50,17 @@ This function processes GDX files and converts them to MIF format, with options 
 }
 \examples{
 \dontrun{
-convertGDXtoMIF(.path = c("path/to/gdx1", "path/to/gdx2"),
-                mif_name = "output.mif",
-                regions = c("runCYL", "World"),
-                fullValidation = TRUE,
-                scenario_name = c("Scenario1", "Scenario2"),
-                aggregate = TRUE,
-                emissions = TRUE,
-                save = TRUE,
-                htmlReport = FALSE,
-                projectReport = FALSE)
+convertGDXtoMIF(
+  .path = c("path/to/gdx1", "path/to/gdx2"),
+  mif_name = "output.mif",
+  regions = c("runCYL", "World"),
+  fullValidation = TRUE,
+  scenario_name = c("Scenario1", "Scenario2"),
+  aggregate = TRUE,
+  emissions = TRUE,
+  save = TRUE,
+  htmlReport = FALSE,
+  projectReport = FALSE
+)
 }
 }
