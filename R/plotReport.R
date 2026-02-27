@@ -82,6 +82,10 @@ plotTool <- function(data, colors_vars, variable, plot_style,
   
   # Split regions into chunks
   unique_regions <- unique(data$region)
+  # World first in plot
+  if ("World" %in% unique_regions) {
+    unique_regions <- c("World", setdiff(unique_regions, "World"))
+  }
   region_chunks <- split(unique_regions, ceiling(seq_along(unique_regions) / n_regions_per_plot))
   
   # List to store plots

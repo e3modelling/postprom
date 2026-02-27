@@ -56,6 +56,7 @@ reportSE <- function(path, regions, years) {
   prodElecCHP <- readGDX(path, c("V04ProdElecEstCHP", "V04ProdElecCHP"), field = "l", format = "first_found")[regions, years, ]
   prodElecCHP <- add_dimension(prodElecCHP, nm = "TSTE", add = "PGALL", dim = 3.1)
   prodElec <- readGDX(path, "VmProdElec", field = "l")[regions, years, ]
+  units <- sub(".*\\((.*)\\).*", "\\1", prodElec@description)
   prodElec <- mbind(prodElec, prodElecCHP)
 
   # Create a mapping for naming (e.g., ATHLGN->Lignite|w/o CCS, etc.)
@@ -75,6 +76,6 @@ reportSE <- function(path, regions, years) {
   getItems(totalDemand, 3.1) <- "Secondary Energy|Electricity|Demand"
   prodAll <- mbind(prodAll, totalDemand)
 
-  prodAll <- add_dimension(prodAll, dim = 3.2, add = "unit", nm = "TWh")
+  prodAll <- add_dimension(prodAll, dim = 3.2, add = "unit", nm = units)
   return(prodAll)
 }

@@ -33,6 +33,7 @@ reportEmissions <- function(path, regions, years) {
   grossCO2Demand <- grossCO2Demand[c("NEN", "PCH"), invert = TRUE]
   # names(dimnames(grossCO2Demand))[3] <- "SBS"
   grossCO2Supply <- variables$V07GrossEmissCO2Supply[regions, years, ]
+  units_grossCO2Supply <- sub(".*\\((.*)\\).*", "\\1", grossCO2Supply@description)
   # names(dimnames(grossCO2Supply))[3] <- "SBS"
   captured <- variables$V06CapCO2ElecHydr[regions, years]
   captured <- captured[c("NEN", "PCH"), invert = TRUE]
@@ -164,11 +165,11 @@ reportEmissions <- function(path, regions, years) {
     nm = unname(sapply(getNames(emissionsNonCO2), getUnit)),
     expand = FALSE
   )
-  EmissionsCo2 <- add_dimension(EmissionsCo2, dim = 3.2, add = "unit", nm = "Mt CO2/yr")
+  EmissionsCo2 <- add_dimension(EmissionsCo2, dim = 3.2, add = "unit", nm = units_grossCO2Supply)
   kyotoGases <- add_dimension(kyotoGases, dim = 3.2, add = "unit", nm = "Mt CO2-equiv/yr")
   Cumulated <- add_dimension(Cumulated, dim = 3.2, add = "unit", nm = "Gt CO2")
-  sumIPEnergy <- add_dimension(sumIPEnergy, dim = 3.2, add = "unit", nm = "Mt CO2/yr")
-  resCom <- add_dimension(resCom, dim = 3.2, add = "unit", nm = "Mt CO2/yr")
+  sumIPEnergy <- add_dimension(sumIPEnergy, dim = 3.2, add = "unit", nm = units_grossCO2Supply)
+  resCom <- add_dimension(resCom, dim = 3.2, add = "unit", nm = units_grossCO2Supply)
 
   magpie_object <- mbind(
     emissionsNonCO2, EmissionsCo2, kyotoGases,

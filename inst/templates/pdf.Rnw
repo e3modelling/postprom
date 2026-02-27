@@ -31,11 +31,22 @@ plot_list <- readRDS(plot_rds_path)
 
 for (section_name in names(plot_list)) {
 
-  # new page + section title
+  # Section (appears in PDF menu)
   cat(sprintf("\\newpage\n\\section{%s}\n\n", section_name))
 
-  # print each plot DIRECTLY (no inner chunk)
+  # Each plot
   for (p in plot_list[[section_name]]) {
+
+    # Extract region (adapt as needed)
+    region_name <- attr(p, "region")
+
+    # Add subtitle (also appears in PDF menu)
+    cat(sprintf("\\subsection{%s}\n\n", region_name))
+
+    # Force new page for each plot
+    cat("\\newpage\n")
+
+    # Print the plot
     print(p)
   }
 }

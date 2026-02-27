@@ -21,7 +21,7 @@ reportCostsPGtechnologies <- function(path, regions, years) {
   
   # complete names
   getItems(V04CapexFixCostPG, 3) <- paste0("CAPEX and fixed costs of power generation technology|", getItems(V04CapexFixCostPG, 3))
-  V04CapexFixCostPG <- add_dimension(V04CapexFixCostPG, dim = 3.2, add = "unit", nm = "US$2015/kW")
+  V04CapexFixCostPG <- add_dimension(V04CapexFixCostPG, dim = 3.2, add = "unit", nm = sub(".*\\((.*)\\).*", "\\1", V04CapexFixCostPG@description))
   
   return(V04CapexFixCostPG)
 }
