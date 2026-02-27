@@ -170,11 +170,11 @@ reportEmissions <- function(path, regions, years) {
   kyotoGases <- add_dimension(kyotoGases, dim = 3.2, add = "unit", nm = "Mt CO2-equiv/yr")
   Cumulated <- add_dimension(Cumulated, dim = 3.2, add = "unit", nm = "Gt CO2")
   sumIPEnergy <- add_dimension(sumIPEnergy, dim = 3.2, add = "unit", nm = "Mt CO2/yr")
-  # resCom <- add_dimension(resCom, dim = 3.2, add = "unit", nm = "Mt CO2/yr")
+  resCom <- add_dimension(resCom, dim = 3.2, add = "unit", nm = "Mt CO2/yr")
 
   magpie_object <- mbind(
     emissionsNonCO2, EmissionsCo2, kyotoGases,
-    Cumulated, sumIPEnergy
+    Cumulated, sumIPEnergy, resCom
   )
 
   return(magpie_object)
