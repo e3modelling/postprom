@@ -37,7 +37,10 @@ reportSE <- function(path, regions, years) {
     as.data.frame() %>%
     rename(CCS = PGALL, NOCCS = PGALL1)
 
-  TSTEAMtoEF <- data.frame(Tech = "TSTE", EF = "STE")
+  TSTEAMtoEF <- readGDX(path, "TSTEAMtoEF") %>%
+    rename(Tech = TSTEAM, EF = EF)
+  TSTEAMtoEF[["EF"]] <- "STE"
+  
   PGALLtoEF <- readGDX(path, "PGALLtoEF") %>%
     rename(Tech = PGALL, EF = EFS) %>%
     bind_rows(TSTEAMtoEF)
@@ -54,7 +57,7 @@ reportSE <- function(path, regions, years) {
     unlist(use.names = FALSE)
 
   prodElecCHP <- readGDX(path, c("V04ProdElecEstCHP", "V04ProdElecCHP"), field = "l", format = "first_found")[regions, years, ]
-  prodElecCHP <- add_dimension(prodElecCHP, nm = "TSTE", add = "PGALL", dim = 3.1)
+  #prodElecCHP <- add_dimension(prodElecCHP, nm = "TSTE", add = "PGALL", dim = 3.1)
   prodElec <- readGDX(path, "VmProdElec", field = "l")[regions, years, ]
   prodElec <- mbind(prodElec, prodElecCHP)
 
@@ -64,7 +67,7 @@ reportSE <- function(path, regions, years) {
       EF = ifelse(EF %in% c("Hard coal", "Lignite"), "Coal", EF),
       EF = ifelse(Tech %in% CCS, paste0(EF, "|w/ CCS"), EF),
       EF = ifelse(EF %in% CCStoEF$EF & !(Tech %in% CCS), paste0(EF, "|w/o CCS"), EF)
-    )
+    ) %>% filter(Tech %in% getItems(prodElec,3))
 
   prefix <- "Secondary Energy|Electricity|"
   prodElec <- helperRenameItems(prodElec, prefix = prefix, mapping = mapping)
