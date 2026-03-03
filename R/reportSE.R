@@ -19,58 +19,52 @@
 #' @importFrom madrat toolAggregate
 #' @export
 reportSE <- function(path, regions, years) {
-  rename_EF <- c(
-    "LGN" = "Coal",
-    "HCL" = "Coal",
-    "GDO" = "Oil",
-    "NGS" = "Gas",
-    "BMSWAS" = "Biomass",
-    "NUC" = "Nuclear",
-    "HYD" = "Hydro",
-    "WND" = "Wind",
-    "SOL" = "Solar",
-    "GEO" = "Geothermal",
-    "H2F" = "Hydrogen",
-    "STE" = "Steam"
-  )
+  EFSTable <- rgdx.set(path, "EFS", te = TRUE)
+
+  BALEF2EFS <- rgdx.set(path, "BALEF2EFS") %>%
+    left_join(EFSTable, by = c("EFS" = "EF")) %>%
+    filter(BALEF %in% c(
+      "Solids", "Fossil Liquids", "Gases", "Heat",
+      "Electricity", "Hydrogen", "Biofuels",
+      "Nuclear", "Hydro", "Wind", "Solar energy",
+      "Geothermal heat", "Nuclear heat", "Other Fuels"
+    )) %>%
+    rename(EF = EFS) %>%
+    select(BALEF, EF)
+
   mapCCS <- readGDX(path, "CCS_NOCCS") %>%
     as.data.frame() %>%
     rename(CCS = PGALL, NOCCS = PGALL1)
 
   TSTEAMtoEF <- readGDX(path, "TSTEAMtoEF") %>%
     rename(Tech = TSTEAM, EF = EF)
-  TSTEAMtoEF[["EF"]] <- "STE"
-  
+
   PGALLtoEF <- readGDX(path, "PGALLtoEF") %>%
-    rename(Tech = PGALL, EF = EFS) %>%
-    bind_rows(TSTEAMtoEF)
-  CCStoEF <- PGALLtoEF %>%
+    rename(Tech = PGALL, EF = EFS)
+
+  mapping <- bind_rows(PGALLtoEF, TSTEAMtoEF) %>%
+    left_join(BALEF2EFS, by = "EF") %>%
+    select(-EF)
+
+  CCStoEF <- mapping %>%
     filter(Tech %in% mapCCS$CCS)
 
-  PGALLtoEF$EF <- str_replace_all(PGALLtoEF$EF, rename_EF)
-  CCStoEF$EF <- str_replace_all(CCStoEF$EF, rename_EF)
-  TSTEAMtoEF$EF <- str_replace_all(TSTEAMtoEF$EF, rename_EF)
-
-  CCS <- PGALLtoEF %>%
-    filter(Tech %in% CCStoEF$Tech) %>%
-    select(Tech) %>%
-    unlist(use.names = FALSE)
+  CCS <- CCStoEF$Tech
 
   prodElecCHP <- readGDX(path, c("V04ProdElecEstCHP", "V04ProdElecCHP"), field = "l", format = "first_found")[regions, years, ]
-  #prodElecCHP <- add_dimension(prodElecCHP, nm = "TSTE", add = "PGALL", dim = 3.1)
   prodElec <- readGDX(path, "VmProdElec", field = "l")[regions, years, ]
   prodElec <- mbind(prodElec, prodElecCHP)
 
   # Create a mapping for naming (e.g., ATHLGN->Lignite|w/o CCS, etc.)
-  mapping <- PGALLtoEF %>%
+  mapping2 <- mapping %>%
     mutate(
-      EF = ifelse(EF %in% c("Hard coal", "Lignite"), "Coal", EF),
-      EF = ifelse(Tech %in% CCS, paste0(EF, "|w/ CCS"), EF),
-      EF = ifelse(EF %in% CCStoEF$EF & !(Tech %in% CCS), paste0(EF, "|w/o CCS"), EF)
-    ) %>% filter(Tech %in% getItems(prodElec,3))
+      BALEF = ifelse(Tech %in% CCS, paste0(BALEF, "|w/ CCS"), as.character(BALEF)),
+      BALEF = ifelse(BALEF %in% CCStoEF$BALEF & !(Tech %in% CCS), paste0(BALEF, "|w/o CCS"), as.character(BALEF))
+    ) %>%
+    filter(Tech %in% getItems(prodElec, 3))
 
-  prefix <- "Secondary Energy|Electricity|"
-  prodElec <- helperRenameItems(prodElec, prefix = prefix, mapping = mapping)
+  prodElec <- toolAggregate(prodElec, dim = 3.1, rel = mapping2, from = "Tech", to = "BALEF")
+  getItems(prodElec, 3) <- paste0("Secondary Energy|Electricity|", getItems(prodElec, 3))
 
   prodAll <- helperAggregateLevel(prodElec, level = 2, recursive = TRUE)
 
