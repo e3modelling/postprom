@@ -76,20 +76,20 @@ ValidationMif <- function(.path, mif_name = "fullValidation2.mif", Validation_da
     Val_Mif <- add_columns(Val_Mif, addnm = setdiff(getRegions(reportOPEN_PROM),getRegions(Val_Mif)), dim = 1, fill = NA)
     Val_Mif <- Val_Mif[getRegions(reportOPEN_PROM),,]
     
-    # Val_Mif[,val_years,"Final Energy|Industry|VAL"] <- Val_Mif[,val_years,"Final Energy|Industry|VAL"] +
-    #   reportOPEN_PROM[,val_years,"Final Energy|Residential and Commercial"] + reportOPEN_PROM[,val_years,"Final Energy|Transportation"] +
-    #   reportOPEN_PROM[,val_years,"Final Energy|Non Energy"] + reportOPEN_PROM[,val_years,"Final Energy|Bunkers"]
-    # Val_Mif[,val_years,"Final Energy|Transportation|VAL"] <- Val_Mif[,val_years,"Final Energy|Transportation|VAL"] +
-    #   reportOPEN_PROM[,val_years,"Final Energy|Residential and Commercial"] + reportOPEN_PROM[,val_years,"Final Energy|Non Energy"] +
-    #   reportOPEN_PROM[,val_years,"Final Energy|Bunkers"]
+    Val_Mif[,val_years,"Final Energy|Industry|VAL"] <- Val_Mif[,val_years,"Final Energy|Industry|VAL"] +
+      reportOPEN_PROM[,val_years,"Final Energy|Residential and Commercial"] + reportOPEN_PROM[,val_years,"Final Energy|Transportation"] +
+      reportOPEN_PROM[,val_years,"Final Energy|Non-Energy Use"] + reportOPEN_PROM[,val_years,"Final Energy|Bunkers"] + reportOPEN_PROM[,val_years,"Final Energy|Other Capture and Removal"]
+    Val_Mif[,val_years,"Final Energy|Transportation|VAL"] <- Val_Mif[,val_years,"Final Energy|Transportation|VAL"] +
+      reportOPEN_PROM[,val_years,"Final Energy|Residential and Commercial"] + reportOPEN_PROM[,val_years,"Final Energy|Non-Energy Use"] +
+      reportOPEN_PROM[,val_years,"Final Energy|Bunkers"] + reportOPEN_PROM[,val_years,"Final Energy|Other Capture and Removal"]
     
     if (metadata_run == 1 & Validation2050 == TRUE) {
       Val_Mif[,val_years,"Final Energy|Industry|Validation"] <- Val_Mif[,val_years,"Final Energy|Industry|Validation"] +
         reportOPEN_PROM[,val_years,"Final Energy|Residential and Commercial"] + reportOPEN_PROM[,val_years,"Final Energy|Transportation"] +
-        reportOPEN_PROM[,val_years,"Final Energy|Non Energy"] + reportOPEN_PROM[,val_years,"Final Energy|Bunkers"]
+        reportOPEN_PROM[,val_years,"Final Energy|Non-Energy Use"] + reportOPEN_PROM[,val_years,"Final Energy|Bunkers"] + reportOPEN_PROM[,val_years,"Final Energy|Other Capture and Removal"]
       Val_Mif[,val_years,"Final Energy|Transportation|Validation"] <- Val_Mif[,val_years,"Final Energy|Transportation|Validation"] +
-        reportOPEN_PROM[,val_years,"Final Energy|Residential and Commercial"] + reportOPEN_PROM[,val_years,"Final Energy|Non Energy"] +
-        reportOPEN_PROM[,val_years,"Final Energy|Bunkers"]
+        reportOPEN_PROM[,val_years,"Final Energy|Residential and Commercial"] + reportOPEN_PROM[,val_years,"Final Energy|Non-Energy Use"] +
+        reportOPEN_PROM[,val_years,"Final Energy|Bunkers"] + reportOPEN_PROM[,val_years,"Final Energy|Other Capture and Removal"]
     }  else {
       Val_Mif[,val_years,c("Final Energy|Validation","Final Energy|Industry|Validation",
                            "Final Energy|Transportation|Validation",

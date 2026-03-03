@@ -23,19 +23,39 @@
 reportEmissions <- function(path, regions, years) {
   # ====================== Energy ====================================
   # ------------------------- CO2 ------------------------------------
+  BALEF2EFS <- rgdx.set(path, "BALEF2EFS") %>%
+    filter(BALEF %in% c("Fossil", "Biofuels"))
+
   variables <- readGDX(
     path,
-    c("V07GrossEmissCO2Demand", "V06CapCO2ElecHydr", "V07GrossEmissCO2Supply"),
+    c(
+      "V07GrossEmissCO2Demand", "V06CO2CaptureCCS",
+      "V07GrossEmissCO2Supply", "V06CapCDR"
+    ),
     field = "l"
   )
 
   grossCO2Demand <- variables$V07GrossEmissCO2Demand[regions, years]
   grossCO2Demand <- grossCO2Demand[c("NEN", "PCH"), invert = TRUE]
-  # names(dimnames(grossCO2Demand))[3] <- "SBS"
+
   grossCO2Supply <- variables$V07GrossEmissCO2Supply[regions, years, ]
-  # names(dimnames(grossCO2Supply))[3] <- "SBS"
-  captured <- variables$V06CapCO2ElecHydr[regions, years]
-  captured <- captured[c("NEN", "PCH"), invert = TRUE]
+
+  CCS <- variables$V06CO2CaptureCCS[regions, years]
+  CCS <- CCS[, , BALEF2EFS$EF]
+  CCS <- toolAggregate(CCS, dim = 3.2, rel = BALEF2EFS, from = "EFS", to = "BALEF")
+
+  CDR <- new.magpie(
+    getRegions(CCS),
+    years = getYears(CCS),
+    names = getItems(CCS, 3.1),
+    fill = 0
+  )
+  CDR[, , "DAC"] <- dimSums(
+    variables$V06CapCDR[regions, years][, , "TEW", invert = TRUE], 3.1
+  )
+  CDR[, , "EW"] <- dimSums(variables$V06CapCDR[regions, years][, , "TEW"], 3.1)
+
+  captured <- dimSums(CCS, 3.2) + CDR
   netCO2Demand <- grossCO2Demand - captured[, , getItems(grossCO2Demand, 3.1)]
   netCO2Supply <- grossCO2Supply - captured[, , getItems(grossCO2Supply, 3.1)]
   # ------------------------ Renamings --------------------------------
@@ -71,17 +91,34 @@ reportEmissions <- function(path, regions, years) {
   name <- SSBSTable$.te[match(getItems(grossCO2Supply, 3.1), SSBSTable$SBS)]
   getItems(grossCO2Supply, 3.1) <- paste0("Gross Emissions|CO2|Energy|Supply|", name)
   getItems(netCO2Supply, 3.1) <- paste0("Emissions|CO2|Energy|Supply|", name)
-  # -------------------------- Carbon Capture -----------------------------
-  side <- ifelse(getItems(captured, 3.1) %in% SSBSTable$SBS, "Supply", "Demand")
-  name <- TotalTable$.te[match(getItems(captured, 3.1), TotalTable$SBS)]
-  prefix <- case_when(
-    name == "Direct Air Capture" ~ "Carbon Capture",
-    name == "Enhanced Weathering" ~ "Carbon Removal",
-    TRUE ~ paste0("Carbon Capture|Energy|", side)
-  )
+  # ------------------------ Carbon Capture & Removal --------------------------
+  CCS <- CCS[, , c("DAC", "EW"), invert = TRUE]
+  side <- ifelse(getItems(CCS, 3.1) %in% SSBSTable$SBS, "Supply", "Demand")
+  name <- TotalTable$.te[match(getItems(CCS, 3.1), TotalTable$SBS)]
 
-  getItems(captured, 3.1) <- paste0(prefix, "|", name)
-  captured <- helperAggregateLevel(captured, level = 2, recursive = TRUE)
+  getItems(CCS, 3.1) <- paste0("Carbon Capture|Energy|", side, "|", name)
+  getItems(CCS, 3) <- gsub("\\.", "|", getItems(CCS, dim = 3))
+
+  CCS <- add_columns(CCS, addnm = "Carbon Capture|Direct Air Capture", dim = 3)
+  CCS[, , "Carbon Capture|Direct Air Capture"] <- CDR[, , "DAC"]
+
+  CDR <- CDR[, , c("DAC", "EW")]
+
+  midfix <- case_when(
+    getItems(CDR, 3.1) == "DAC" ~ "Geological Storage|Direct Air Capture",
+    getItems(CDR, 3.1) == "EW" ~ "Enhanced Weathering",
+  )
+  getItems(CDR, 3.1) <- paste0("Carbon Removal|", midfix)
+  CDR <- add_columns(
+    CDR,
+    addnm = c("Geological Storage|Biomass", "Geological Storage|Other Sources"),
+    dim = 3
+  )
+  #CDR[,,"Geological Storage|Biomass"] <- CCS[,,]
+  #CDR[,,"Geological Storage|Other Sources"] = 1
+
+  captured <- mbind(CDR, CCS)
+  captured <- helperAggregateLevel(captured, level = 1, recursive = TRUE)
   # ========================= AFOLU & Land Use ===============================
   AFOLU_CDR <- mbind(
     getGLOBIOMEU(path, grossCO2Demand)[, years, ],
