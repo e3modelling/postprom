@@ -55,9 +55,9 @@ reportEmissions <- function(path, regions, years) {
   ) * 1e-6
   CDR[, , "EW"] <- dimSums(variables$V06CapCDR[regions, years][, , "TEW"], 3.1) * 1e-6
 
-  captured <- dimSums(CCS, 3.2) + CDR
-  netCO2Demand <- grossCO2Demand - captured[, , getItems(grossCO2Demand, 3.1)]
-  netCO2Supply <- grossCO2Supply - captured[, , getItems(grossCO2Supply, 3.1)]
+  temp <- dimSums(CCS, 3.2) + CDR
+  netCO2Demand <- grossCO2Demand - temp[, , getItems(grossCO2Demand, 3.1)]
+  netCO2Supply <- grossCO2Supply - temp[, , getItems(grossCO2Supply, 3.1)]
   # ------------------------ Renamings --------------------------------
   DSBSTable <- rgdx.set(path, "DSBS", te = TRUE)
   SSBSTable <- rgdx.set(path, "SSBS", te = TRUE)
@@ -114,9 +114,9 @@ reportEmissions <- function(path, regions, years) {
     addnm = paste0("Carbon Removal|Geological Storage|", c("Biomass", "Other Sources")),
     dim = 3
   )
-  CDR[,,"Carbon Removal|Geological Storage|Biomass"] <- dimSums(CCS[,,getItems(CCS, 3)[ grepl("\\|Biofuels$", getItems(CCS, 3)) ]], 3.1)
-  
-  CDR[,,"Carbon Removal|Geological Storage|Other Sources"] <- dimSums(CCS[,,getItems(CCS, 3)[grepl("\\|Fossil$", getItems(CCS, 3))]], 3.1)
+  CDR[, , "Carbon Removal|Geological Storage|Biomass"] <- dimSums(CCS[, , getItems(CCS, 3)[grepl("\\|Biofuels$", getItems(CCS, 3))]], 3.1)
+
+  CDR[, , "Carbon Removal|Geological Storage|Other Sources"] <- dimSums(CCS[, , getItems(CCS, 3)[grepl("\\|Fossil$", getItems(CCS, 3))]], 3.1)
 
   captured <- mbind(CDR, CCS)
   captured <- helperAggregateLevel(captured, level = 1, recursive = TRUE)
@@ -204,7 +204,7 @@ reportEmissions <- function(path, regions, years) {
     nm = unname(sapply(getNames(emissionsNonCO2), getUnit)),
     expand = FALSE
   )
-  captured <- add_dimension(EmissionsCo2, dim = 3.2, add = "unit", nm = "Mt CO2/yr")
+  captured <- add_dimension(captured, dim = 3.2, add = "unit", nm = "Mt CO2/yr")
   EmissionsCo2 <- add_dimension(EmissionsCo2, dim = 3.2, add = "unit", nm = "Mt CO2/yr")
   kyotoGases <- add_dimension(kyotoGases, dim = 3.2, add = "unit", nm = "Mt CO2-equiv/yr")
   Cumulated <- add_dimension(Cumulated, dim = 3.2, add = "unit", nm = "Gt CO2")
