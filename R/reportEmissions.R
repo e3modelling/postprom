@@ -52,8 +52,8 @@ reportEmissions <- function(path, regions, years) {
   )
   CDR[, , "DAC"] <- dimSums(
     variables$V06CapCDR[regions, years][, , "TEW", invert = TRUE], 3.1
-  )
-  CDR[, , "EW"] <- dimSums(variables$V06CapCDR[regions, years][, , "TEW"], 3.1)
+  ) * 1e-6
+  CDR[, , "EW"] <- dimSums(variables$V06CapCDR[regions, years][, , "TEW"], 3.1) * 1e-6
 
   captured <- dimSums(CCS, 3.2) + CDR
   netCO2Demand <- grossCO2Demand - captured[, , getItems(grossCO2Demand, 3.1)]
