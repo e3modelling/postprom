@@ -104,6 +104,26 @@ projectReport <- function(.path, openPromFile) {
     )
   #print(finalResults$log)
 
+  # Duplicate and Rename Specific Variables
+  varsToDuplicate <- c(
+    "Carbon Removal|Geological Storage|Direct Air Capture" = "Carbon Capture|Direct Air Capture"
+  )
+  
+  allNames <- getItems(finalResults$object, dim = 3)
+  cleanNames <- trimws(gsub("\\s*\\(.*\\)$", "", allNames))
+  idx <- which(cleanNames %in% names(varsToDuplicate))
+  
+  if (length(idx) > 0) {
+    dups <- finalResults$object[, , idx]
+    # Vectorized find-and-replace of the base name, leaving the unit intact
+    getItems(dups, dim = 3) <- mapply(
+      gsub, pattern = cleanNames[idx], replacement = varsToDuplicate[cleanNames[idx]], 
+      x = allNames[idx], fixed = TRUE, USE.NAMES = FALSE
+    )
+    
+    finalResults$object <- mbind(finalResults$object, dups)
+  }
+
   # Add variables from the project needs as 0 values. 
   # Select multiple tiers and get variable and units as vectors
   selectedVariables <- project %>%

@@ -1,4 +1,8 @@
 project_template,OPEN_PROM
+Capacity Additions|Electricity|Biomass|w/ CCS,Capacity Additions|Electricity|ATHBMSCCS
+Capacity Additions|Electricity|Biomass|w/o CCS,Capacity Additions|Electricity|ATHBMSWAS
+Capacity Additions|Electricity|Coal|w/ CCS,Capacity Additions|Electricity|ATHCOALCCS
+Capacity Additions|Electricity|Gas|w/ CCS,Capacity Additions|Electricity|ATHGASCCS
 Carbon Capture|IndustrialProcesses,Carbon Capture|Industry
 Carbon Capture|Direct Air Capture,Carbon Capture|Energy|Demand|Direct Air Capture
 Carbon Removal|Enhanced Weathering,Carbon Capture|Enhanced Weathering
@@ -7,20 +11,74 @@ Carbon Removal|Geological Storage|Biomass,Carbon Capture|Geological Storage|Biom
 Carbon Removal|Geological Storage|Direct Air Capture,Carbon Capture|Geological Storage|Direct Air Capture
 Carbon Removal|Geological Storage|Other Sources,Carbon Capture|Geological Storage|Other Sources
 Carbon Removal|Land Use,Carbon Capture|Land Use
-Final Energy|Geothermal,Final Energy|Geothermal heat
-Final Energy|Solar,Final Energy|Solar energy
-Final Energy|Carbon Management|Direct Air Capture,Final Energy|Direct Air Capture
-Final Energy|Carbon Management|Enhanced Weathering,Final Energy|Enhanced Weathering
-Final Energy|Geothermal,Final Energy|Geothermal heat
-Final Energy|Iron and Steel,Final Energy|IS
-Final Energy|Non-Metallic Minerals,Final Energy|BM
-Final Energy|Chemicals,Final Energy|CH
-Final Energy|Non-Ferrous Metals,Final Energy|NF
-Final Energy|Pulp and Paper,Final Energy|PP
-Final Energy|Non-Energy Use,Final Energy|Non Energy
-Final Energy|Solar,Final Energy|Solar energy
-Final Energy|Transportation|Bus,Final Energy|Transportation|PB
-Final Energy|Transportation|Passenger,Final Energy|Transportation|PC
-Final Energy|Transportation|Rail,Final Energy|Transportation|PT
-Final Energy|Transportation|Truck,Final Energy|Transportation|GU
-Final Energy|Transportation|Domestic Aviation,Final Energy|Transportation|PA
+Carbon Capture|Energy|Demand|Industry|Chemicals,Carbon Capture|Energy|Demand|Chemicals
+Carbon Capture|Energy|Demand|Industry|Iron and Steel,Carbon Capture|Energy|Demand|Iron and Steel
+Carbon Capture|Energy|Demand|Industry|Non-Metallic Minerals,Carbon Capture|Energy|Demand|Non-Metallic Minerals
+Price|Final Energy|Industry|Liquids|Biomass,Price|Final Energy|Industry|Biofuels
+Price|Final Energy|Industry|Solids|Biomass,Price|Final Energy|Industry|Biomass
+Price|Final Energy|Industry|Non-Metallic Minerals|Electricity,Price|Final Energy|Industry|BM|ELC
+Price|Final Energy|Industry|Non-Metallic Minerals|Hydrogen,Price|Final Energy|Industry|BM|H2F
+Price|Final Energy|Industry|Non-Metallic Minerals|Heat,Price|Final Energy|Industry|BM|STE
+Price|Final Energy|Industry|Solids|Biomass,Price|Final Energy|Industry|BMSWAS
+Price|Final Energy|Industry|Chemicals|Electricity,Price|Final Energy|Industry|CH|ELC
+Price|Final Energy|Industry|Chemicals|Hydrogen,Price|Final Energy|Industry|CH|H2F
+Price|Final Energy|Industry|Chemicals|Heat,Price|Final Energy|Industry|CH|STE
+Price|Final Energy|Industry|Gases|Other,Price|Final Energy|Industry|Derived gases
+Price|Final Energy|Industry|Liquids|Oil,Price|Final Energy|Industry|Diesel oil
+Price|Final Energy|Industry|Liquids|Oil,Price|Final Energy|Industry|Fuel oil
+Price|Final Energy|Industry|Gases,Price|Final Energy|Industry|Gases
+Price|Final Energy|Industry|Liquids|Oil,Price|Final Energy|Industry|GDO
+Price|Final Energy|Industry|Hydrogen,Price|Final Energy|Industry|H2F
+Price|Final Energy|Industry|Solids|Coal,Price|Final Energy|Industry|HCL
+Price|Final Energy|Industry|Heat,Price|Final Energy|Industry|Heat
+Price|Final Energy|Industry|Hydrogen,Price|Final Energy|Industry|Hydrogen
+Price|Final Energy|Industry|Iron and Steel|Electricity,Price|Final Energy|Industry|IS|ELC
+Price|Final Energy|Industry|Iron and Steel|Hydrogen,Price|Final Energy|Industry|IS|H2F
+Price|Final Energy|Industry|Iron and Steel|Heat,Price|Final Energy|Industry|IS|STE
+Price|Final Energy|Industry|Liquids,Price|Final Energy|Industry|Liquids
+Price|Final Energy|Industry|Gases|Gas,Price|Final Energy|Industry|Natural gas
+Price|Final Energy|Industry|Non-Ferrous Metals|Electricity,Price|Final Energy|Industry|NF|ELC
+Price|Final Energy|Industry|Non-Ferrous Metals|Hydrogen,Price|Final Energy|Industry|NF|H2F
+Price|Final Energy|Industry|Non-Ferrous Metals|Heat,Price|Final Energy|Industry|NF|STE
+Price|Final Energy|Industry|Gases|Gas,Price|Final Energy|Industry|NGS
+Price|Final Energy|Industry|Liquids|Other,Price|Final Energy|Industry|Other liquids
+Price|Final Energy|Industry|Pulp and Paper|Electricity,Price|Final Energy|Industry|PP|ELC
+Price|Final Energy|Industry|Pulp and Paper|Gases,Price|Final Energy|Industry|PP|NGS
+Price|Final Energy|Industry|Pulp and Paper|Heat,Price|Final Energy|Industry|PP|STE
+Price|Final Energy|Industry|Liquids|Oil,Price|Final Energy|Industry|RFO
+Price|Final Energy|Industry|Solids,Price|Final Energy|Industry|Solids
+Price|Final Energy|Industry|Heat,Price|Final Energy|Industry|STE
+Price|Final Energy|Industry,Price|Final Energy|Industry|Total
+Price|Final Energy|Bunkers|Hydrogen,Price|Final Energy|Non Energy and Bunkers|BU|H2F
+Price|Final Energy|Agriculture|Electricity,Price|Final Energy|Residential and Commercial|AG|ELC
+Price|Final Energy|Agriculture|Liquids,Price|Final Energy|Residential and Commercial|AG|GDO
+Price|Final Energy|Agriculture|Solids,Price|Final Energy|Residential and Commercial|AG|HCL
+Price|Final Energy|Agriculture|Gases,Price|Final Energy|Residential and Commercial|AG|NGS
+Price|Final Energy|Agriculture|Heat,Price|Final Energy|Residential and Commercial|AG|STE
+Price|Final Energy|Residential and Commercial|Electricity,Price|Final Energy|Residential and Commercial|ELC
+Price|Final Energy|Residential|Electricity,Price|Final Energy|Residential and Commercial|HOU|ELC
+Price|Final Energy|Residential|Liquids,Price|Final Energy|Residential and Commercial|HOU|GDO
+Price|Final Energy|Residential|Solids,Price|Final Energy|Residential and Commercial|HOU|HCL
+Price|Final Energy|Residential|Gases,Price|Final Energy|Residential and Commercial|HOU|NGS
+Price|Final Energy|Residential|Heat,Price|Final Energy|Residential and Commercial|HOU|STE
+Price|Final Energy|Commercial|Electricity,Price|Final Energy|Residential and Commercial|SE|ELC
+Price|Final Energy|Commercial|Solids,Price|Final Energy|Residential and Commercial|SE|HCL
+Price|Final Energy|Commercial|Gases,Price|Final Energy|Residential and Commercial|SE|NGS
+Price|Final Energy|Commercial|Heat,Price|Final Energy|Residential and Commercial|SE|STE
+Price|Final Energy|Transportation|Liquids|Biomass,Price|Final Energy|Transportation|Biofuels
+Price|Final Energy|Transportation|Gases|Other,Price|Final Energy|Transportation|Derived gases
+Price|Final Energy|Transportation|Liquids|Oil,Price|Final Energy|Transportation|Diesel oil
+Price|Final Energy|Transportation|Gases,Price|Final Energy|Transportation|Gases
+Price|Final Energy|Transportation|Domestic Shipping|Liquids,Price|Final Energy|Transportation|GN|GDO
+Price|Final Energy|Transportation|Domestic Shipping|Hydrogen,Price|Final Energy|Transportation|GN|H2F
+Price|Final Energy|Transportation|Freight|Electricity,Price|Final Energy|Transportation|GT|ELC
+Price|Final Energy|Transportation|Freight|Liquids,Price|Final Energy|Transportation|GT|GDO
+Price|Final Energy|Transportation|Truck|Electricity,Price|Final Energy|Transportation|GU|ELC
+Price|Final Energy|Transportation|Truck|Hydrogen,Price|Final Energy|Transportation|GU|H2F
+Price|Final Energy|Transportation|Hydrogen,Price|Final Energy|Transportation|Hydrogen
+Price|Final Energy|Transportation|Liquids,Price|Final Energy|Transportation|Liquids
+Price|Final Energy|Transportation|Gases|Gas,Price|Final Energy|Transportation|Natural gas
+Price|Final Energy|Transportation|Bus|Electricity,Price|Final Energy|Transportation|PB|ELC
+Price|Final Energy|Transportation|Bus|Liquids,Price|Final Energy|Transportation|PB|GDO
+Price|Final Energy|Transportation|Bus|Hydrogen,Price|Final Energy|Transportation|PB|H2F
+Price|Final Energy|Transportation|Rail|Electricity,Price|Final Energy|Transportation|PT|ELC
