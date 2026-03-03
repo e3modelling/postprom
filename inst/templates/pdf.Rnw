@@ -28,26 +28,60 @@ plot_list <- readRDS(plot_rds_path)
 \newpage
 
 <<generate_plots, echo=FALSE, results='asis', fig.width=10, fig.height=12, fig.pos='H'>>=
+### Function to extract regions from a single plot (facet strips)
+get_regions_from_plot <- function(p) {
+  facet_var <- names(p$facet$params$facets)
 
+  if (!is.null(facet_var) && facet_var %in% names(p$data)) {
+    regions <- unique(p$data[[facet_var]])
+  } else {
+    regions <- NULL
+  }
+
+  regions[!is.na(regions)]
+}
+
+### Function to reorder regions with "World" first
+reorder_regions <- function(regions) {
+  if ("World" %in% regions) {
+    c("World", setdiff(regions, "World"))
+  } else {
+    regions
+  }
+}
+
+### MAIN LOOP
 for (section_name in names(plot_list)) {
 
-  # Section (appears in PDF menu)
-  cat(sprintf("\\newpage\n\\section{%s}\n\n", section_name))
+  plots <- plot_list[[section_name]]
 
-  # Each plot
-  for (p in plot_list[[section_name]]) {
+  cat("\\newpage\n")
 
-    # Extract region (adapt as needed)
-    region_name <- attr(p, "region")
+  ### ---- SECTION TITLE (creates its own bookmark automatically) ----
+  cat(sprintf("\\section{%s}\n\n", section_name))
 
-    # Add subtitle (also appears in PDF menu)
-    cat(sprintf("\\subsection{%s}\n\n", region_name))
+  ### ---- LOOP OVER PLOTS ----
+  for (i in seq_along(plots)) {
 
-    # Force new page for each plot
-    cat("\\newpage\n")
+    p <- plots[[i]]
 
-    # Print the plot
+    # Extract regions
+    regions <- get_regions_from_plot(p)
+    regions <- reorder_regions(regions)
+    region_subtitle <- paste(regions, collapse = ", ")
+
+    ### ---- PLOT-LEVEL BOOKMARK ONLY ----
+    cat(sprintf(
+      "\\pdfbookmark[3]{Regions: %s}{bookmark-%s-%d}\n",
+      region_subtitle, section_name, i
+    ))
+
+    ### ---- PRINTED SUBTITLE ----
+    cat(sprintf("\\subsection*{Regions: %s}\n\n", region_subtitle))
+
+    ### ---- PRINT PLOT ----
     print(p)
+    cat("\n")
   }
 }
 @
