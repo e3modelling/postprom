@@ -45,7 +45,7 @@ reportPrice <- function(path, regions, years) {
   getNames(elec_prices_Residential) <- "Price|Final Energy|Residential|Electricity"
 
   elec_prices <- mbind(elec_prices_Industry, elec_prices_Residential)
-  elec_prices <- add_dimension(elec_prices, dim = 3.2, add = "unit", nm = "US$2015/KWh")
+  elec_prices <- add_dimension(elec_prices, dim = 3.2, add = "unit", nm = sub(".*\\((.*)\\).*", "\\1", VPriceElecIndResConsu@description))
   magpie_object <- mbind(NULL, elec_prices)
 
 
@@ -81,7 +81,7 @@ reportPrice <- function(path, regions, years) {
     PRICE_by_sector_and_EF <- select(PRICE_by_sector_and_EF, -c("variable","EF"))
     PRICE_by_sector_and_EF <- as.quitte(PRICE_by_sector_and_EF) %>% as.magpie()
 
-    PRICE_by_sector_and_EF <- add_dimension(PRICE_by_sector_and_EF, dim = 3.2, add = "unit", nm = "KUS$2015/toe")
+    PRICE_by_sector_and_EF <- add_dimension(PRICE_by_sector_and_EF, dim = 3.2, add = "unit", nm = sub(".*\\((.*)\\).*", "\\1", iFuelPrice@description))
     magpie_object <- mbind(magpie_object, PRICE_by_sector_and_EF)
 
     #aggregation by SECTOR and EF
@@ -94,7 +94,7 @@ reportPrice <- function(path, regions, years) {
 
     # complete names
     getItems(PRICE_by_EF_OPEN_PROM, 3) <- paste0("Price|Final Energy|", sector_name[y],"|", getItems(PRICE_by_EF_OPEN_PROM, 3))
-    PRICE_by_EF_OPEN_PROM <- add_dimension(PRICE_by_EF_OPEN_PROM, dim = 3.2, add = "unit", nm = "KUS$2015/toe")
+    PRICE_by_EF_OPEN_PROM <- add_dimension(PRICE_by_EF_OPEN_PROM, dim = 3.2, add = "unit", nm = sub(".*\\((.*)\\).*", "\\1", iFuelPrice@description))
     magpie_object <- mbind(magpie_object, PRICE_by_EF_OPEN_PROM)
 
     # Fuel categories
@@ -119,7 +119,7 @@ reportPrice <- function(path, regions, years) {
     # complete names
     getItems(sum_open_prom, 3) <- paste0("Price|Final Energy|", sector_name[y],"|", getItems(sum_open_prom, 3))
 
-    sum_open_prom <- add_dimension(sum_open_prom, dim = 3.2, add = "unit", nm = "KUS$2015/toe")
+    sum_open_prom <- add_dimension(sum_open_prom, dim = 3.2, add = "unit", nm = sub(".*\\((.*)\\).*", "\\1", iFuelPrice@description))
     magpie_object <- mbind(magpie_object, sum_open_prom)
   }
   return(magpie_object)

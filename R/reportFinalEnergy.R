@@ -100,6 +100,6 @@ reportFinalEnergy <- function(path, regions, years) {
     fuel, finalPerFuel, fuelWOBunkers, resCom,
     finalPerFuelAggregated, otherCap
   )
-  magpie_object <- add_dimension(magpie_object, dim = 3.2, add = "unit", nm = "Mtoe")
+  magpie_object <- add_dimension(magpie_object, dim = 3.2, add = "unit", nm = sub(".*\\((.*)\\).*", "\\1", VFuelTransport@description))
   return(magpie_object)
 }

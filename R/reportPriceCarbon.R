@@ -17,10 +17,10 @@
 #' @export
 reportPriceCarbon <- function(path, regions, years) {
   VCarVal <- readGDX(path, "VmCarVal", field = "l")[regions, years, ][,,"TRADE"]
-
+  units <- sub(".*\\((.*)\\).*", "\\1", VCarVal@description)
   # complete names
   getItems(VCarVal, 3) <- "Price|Carbon"
 
-  VCarVal <- add_dimension(VCarVal, dim = 3.2, add = "unit", nm = "US$2015/tn CO2")
+  VCarVal <- add_dimension(VCarVal, dim = 3.2, add = "unit", nm = units)
   return(VCarVal)
 }

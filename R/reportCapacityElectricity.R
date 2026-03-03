@@ -52,6 +52,8 @@ reportCapacityElectricity <- function(path, regions, years) {
   capacity <- readGDX(path, "V04CapElecNominal",
     field = "l"
   )[regions, years, ]
+  
+  units <- sub(".*\\((.*)\\).*", "\\1", capacity@description)
 
   mapping <- PGALLtoEF %>%
     mutate(
@@ -64,6 +66,6 @@ reportCapacityElectricity <- function(path, regions, years) {
   capacity <- helperRenameItems(capacity, mapping = mapping, prefix = prefix)
   capAll <- helperAggregateLevel(capacity, level = 2, recursive = TRUE)
 
-  capAll <- add_dimension(capAll, dim = 3.2, add = "unit", nm = "GW")
+  capAll <- add_dimension(capAll, dim = 3.2, add = "unit", nm = units)
   return(capAll)
 }

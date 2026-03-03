@@ -35,14 +35,14 @@ reportVehicles <- function(path, regions, years) {
   
   StockPcYearlyTech <- values$V01StockPcYearlyTech[regions, years, ]
   NewRegPcTechYearly <- values$V01NewRegPcTechYearly[regions, years, ]
-
+  units <- sub(".*\\((.*)\\).*", "\\1", NewRegPcTechYearly@description)
   TechNames <- str_replace_all(getItems(NewRegPcTechYearly, 3.1), rename_TTECH)
 
   getItems(NewRegPcTechYearly, 3.1) <- paste0("Capacity Additions|Passenger Cars|", TechNames)
   getItems(StockPcYearlyTech, 3.1) <- paste0("Capacity|Passenger Cars|", TechNames)
 
-  NewRegPcTechYearly <- add_dimension(NewRegPcTechYearly, dim = 3.2, add = "unit", nm = "million vehicles")
-  StockPcYearlyTech <- add_dimension(StockPcYearlyTech, dim = 3.2, add = "unit", nm = "million vehicles")
+  NewRegPcTechYearly <- add_dimension(NewRegPcTechYearly, dim = 3.2, add = "unit", nm = units)
+  StockPcYearlyTech <- add_dimension(StockPcYearlyTech, dim = 3.2, add = "unit", nm = units)
   
   return(mbind(NewRegPcTechYearly, StockPcYearlyTech))
 }
