@@ -111,11 +111,12 @@ reportEmissions <- function(path, regions, years) {
   getItems(CDR, 3.1) <- paste0("Carbon Removal|", midfix)
   CDR <- add_columns(
     CDR,
-    addnm = c("Geological Storage|Biomass", "Geological Storage|Other Sources"),
+    addnm = paste0("Carbon Removal|Geological Storage|", c("Biomass", "Other Sources")),
     dim = 3
   )
-  #CDR[,,"Geological Storage|Biomass"] <- CCS[,,]
-  #CDR[,,"Geological Storage|Other Sources"] = 1
+  CDR[,,"Carbon Removal|Geological Storage|Biomass"] <- dimSums(CCS[,,getItems(CCS, 3)[ grepl("\\|Biofuels$", getItems(CCS, 3)) ]], 3.1)
+  
+  CDR[,,"Carbon Removal|Geological Storage|Other Sources"] <- dimSums(CCS[,,getItems(CCS, 3)[grepl("\\|Fossil$", getItems(CCS, 3))]], 3.1)
 
   captured <- mbind(CDR, CCS)
   captured <- helperAggregateLevel(captured, level = 1, recursive = TRUE)
@@ -131,7 +132,7 @@ reportEmissions <- function(path, regions, years) {
   # -----------------------------------------------------------------------
   EmissionsCo2 <- mbind(
     grossCO2Demand, netCO2Demand, grossCO2Supply,
-    netCO2Supply, captured, AFOLU_CDR, IndustrialProcesses
+    netCO2Supply, AFOLU_CDR, IndustrialProcesses
   )
   EmissionsCo2 <- helperAggregateLevel(EmissionsCo2, level = 2, recursive = TRUE)
 
@@ -201,6 +202,7 @@ reportEmissions <- function(path, regions, years) {
     nm = unname(sapply(getNames(emissionsNonCO2), getUnit)),
     expand = FALSE
   )
+  captured <- add_dimension(EmissionsCo2, dim = 3.2, add = "unit", nm = "Mt CO2/yr")
   EmissionsCo2 <- add_dimension(EmissionsCo2, dim = 3.2, add = "unit", nm = "Mt CO2/yr")
   kyotoGases <- add_dimension(kyotoGases, dim = 3.2, add = "unit", nm = "Mt CO2-equiv/yr")
   Cumulated <- add_dimension(Cumulated, dim = 3.2, add = "unit", nm = "Gt CO2")
@@ -209,7 +211,7 @@ reportEmissions <- function(path, regions, years) {
 
   magpie_object <- mbind(
     emissionsNonCO2, EmissionsCo2, kyotoGases,
-    Cumulated, sumIPEnergy, resCom
+    Cumulated, sumIPEnergy, resCom, captured
   )
 
   return(magpie_object)
