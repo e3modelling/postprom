@@ -45,9 +45,9 @@ reportFinalEnergy <- function(path, regions, years) {
   fuel <- readGDX(path, "VmConsFuel", field = "l")[regions, years, ]
   VFuelTransport <- readGDX(path, "VmDemFinEneTranspPerFuel", field = "l")[regions, years, ]
   fuel[, , getItems(VFuelTransport, 3)] <- VFuelTransport[, , getItems(VFuelTransport, 3)]
-  # VFuelDAC <- readGDX(path, "VmConsFuelDACProd", field = "l")[regions, years, ]
-  # dimnames(VFuelDAC)[[3]] <- paste0("DAC.", getItems(VFuelDAC, 3))
-  # fuel[, , getItems(VFuelDAC, 3)] <- VFuelDAC[, , getItems(VFuelDAC, 3)]
+  VFuelCDR <- readGDX(path, "VmConsFuelCDRProd", field = "l")[regions, years, ]
+  dimnames(VFuelCDR)[[3]] <- paste0("DAC.", getItems(VFuelCDR, 3))
+  fuel[, , getItems(VFuelCDR, 3)] <- VFuelCDR[, , getItems(VFuelCDR, 3)]
   fuel <- fuel[, , EFSTable$EF]
 
   # -------------------------- Rename Variables -------------------------------
@@ -74,7 +74,7 @@ reportFinalEnergy <- function(path, regions, years) {
   getItems(finalPerFuelAggregated, 3.1) <- paste0("Final Energy|", getItems(finalPerFuelAggregated, 3.1))
   # ---------------------------------------------------------------------------
   # Replace sep in dimensions and prepend the sector
-  name <- gsub("\\.", "|", getItems(fuel, dim = 3)) # IS.HCL --> IS|HCL
+  name <- gsub("\\.", "|", getItems(fuel, dim = 3)) # e.g., IS.HCL --> IS|HCL
   key <- str_extract(name, "^[^|]+")
   mapped <- lookup[key]
 
@@ -100,6 +100,6 @@ reportFinalEnergy <- function(path, regions, years) {
     fuel, finalPerFuel, fuelWOBunkers, resCom,
     finalPerFuelAggregated, otherCap
   )
-  magpie_object <- add_dimension(magpie_object, dim = 3.2, add = "unit", nm = "Mtoe")
+  magpie_object <- add_dimension(magpie_object, dim = 3.2, add = "unit", nm = sub(".*\\((.*)\\).*", "\\1", VFuelTransport@description))
   return(magpie_object)
 }
