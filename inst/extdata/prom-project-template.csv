@@ -3,7 +3,7 @@ Capacity Additions|Electricity|Biomass|w/ CCS,Capacity Additions|Electricity|ATH
 Capacity Additions|Electricity|Biomass|w/o CCS,Capacity Additions|Electricity|ATHBMSWAS
 Capacity Additions|Electricity|Coal|w/ CCS,Capacity Additions|Electricity|ATHCOALCCS
 Capacity Additions|Electricity|Gas|w/ CCS,Capacity Additions|Electricity|ATHGASCCS
-Carbon Capture|IndustrialProcesses,Carbon Capture|Industry
+Carbon Capture|Energy|Supply|Electricity|Biomass,Carbon Capture|Energy|Supply|Electricity|Biofuels
 Carbon Capture|Direct Air Capture,Carbon Capture|Energy|Demand|Direct Air Capture
 Carbon Removal|Enhanced Weathering,Carbon Capture|Enhanced Weathering
 Carbon Removal|Geological Storage,Carbon Capture|Geological Storage

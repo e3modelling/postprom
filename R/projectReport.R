@@ -106,7 +106,7 @@ projectReport <- function(.path, openPromFile) {
 
   # Duplicate and Rename Specific Variables
   varsToDuplicate <- c(
-    "Carbon Removal|Geological Storage|Direct Air Capture" = "Carbon Capture|Direct Air Capture"
+    "Carbon Removal|Geological Storage|Test" = "Carbon Capture|Test"
   )
   
   allNames <- getItems(finalResults$object, dim = 3)
