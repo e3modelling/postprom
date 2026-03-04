@@ -101,10 +101,16 @@ reportFinalEnergy <- function(path, regions, years) {
   otherCap <- fuel[, , c("Final Energy|Direct Air Capture", "Final Energy|Enhanced Weathering")]
   otherCap <- dimSums(otherCap, 3)
   getItems(otherCap, 3.1) <- "Final Energy|Other Capture and Removal"
+  # --------------------------- Include carbon management category ---------
+  dimnames(fuel)[[3]] <- gsub("Final Energy\\|Direct Air Capture", "Final Energy|Carbon Management|Direct Air Capture", getItems(fuel, dim = 3))
+  dimnames(fuel)[[3]] <- gsub("Final Energy\\|Enhanced Weathering", "Final Energy|Carbon Management|Enhanced Weathering", getItems(fuel, dim = 3))
+  DACEW <- fuel[, , c("Final Energy|Carbon Management|Direct Air Capture", "Final Energy|Carbon Management|Enhanced Weathering")]
+  DACEW <- dimSums(DACEW, 3)
+  getItems(DACEW, 3.1) <- c("Final Energy|Carbon Management")
   # ------------------------------- Add units ----------------------------
   magpie_object <- mbind(
     fuel, finalPerFuel, fuelWOBunkers, resCom,
-    finalPerFuelAggregated, otherCap
+    finalPerFuelAggregated, otherCap, DACEW
   )
   magpie_object <- add_dimension(magpie_object, dim = 3.2, add = "unit", nm = sub(".*\\((.*)\\).*", "\\1", VFuelTransport@description))
   return(magpie_object)
