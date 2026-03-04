@@ -14,7 +14,7 @@
 #' }
 #'
 #' @importFrom gdx readGDX
-#' @importFrom magclass getItems dimSums add_dimension mbind collapseDim
+#' @importFrom magclass getItems dimSums add_dimension mbind add_columns
 #' @importFrom stringr str_replace
 #' @importFrom quitte as.quitte
 #' @importFrom dplyr filter left_join mutate select group_by %>%
