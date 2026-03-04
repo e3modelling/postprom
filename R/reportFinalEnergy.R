@@ -45,11 +45,17 @@ reportFinalEnergy <- function(path, regions, years) {
   fuel <- readGDX(path, "VmConsFuel", field = "l")[regions, years, ]
   VFuelTransport <- readGDX(path, "VmDemFinEneTranspPerFuel", field = "l")[regions, years, ]
   fuel[, , getItems(VFuelTransport, 3)] <- VFuelTransport[, , getItems(VFuelTransport, 3)]
-  VFuelCDR <- readGDX(path, "VmConsFuelCDRProd", field = "l")[regions, years, ]
-  dimnames(VFuelCDR)[[3]] <- paste0("DAC.", getItems(VFuelCDR, 3))
-  fuel[, , getItems(VFuelCDR, 3)] <- VFuelCDR[, , getItems(VFuelCDR, 3)]
+  VFuelCDR <- readGDX(path, "VmConsFuelTechCDRProd", field = "l")[regions, years, ]
+  # Divide CDR into TEW and DAC to add all DAC technologies by fuel
+  TEWnames <- grepl("TEW", getItems(VFuelCDR, 3))
+  TEW <- VFuelCDR[, , TEWnames]
+  DAC <- VFuelCDR[, , !TEWnames]
+  DACbyFuel <- dimSums(DAC, dim = "CDRTECH")
+  dimnames(DACbyFuel)[[3]] <- paste0("DAC.", getItems(DACbyFuel, 3))
+  dimnames(TEW)[[3]] <- gsub("TEW.", "EW.", getItems(TEW, 3))
+  fuel[, , getItems(TEW, 3)] <- TEW[, , getItems(TEW, 3)]
+  fuel[, , getItems(DACbyFuel, 3)] <- DACbyFuel[, , getItems(DACbyFuel, 3)]
   fuel <- fuel[, , EFSTable$EF]
-
   # -------------------------- Rename Variables -------------------------------
   getItems(fuel, 3.1) <- DSBSTable$.te[match(getItems(fuel, 3.1), DSBSTable$SBS)]
   # Rename Fuels
@@ -91,14 +97,16 @@ reportFinalEnergy <- function(path, regions, years) {
   resCom <- fuel[, , c("Final Energy|Residential", "Final Energy|Commercial", "Final Energy|Agriculture, Fishing, Forestry")]
   resCom <- dimSums(resCom, 3)
   getItems(resCom, 3.1) <- "Final Energy|Residential and Commercial"
-  # --------------------------- Other Capture and Removal ------------------
-  otherCap <- fuel[, , c("Final Energy|Direct Air Capture", "Final Energy|Enhanced Weathering")]
-  otherCap <- dimSums(otherCap, 3)
-  getItems(otherCap, 3.1) <- "Final Energy|Other Capture and Removal"
+  # --------------------------- Include carbon management category ---------
+  dimnames(fuel)[[3]] <- gsub("Final Energy\\|Direct Air Capture", "Final Energy|Carbon Management|Direct Air Capture", getItems(fuel, dim = 3))
+  dimnames(fuel)[[3]] <- gsub("Final Energy\\|Enhanced Weathering", "Final Energy|Carbon Management|Enhanced Weathering", getItems(fuel, dim = 3))
+  DACEW <- fuel[, , c("Final Energy|Carbon Management|Direct Air Capture", "Final Energy|Carbon Management|Enhanced Weathering")]
+  DACEW <- dimSums(DACEW, 3)
+  getItems(DACEW, 3.1) <- c("Final Energy|Carbon Management")
   # ------------------------------- Add units ----------------------------
   magpie_object <- mbind(
     fuel, finalPerFuel, fuelWOBunkers, resCom,
-    finalPerFuelAggregated, otherCap
+    finalPerFuelAggregated, otherCap, DACEW
   )
   magpie_object <- add_dimension(magpie_object, dim = 3.2, add = "unit", nm = sub(".*\\((.*)\\).*", "\\1", VFuelTransport@description))
   return(magpie_object)
