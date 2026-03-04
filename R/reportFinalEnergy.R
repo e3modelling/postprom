@@ -45,11 +45,17 @@ reportFinalEnergy <- function(path, regions, years) {
   fuel <- readGDX(path, "VmConsFuel", field = "l")[regions, years, ]
   VFuelTransport <- readGDX(path, "VmDemFinEneTranspPerFuel", field = "l")[regions, years, ]
   fuel[, , getItems(VFuelTransport, 3)] <- VFuelTransport[, , getItems(VFuelTransport, 3)]
-  VFuelCDR <- readGDX(path, "VmConsFuelCDRProd", field = "l")[regions, years, ]
-  dimnames(VFuelCDR)[[3]] <- paste0("DAC.", getItems(VFuelCDR, 3))
-  fuel[, , getItems(VFuelCDR, 3)] <- VFuelCDR[, , getItems(VFuelCDR, 3)]
+  VFuelCDR <- readGDX(path, "VmConsFuelTechCDRProd", field = "l")[regions, years, ]
+  # Divide CDR into TEW and DAC to add all DAC technologies by fuel
+  TEWnames <- grepl("TEW", getItems(VFuelCDR, 3))
+  TEW <- VFuelCDR[, , TEWnames]
+  DAC <- VFuelCDR[, , !TEWnames]
+  DACbyFuel <- dimSums(DAC, dim = "CDRTECH")
+  dimnames(DACbyFuel)[[3]] <- paste0("DAC.", getItems(DACbyFuel, 3))
+  dimnames(TEW)[[3]] <- gsub("TEW.", "EW.", getItems(TEW, 3))
+  fuel[, , getItems(TEW, 3)] <- TEW[, , getItems(TEW, 3)]
+  fuel[, , getItems(DACbyFuel, 3)] <- DACbyFuel[, , getItems(DACbyFuel, 3)]
   fuel <- fuel[, , EFSTable$EF]
-
   # -------------------------- Rename Variables -------------------------------
   getItems(fuel, 3.1) <- DSBSTable$.te[match(getItems(fuel, 3.1), DSBSTable$SBS)]
   # Rename Fuels
