@@ -4,13 +4,6 @@ Capacity Additions|Electricity|Biomass|w/o CCS,Capacity Additions|Electricity|AT
 Capacity Additions|Electricity|Coal|w/ CCS,Capacity Additions|Electricity|ATHCOALCCS
 Capacity Additions|Electricity|Gas|w/ CCS,Capacity Additions|Electricity|ATHGASCCS
 Carbon Capture|Energy|Supply|Electricity|Biomass,Carbon Capture|Energy|Supply|Electricity|Biofuels
-Carbon Capture|Direct Air Capture,Carbon Capture|Energy|Demand|Direct Air Capture
-Carbon Removal|Enhanced Weathering,Carbon Capture|Enhanced Weathering
-Carbon Removal|Geological Storage,Carbon Capture|Geological Storage
-Carbon Removal|Geological Storage|Biomass,Carbon Capture|Geological Storage|Biomass
-Carbon Removal|Geological Storage|Direct Air Capture,Carbon Capture|Geological Storage|Direct Air Capture
-Carbon Removal|Geological Storage|Other Sources,Carbon Capture|Geological Storage|Other Sources
-Carbon Removal|Land Use,Carbon Capture|Land Use
 Carbon Capture|Energy|Demand|Industry|Chemicals,Carbon Capture|Energy|Demand|Chemicals
 Carbon Capture|Energy|Demand|Industry|Iron and Steel,Carbon Capture|Energy|Demand|Iron and Steel
 Carbon Capture|Energy|Demand|Industry|Non-Metallic Minerals,Carbon Capture|Energy|Demand|Non-Metallic Minerals
