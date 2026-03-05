@@ -17,9 +17,10 @@
 #' @importFrom quitte as.quitte
 #' @importFrom dplyr mutate %>%
 #' @importFrom madrat toolAggregate
+#' @importFrom tidyr separate_rows
 #' @export
 reportSE <- function(path, regions, years) {
-  MtoeToGwh <- 11630
+  MtoeToTWh <- 11630 * 1e-3
   shares <- readGDX(path, c("i09ShareFuel", "i04ShareFuels"), field = "l")
   # ===================== Electricity ==========================
   # --------------------- Non CHP -----------------------------
@@ -57,11 +58,11 @@ reportSE <- function(path, regions, years) {
     rename(TECH = H2TECH)
   CCS <- readGDX(path, "H2CCS")
   NOCCS <- readGDX(path, "H2NOCCS")
-  prodH2 <- readGDX(path, "VmProdH2", field = "l")[regions, years, ] * MtoeToGwh
+  prodH2 <- readGDX(path, "VmProdH2", field = "l")[regions, years, ] * MtoeToTWh
   prodH2 <- getSecondaryEnergy(TECHtoEF, prodH2, CCS, NOCCS)
   getItems(prodH2, 3) <- paste0("Secondary Energy|Hydrogen|", getItems(prodH2, 3))
   # =========================== Heat =====================================
-  prodHeat <- readGDX(path, "VmProdSte", field = "l")[regions, years, ] * MtoeToGwh
+  prodHeat <- readGDX(path, "VmProdSte", field = "l")[regions, years, ] * MtoeToTWh
   TECHtoEF <- readGDX(path, "TSTEAMtoEF") %>%
     filter(TSTEAM %in% getItems(prodHeat, 3.1)) %>%
     rename(TECH = TSTEAM)
@@ -77,7 +78,12 @@ reportSE <- function(path, regions, years) {
   # ========================== Total ========================================
   magpie_object <- mbind(prodElecAll, prodH2, prodHeat)
   magpie_object <- helperAggregateLevel(magpie_object, level = 2, recursive = TRUE)
-  magpie_object <- add_dimension(magpie_object, dim = 3.2, add = "unit", nm = "GWh")
+  # ========================== Elc Demand =======================================
+  elcDemand <- readGDX(path, "V04DemElecTot", field = "l")[regions, years, ] * MtoeToTWh
+  getItems(elcDemand, 3) <- paste0("Secondary Energy|Electricity|Demand")
+
+  magpie_object <- mbind(magpie_object, elcDemand)
+  magpie_object <- add_dimension(magpie_object, dim = 3.2, add = "unit", nm = "TWh")
   return(magpie_object)
 }
 
