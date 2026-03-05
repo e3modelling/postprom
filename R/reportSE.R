@@ -68,14 +68,12 @@ reportSE <- function(path, regions, years) {
   CCS <- c("")
   NOCCS <- c(
     "TSTE1AD", "TSTE1AL", "TSTE1AG", "TSTE1AH", "TSTE1AB",
-    "TSTE2LGN", "TSTE2OSL", "TSTE2GDO", "TSTE2NGS", "TSTE2BMS", "TSTE2GEO",
-    "TSTE2OTH"
+    "TSTE2LGN", "TSTE2OSL", "TSTE2GDO", "TSTE2NGS", "TSTE2BMS"
   )
   sharesTech <- shares$i09ShareFuel[regions, years, ]
 
   prodHeat <- getSecondaryEnergy(TECHtoEF, prodHeat, CCS, NOCCS, sharesTech)
   getItems(prodHeat, 3) <- paste0("Secondary Energy|Heat|", getItems(prodHeat, 3))
-
   # ========================== Total ========================================
   magpie_object <- mbind(prodElecAll, prodH2, prodHeat)
   magpie_object <- helperAggregateLevel(magpie_object, level = 2, recursive = TRUE)
