@@ -132,10 +132,40 @@ reportEmissions <- function(path, regions, years) {
   # -----------------------------------------------------------------------
   EmissionsCo2 <- mbind(
     grossCO2Demand, netCO2Demand, grossCO2Supply,
-    netCO2Supply, AFOLU_CDR, IndustrialProcesses
+    netCO2Supply, AFOLU_CDR[, , "Emissions|CO2|AFOLU"], IndustrialProcesses
   )
   EmissionsCo2 <- helperAggregateLevel(EmissionsCo2, level = 2, recursive = TRUE)
+  # ------------------------ Carbon Capture & Removal --------------------------
+  CCS <- CCS[, , c("DAC", "EW"), invert = TRUE]
+  side <- ifelse(getItems(CCS, 3.1) %in% SSBSTable$SBS, "Supply", "Demand")
+  name <- TotalTable$.te[match(getItems(CCS, 3.1), TotalTable$SBS)]
 
+  getItems(CCS, 3.1) <- paste0("Carbon Capture|Energy|", side, "|", name)
+  getItems(CCS, 3) <- gsub("\\.", "|", getItems(CCS, dim = 3))
+
+  CCS <- add_columns(CCS, addnm = "Carbon Capture|Direct Air Capture", dim = 3)
+  CCS <- add_columns(CCS, addnm = "Carbon Capture|Utilization", dim = 3)
+  CCS[, , "Carbon Capture|Utilization"] <- 0
+  CCS[, , "Carbon Capture|Direct Air Capture"] <- CDR[, , "DAC"]
+
+  CDR <- CDR[, , c("DAC", "EW")]
+
+  midfix <- case_when(
+    getItems(CDR, 3.1) == "DAC" ~ "Geological Storage|Direct Air Capture",
+    getItems(CDR, 3.1) == "EW" ~ "Enhanced Weathering",
+  )
+  getItems(CDR, 3.1) <- paste0("Carbon Removal|", midfix)
+  CDR <- add_columns(
+    CDR,
+    addnm = paste0("Carbon Removal|Geological Storage|", c("Biomass", "Other Sources")),
+    dim = 3
+  )
+  CDR[, , "Carbon Removal|Geological Storage|Biomass"] <- dimSums(CCS[, , getItems(CCS, 3)[grepl("\\|Biofuels$", getItems(CCS, 3))]], 3.1)
+
+  CDR[, , "Carbon Removal|Geological Storage|Other Sources"] <- dimSums(CCS[, , getItems(CCS, 3)[grepl("\\|Fossil$", getItems(CCS, 3))]], 3.1)
+
+  captured <- mbind(CDR, CCS, AFOLU_CDR[, , "Carbon Removal|Land Use"])
+  captured <- helperAggregateLevel(captured, level = 1, recursive = TRUE)
   # =============================== Non-CO2===================================
   emissionsNonCO2 <- readGDX(path, "V07EmiActBySrcRegTim", field = "l")[regions, years, ]
   if (is.null(emissionsNonCO2)) {
@@ -194,6 +224,10 @@ reportEmissions <- function(path, regions, years) {
   resCom <- EmissionsCo2[, , c("Emissions|CO2|Energy|Demand|Residential", "Emissions|CO2|Energy|Demand|Commercial", "Emissions|CO2|Energy|Demand|Agriculture, Fishing, Forestry")]
   resCom <- dimSums(resCom, 3)
   getItems(resCom, 3.1) <- "Emissions|CO2|Energy|Demand|Residential and Commercial"
+  # ------------ Carbon Capture|Geological Storage|Direct Air Capture -------
+  captureGeoStorage <- captured[, , grepl("Geological Storage", getItems(captured, dim = 3))]
+  getItems(captureGeoStorage, dim = 3) <- gsub("Carbon Removal", "Carbon Capture", getItems(captureGeoStorage, dim = 3))
+
   # =============================== Add Dimensions ============================
   emissionsNonCO2 <- add_dimension(
     emissionsNonCO2,
@@ -202,16 +236,18 @@ reportEmissions <- function(path, regions, years) {
     nm = unname(sapply(getNames(emissionsNonCO2), getUnit)),
     expand = FALSE
   )
-  captured <- add_dimension(captured, dim = 3.2, add = "unit", nm = "Mt CO2/yr")
-  EmissionsCo2 <- add_dimension(EmissionsCo2, dim = 3.2, add = "unit", nm = "Mt CO2/yr")
+  unitsCO2 <- sub(".*\\((.*)\\).*", "\\1", grossCO2Supply@description)
+  captured <- add_dimension(captured, dim = 3.2, add = "unit", nm = unitsCO2)
+  EmissionsCo2 <- add_dimension(EmissionsCo2, dim = 3.2, add = "unit", nm = unitsCO2)
   kyotoGases <- add_dimension(kyotoGases, dim = 3.2, add = "unit", nm = "Mt CO2-equiv/yr")
   Cumulated <- add_dimension(Cumulated, dim = 3.2, add = "unit", nm = "Gt CO2")
-  sumIPEnergy <- add_dimension(sumIPEnergy, dim = 3.2, add = "unit", nm = "Mt CO2/yr")
-  resCom <- add_dimension(resCom, dim = 3.2, add = "unit", nm = "Mt CO2/yr")
+  sumIPEnergy <- add_dimension(sumIPEnergy, dim = 3.2, add = "unit", nm = unitsCO2)
+  resCom <- add_dimension(resCom, dim = 3.2, add = "unit", nm = unitsCO2)
+  captureGeoStorage <- add_dimension(captureGeoStorage, dim = 3.2, add = "unit", nm = unitsCO2)  
 
   magpie_object <- mbind(
     emissionsNonCO2, EmissionsCo2, kyotoGases,
-    Cumulated, sumIPEnergy, resCom, captured
+    Cumulated, sumIPEnergy, resCom, captured, captureGeoStorage
   )
 
   return(magpie_object)

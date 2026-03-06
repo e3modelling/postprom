@@ -107,7 +107,8 @@ reportCapacityElectricity <- function(path, regions, years) {
   
   capacity <- helperAggregateLevel(capacity, level = 1, recursive = TRUE)
   
-  capacity <- add_dimension(capacity, dim = 3.2, add = "unit", nm = "GW")
+  units <- sub(".*\\((.*)\\).*", "\\1", capacity@description)
+  capacity <- add_dimension(capacity, dim = 3.2, add = "unit", nm = units)
   
   return(capacity)
 }

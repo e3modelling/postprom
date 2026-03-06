@@ -84,7 +84,8 @@ reportSE <- function(path, regions, years) {
   getItems(elcDemand, 3) <- paste0("Secondary Energy|Electricity|Demand")
 
   magpie_object <- mbind(magpie_object, elcDemand)
-  magpie_object <- add_dimension(magpie_object, dim = 3.2, add = "unit", nm = "TWh")
+  units <- sub(".*\\((.*)\\).*", "\\1", prodElec@description)
+  magpie_object <- add_dimension(magpie_object, dim = 3.2, add = "unit", nm = units)
   return(magpie_object)
 }
 
