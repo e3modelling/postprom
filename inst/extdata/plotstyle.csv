@@ -7,8 +7,8 @@ Capacity|Electricity|Hydrogen,Hydrogen,grey,bar
 Capacity|Electricity|Coal,Coal,#0c0c0c,bar
 Capacity|Electricity|Gas,Gas,#999959,bar
 Capacity|Electricity|Nuclear,Nuclear,#ff33ff,bar
-Capacity|Electricity|Biomass,Biomass,#005900,bar
-Capacity|Electricity|Geothermal,Geothermal,#e51900,bar
+Capacity|Electricity|Biofuels,Biofuels,#005900,bar
+Capacity|Electricity|Geothermal and other renewable sources,Geothermal,#e51900,bar
 Capacity|Electricity|PGCSP,PGCSP,#ffb400,bar
 Capacity|Electricity|PGAWND,PGAWND,#8800ff,bar
 Capacity|Electricity|PGAWNO,PGAWNO,#334cff,bar
@@ -25,12 +25,12 @@ Secondary Energy|Electricity|Coal,Coal,#0c0c0c,bar
 Secondary Energy|Electricity|Gas,Gas,#999959,bar
 Secondary Energy|Electricity|Hydro,Hydro,#07cbf2,bar
 Secondary Energy|Electricity|CHP,CHP,#87e6a4,bar
-Secondary Energy|Electricity|Biomass,Biomass,#005900,bar
+Secondary Energy|Electricity|Biofuels,Biofuels,#005900,bar
 Secondary Energy|Electricity|Hydrogen,Hydrogen,grey,bar
-Secondary Energy|Electricity|Heat,CHP,#943103,bar
+Secondary Energy|Electricity|Heat,Steam,#943103,bar
 Secondary Energy|Electricity|Demand,Demand,black,solidLine
-Secondary Energy|Electricity|Biomass|w/ CCS,Biomass w/ CCS,#37e314,area
-Secondary Energy|Electricity|Biomass|w/o CCS,Biomass w/o CCS,#123d0a,area
+Secondary Energy|Electricity|Biofuels|w/ CCS,Biomass w/ CCS,#37e314,area
+Secondary Energy|Electricity|Biofuels|w/o CCS,Biomass w/o CCS,#123d0a,area
 Secondary Energy|Electricity|Coal|w/ CCS,Coal w/ CCS,#7b807a,area
 Secondary Energy|Electricity|Coal|w/o CCS,Coal w/o CCS,#262625,area
 Secondary Energy|Electricity|Gas|w/ CCS,Gas w/ CCS,#bfbf69,area
@@ -46,7 +46,6 @@ Final Energy|Bunkers,Bunkers,#970824ff,bar
 Final Energy|Industry,Industry,orange,bar
 Final Energy|Transportation,Transportation,black,bar
 Final Energy|Residential and Commercial,Res and Com,red,bar
-Final Energy|Other Capture and Removal,CDR,blue,bar
 Final Energy|VAL,IEA,red,dLine
 Final Energy|Industry|VAL,Industry|IEA,#FFE0B2,dLine
 Final Energy|Transportation|VAL,Transportation|IEA,#CCCCCC,dLine
@@ -56,12 +55,12 @@ Final Energy|Transportation|Validation,Transportation|IEA|Projections,#B0B0B0,so
 Final Energy|Biomass and Waste,Biomass,#005900,bar
 Final Energy|Solids,Solids,black,bar
 Final Energy|Hydrogen,Hydrogen,blue,bar
-Final Energy|Gases,Gases,#999959,bar
+Final Energy|Gas,Gas,#999959,bar
 Final Energy|Biofuels,Biofuels,#005900,bar
 Final Energy|Electricity,Electricity,yellow,bar
 Final Energy|Fossil Liquids,Fossil Liquids,grey,bar
 Final Energy|Heat,Heat,firebrick2,bar
-Final Energy|Other Fuels,Other Fuels,darkorchid3,bar
+Final Energy|Other fuels,Other Fuels,darkorchid3,bar
 Emissions|CO2|Energy|Demand|Bunkers,Bunkers,yellow,bar
 Emissions|CO2|Energy|Supply,Supply,#bcbc6d,bar
 Emissions|CO2|Cumulated,Cumulated,#661a00,bar
