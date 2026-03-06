@@ -91,35 +91,6 @@ reportEmissions <- function(path, regions, years) {
   name <- SSBSTable$.te[match(getItems(grossCO2Supply, 3.1), SSBSTable$SBS)]
   getItems(grossCO2Supply, 3.1) <- paste0("Gross Emissions|CO2|Energy|Supply|", name)
   getItems(netCO2Supply, 3.1) <- paste0("Emissions|CO2|Energy|Supply|", name)
-  # ------------------------ Carbon Capture & Removal --------------------------
-  CCS <- CCS[, , c("DAC", "EW"), invert = TRUE]
-  side <- ifelse(getItems(CCS, 3.1) %in% SSBSTable$SBS, "Supply", "Demand")
-  name <- TotalTable$.te[match(getItems(CCS, 3.1), TotalTable$SBS)]
-
-  getItems(CCS, 3.1) <- paste0("Carbon Capture|Energy|", side, "|", name)
-  getItems(CCS, 3) <- gsub("\\.", "|", getItems(CCS, dim = 3))
-
-  CCS <- add_columns(CCS, addnm = "Carbon Capture|Direct Air Capture", dim = 3)
-  CCS[, , "Carbon Capture|Direct Air Capture"] <- CDR[, , "DAC"]
-
-  CDR <- CDR[, , c("DAC", "EW")]
-
-  midfix <- case_when(
-    getItems(CDR, 3.1) == "DAC" ~ "Geological Storage|Direct Air Capture",
-    getItems(CDR, 3.1) == "EW" ~ "Enhanced Weathering",
-  )
-  getItems(CDR, 3.1) <- paste0("Carbon Removal|", midfix)
-  CDR <- add_columns(
-    CDR,
-    addnm = paste0("Carbon Removal|Geological Storage|", c("Biomass", "Other Sources")),
-    dim = 3
-  )
-  CDR[, , "Carbon Removal|Geological Storage|Biomass"] <- dimSums(CCS[, , getItems(CCS, 3)[grepl("\\|Biofuels$", getItems(CCS, 3))]], 3.1)
-
-  CDR[, , "Carbon Removal|Geological Storage|Other Sources"] <- dimSums(CCS[, , getItems(CCS, 3)[grepl("\\|Fossil$", getItems(CCS, 3))]], 3.1)
-
-  captured <- mbind(CDR, CCS)
-  captured <- helperAggregateLevel(captured, level = 1, recursive = TRUE)
   # ========================= AFOLU & Land Use ===============================
   AFOLU_CDR <- mbind(
     getGLOBIOMEU(path, grossCO2Demand)[, years, ],
@@ -143,9 +114,8 @@ reportEmissions <- function(path, regions, years) {
   getItems(CCS, 3.1) <- paste0("Carbon Capture|Energy|", side, "|", name)
   getItems(CCS, 3) <- gsub("\\.", "|", getItems(CCS, dim = 3))
 
-  CCS <- add_columns(CCS, addnm = "Carbon Capture|Direct Air Capture", dim = 3)
-  CCS <- add_columns(CCS, addnm = "Carbon Capture|Utilization", dim = 3)
-  CCS[, , "Carbon Capture|Utilization"] <- 0
+  CCS <- add_columns(CCS, addnm = "Carbon Capture|Direct Air Capture", dim = 3, fill = 0)
+  CCS <- add_columns(CCS, addnm = "Carbon Capture|Utilization", dim = 3, fill = 0)
   CCS[, , "Carbon Capture|Direct Air Capture"] <- CDR[, , "DAC"]
 
   CDR <- CDR[, , c("DAC", "EW")]
