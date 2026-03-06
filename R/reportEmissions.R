@@ -157,6 +157,26 @@ reportEmissions <- function(path, regions, years) {
   resCom <- EmissionsCo2[, , c("Emissions|CO2|Energy|Demand|Residential", "Emissions|CO2|Energy|Demand|Commercial", "Emissions|CO2|Energy|Demand|Agriculture, Fishing, Forestry")]
   resCom <- dimSums(resCom, 3)
   getItems(resCom, 3.1) <- "Emissions|CO2|Energy|Demand|Residential and Commercial"
+  # -------------------------- Transport Passenger -------
+  TRANP <- EmissionsCo2[, , c("Emissions|CO2|Energy|Demand|Transportation|Passenger Transport - Cars",
+                              "Emissions|CO2|Energy|Demand|Transportation|Passenger Transport - Busses",
+                              "Emissions|CO2|Energy|Demand|Transportation|Passenger Transport - Rail",
+                              "Emissions|CO2|Energy|Demand|Transportation|Passenger Transport - Inland Navigation",
+                              "Emissions|CO2|Energy|Demand|Transportation|Passenger Transport - Aviation")]
+  TRANP <- dimSums(TRANP, 3)
+  getItems(TRANP, 3.1) <- "Emissions|CO2|Energy|Demand|Transportation|Passenger"
+  # -------------------------- Transport Freight -------
+  TRANG <- EmissionsCo2[, , c("Emissions|CO2|Energy|Demand|Transportation|Goods Transport - Trucks",
+                              "Emissions|CO2|Energy|Demand|Transportation|Goods Transport - Rail",
+                              "Emissions|CO2|Energy|Demand|Transportation|Goods Transport - Inland Navigation")]
+  TRANG <- dimSums(TRANG, 3)
+  getItems(TRANG, 3.1) <- "Emissions|CO2|Energy|Demand|Transportation|Freight"
+  # -------------------------- Transformation (Liquids, Solids, Gases) -------
+  Transformation <- EmissionsCo2[, , c("Emissions|CO2|Energy|Supply|Liquids",
+                                       "Emissions|CO2|Energy|Supply|Solids",
+                                       "Emissions|CO2|Energy|Supply|Gases")]
+  Transformation <- dimSums(Transformation, dim = 3, na.rm = TRUE)
+  getItems(Transformation, 3) <- "Emissions|CO2|Energy|Supply|Transformation"
   # =============================== Add Dimensions ============================
   emissionsNonCO2 <- add_dimension(
     emissionsNonCO2,
@@ -170,10 +190,14 @@ reportEmissions <- function(path, regions, years) {
   Cumulated <- add_dimension(Cumulated, dim = 3.2, add = "unit", nm = "Gt CO2")
   sumIPEnergy <- add_dimension(sumIPEnergy, dim = 3.2, add = "unit", nm = units_grossCO2Supply)
   resCom <- add_dimension(resCom, dim = 3.2, add = "unit", nm = units_grossCO2Supply)
+  TRANP <- add_dimension(TRANP, dim = 3.2, add = "unit", nm = units_grossCO2Supply)
+  TRANG <- add_dimension(TRANG, dim = 3.2, add = "unit", nm = units_grossCO2Supply)
+  Transformation <- add_dimension(Transformation, dim = 3.2, add = "unit", nm = units_grossCO2Supply)
 
   magpie_object <- mbind(
     emissionsNonCO2, EmissionsCo2, kyotoGases,
-    Cumulated, sumIPEnergy, resCom
+    Cumulated, sumIPEnergy, resCom,
+    TRANP, TRANG, Transformation
   )
 
   return(magpie_object)
