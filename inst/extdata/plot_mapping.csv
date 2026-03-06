@@ -27,11 +27,11 @@ Final Energy|Sector,Non-Energy Use
 Final Energy|Sector,Bunkers
 Final Energy|Fuel,Solids
 Final Energy|Fuel,Hydrogen
-Final Energy|Fuel,Gases
+Final Energy|Fuel,Gas
 Final Energy|Fuel,Electricity
 Final Energy|Fuel,Fossil Liquids
 Final Energy|Fuel,Heat
-Final Energy|Fuel,Other Fuels
+Final Energy|Fuel,Other fuels
 Final Energy|Fuel,Validation
 Final Energy|Fuel,VAL
 Final Energy|Fuel,Biofuels
@@ -43,7 +43,7 @@ Secondary Energy|Electricity|Total,Gas
 Secondary Energy|Electricity|Total,Nuclear
 Secondary Energy|Electricity|Total,Biofuels
 Secondary Energy|Electricity|Total,Hydro
-Secondary Energy|Electricity|Total,Geothermal
+Secondary Energy|Electricity|Total,Geothermal and other renewable sources
 Secondary Energy|Electricity|Total,Hydrogen
 Secondary Energy|Electricity|Total,Heat
 Secondary Energy|Electricity|Total,Demand
@@ -62,7 +62,7 @@ Capacity|Electricity|Total,Coal
 Capacity|Electricity|Total,Gas
 Capacity|Electricity|Total,Nuclear
 Capacity|Electricity|Total,Biofuels
-Capacity|Electricity|Total,Geothermal
+Capacity|Electricity|Total,Geothermal and other renewable sources
 Capacity|Electricity|Total,Hydro
 Capacity|Electricity|Total,Hydrogen
 Capacity|Electricity|Total,VAL

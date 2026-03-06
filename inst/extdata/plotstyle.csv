@@ -8,7 +8,7 @@ Capacity|Electricity|Coal,Coal,#0c0c0c,bar
 Capacity|Electricity|Gas,Gas,#999959,bar
 Capacity|Electricity|Nuclear,Nuclear,#ff33ff,bar
 Capacity|Electricity|Biofuels,Biofuels,#005900,bar
-Capacity|Electricity|Geothermal,Geothermal,#e51900,bar
+Capacity|Electricity|Geothermal and other renewable sources,Geothermal,#e51900,bar
 Capacity|Electricity|PGCSP,PGCSP,#ffb400,bar
 Capacity|Electricity|PGAWND,PGAWND,#8800ff,bar
 Capacity|Electricity|PGAWNO,PGAWNO,#334cff,bar
@@ -56,12 +56,12 @@ Final Energy|Transportation|Validation,Transportation|IEA|Projections,#B0B0B0,so
 Final Energy|Biomass and Waste,Biomass,#005900,bar
 Final Energy|Solids,Solids,black,bar
 Final Energy|Hydrogen,Hydrogen,blue,bar
-Final Energy|Gases,Gases,#999959,bar
+Final Energy|Gas,Gas,#999959,bar
 Final Energy|Biofuels,Biofuels,#005900,bar
 Final Energy|Electricity,Electricity,yellow,bar
 Final Energy|Fossil Liquids,Fossil Liquids,grey,bar
 Final Energy|Heat,Heat,firebrick2,bar
-Final Energy|Other Fuels,Other Fuels,darkorchid3,bar
+Final Energy|Other fuels,Other Fuels,darkorchid3,bar
 Emissions|CO2|Energy|Demand|Bunkers,Bunkers,yellow,bar
 Emissions|CO2|Energy|Supply,Supply,#bcbc6d,bar
 Emissions|CO2|Cumulated,Cumulated,#661a00,bar

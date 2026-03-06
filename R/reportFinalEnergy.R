@@ -52,21 +52,29 @@ reportFinalEnergy <- function(path, regions, years) {
 
   # -------------------------- Rename Variables -------------------------------
   getItems(fuel, 3.1) <- DSBSTable$.te[match(getItems(fuel, 3.1), DSBSTable$SBS)]
+  # Use only for toolAggregate
+  finalPerFuelForAggr <- fuel
   # Rename Fuels
   getItems(fuel, 3.2) <- EFSTable$.te[match(getItems(fuel, 3.2), EFSTable$EF)]
   # -------------------------- Fuel Aggregations ------------------------------
-  BALEF2EFS <- rgdx.set(path, "BALEF2EFS") %>%
-    left_join(EFSTable, by = c("EFS" = "EF")) %>%
-    filter(BALEF %in% c("Solids", "Fossil Liquids", "Gases", "Heat",
-                        "Electricity", "Hydrogen", "Other Fuels", "Biofuels")) %>%
-    select(BALEF, .te)
 
+  BALEFtoEF <- read.csv(
+    system.file("mappings", "BALEFtoEF.csv", package = "postprom")
+  ) %>%
+    separate_rows(EF) %>%
+    filter(BALEF %in% c(
+      "Solids", "Fossil Liquids", "Gas", "Heat", "Renewables",
+      "Electricity", "Hydrogen", "Other fuels", "Biofuels", "Nuclear"
+    ))
+  
   finalPerFuel <- dimSums(fuel, dim = 3.1)
-  finalPerFuelAggregated <- toolAggregate(finalPerFuel,
-    dim = 3, rel = BALEF2EFS,
-    from = ".te", to = "BALEF", partrel = TRUE
+  finalPerFuelForAggr <- dimSums(finalPerFuelForAggr, dim = 3.1)
+  finalPerFuelAggregated <- toolAggregate(finalPerFuelForAggr,
+    dim = 3, rel = BALEFtoEF,
+    from = "EF", to = "BALEF", partrel = TRUE
   )
-  finalPerFuelAggregated <- finalPerFuelAggregated[, , setdiff(unique(BALEF2EFS$BALEF), getItems(finalPerFuel, 3.1))]
+  
+  finalPerFuelAggregated <- finalPerFuelAggregated[, , setdiff(unique(BALEFtoEF$BALEF), getItems(finalPerFuel, 3.1))]
   fuelWOBunkers <- dimSums(fuel[, , "Bunkers", invert = TRUE], dim = 3)
 
   getItems(finalPerFuel, 3.1) <- paste0("Final Energy|", getItems(finalPerFuel, 3.1))

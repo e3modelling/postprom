@@ -25,7 +25,7 @@ reportCapacityElectricity <- function(path, regions, years) {
     separate_rows(EF) %>%
     filter(BALEF %in% c(
       "Coal", "Gas", "Nuclear", "Biofuels", "Oil",
-      "Solar", "Wind", "Geothermal", "Hydrogen", "Hydro"
+      "Solar", "Wind", "Geothermal and other renewable sources", "Hydrogen", "Hydro"
     ))
   
   PGALLtoEF <- readGDX(path, "PGALLtoEF")

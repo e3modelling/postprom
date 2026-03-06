@@ -96,7 +96,7 @@ getSecondaryEnergy <- function(TECHtoEF, prod, CCS, NOCCS, sharesTech = NULL) {
     separate_rows(EF) %>%
     filter(BALEF %in% c(
       "Coal", "Gas", "Nuclear", "Biofuels", "Oil", "Electricity",
-      "Solar", "Wind", "Geothermal", "Hydrogen", "Hydro"
+      "Solar", "Wind", "Geothermal and other renewable sources", "Hydrogen", "Hydro"
     ))
   if (!is.null(sharesTech)) {
     sharesTech <- sharesTech[, , paste0(TECHtoEF$TECH, ".", TECHtoEF$EF)]
