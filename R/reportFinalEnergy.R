@@ -72,6 +72,8 @@ reportFinalEnergy <- function(path, regions, years) {
     dim = 3, rel = BALEFtoEF,
     from = "EF", to = "BALEF", partrel = TRUE
   )
+  keep <- setdiff(unique(BALEFtoEF$BALEF), EFSTable$.te[match(getItems(finalPerFuel, 3.1), EFSTable$EF)])
+  finalPerFuelAggregated <- finalPerFuelAggregated[, , keep]
   fuelWOBunkers <- dimSums(fuel[, , "BU", invert = TRUE], dim = 3)
 
   # -------------------------- Rename Variables -------------------------------

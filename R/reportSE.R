@@ -13,9 +13,9 @@
 #' }
 #'
 #' @importFrom gdx readGDX
-#' @importFrom magclass getItems dimSums add_dimension mbind
+#' @importFrom magclass getItems dimSums add_dimension mbind getItems
 #' @importFrom quitte as.quitte
-#' @importFrom dplyr mutate %>%
+#' @importFrom dplyr mutate %>% case_when
 #' @importFrom madrat toolAggregate
 #' @importFrom tidyr separate_rows
 #' @export
@@ -29,6 +29,7 @@ reportSE <- function(path, regions, years) {
   CCS <- readGDX(path, "CCS")
   NOCCS <- c(readGDX(path, "NOCCS"), "ATHOIL")
   prodElec <- readGDX(path, "VmProdElec", field = "l")[regions, years, ]
+  units <- sub(".*\\((.*)\\).*", "\\1", prodElec@description)
   sharesTech <- shares$i04ShareFuels[regions, , ]
   prodElec <- getSecondaryEnergy(TECHtoEF, prodElec, CCS, NOCCS, sharesTech)
   prodElec <- add_columns(prodElec, addnm = "Heat", fill = 0)
@@ -84,7 +85,6 @@ reportSE <- function(path, regions, years) {
   getItems(elcDemand, 3) <- paste0("Secondary Energy|Electricity|Demand")
 
   magpie_object <- mbind(magpie_object, elcDemand)
-  units <- sub(".*\\((.*)\\).*", "\\1", prodElec@description)
   magpie_object <- add_dimension(magpie_object, dim = 3.2, add = "unit", nm = units)
   return(magpie_object)
 }
