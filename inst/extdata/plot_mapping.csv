@@ -41,16 +41,16 @@ Secondary Energy|Electricity|Total,Wind
 Secondary Energy|Electricity|Total,Coal
 Secondary Energy|Electricity|Total,Gas
 Secondary Energy|Electricity|Total,Nuclear
-Secondary Energy|Electricity|Total,Biomass
+Secondary Energy|Electricity|Total,Biofuels
 Secondary Energy|Electricity|Total,Hydro
 Secondary Energy|Electricity|Total,Geothermal
 Secondary Energy|Electricity|Total,Hydrogen
-Secondary Energy|Electricity|Total,Steam
+Secondary Energy|Electricity|Total,Heat
 Secondary Energy|Electricity|Total,Demand
 Secondary Energy|Electricity|Total,VAL
 Secondary Energy|Electricity|Total,Validation
-Secondary Energy|Electricity|CCS,Biomass|w/ CCS
-Secondary Energy|Electricity|CCS,Biomass|w/o CCS
+Secondary Energy|Electricity|CCS,Biofuels|w/ CCS
+Secondary Energy|Electricity|CCS,Biofuels|w/o CCS
 Secondary Energy|Electricity|CCS,Coal|w/ CCS
 Secondary Energy|Electricity|CCS,Coal|w/o CCS
 Secondary Energy|Electricity|CCS,Gas|w/ CCS
@@ -61,7 +61,7 @@ Capacity|Electricity|Total,Wind
 Capacity|Electricity|Total,Coal
 Capacity|Electricity|Total,Gas
 Capacity|Electricity|Total,Nuclear
-Capacity|Electricity|Total,Biomass
+Capacity|Electricity|Total,Biofuels
 Capacity|Electricity|Total,Geothermal
 Capacity|Electricity|Total,Hydro
 Capacity|Electricity|Total,Hydrogen

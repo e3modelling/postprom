@@ -31,6 +31,7 @@ reportSE <- function(path, regions, years) {
   prodElec <- readGDX(path, "VmProdElec", field = "l")[regions, years, ]
   sharesTech <- shares$i04ShareFuels[regions, , ]
   prodElec <- getSecondaryEnergy(TECHtoEF, prodElec, CCS, NOCCS, sharesTech)
+  prodElec <- add_columns(prodElec, addnm = "Heat", fill = 0)
   # ---------------------- CHP --------------------------------
   prodElecCHP <- readGDX(path,
     c("V04ProdElecEstCHP", "V04ProdElecCHP"),
@@ -79,7 +80,7 @@ reportSE <- function(path, regions, years) {
   magpie_object <- mbind(prodElecAll, prodH2, prodHeat)
   magpie_object <- helperAggregateLevel(magpie_object, level = 2, recursive = TRUE)
   # ========================== Elc Demand =======================================
-  elcDemand <- readGDX(path, "V04DemElecTot", field = "l")[regions, years, ] * MtoeToTWh
+  elcDemand <- readGDX(path, "V04DemElecTot", field = "l")[regions, years, ]
   getItems(elcDemand, 3) <- paste0("Secondary Energy|Electricity|Demand")
 
   magpie_object <- mbind(magpie_object, elcDemand)
