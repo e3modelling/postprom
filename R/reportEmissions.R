@@ -234,9 +234,9 @@ reportEmissions <- function(path, regions, years) {
   sumIPEnergy <- add_dimension(sumIPEnergy, dim = 3.2, add = "unit", nm = unitsCO2)
   resCom <- add_dimension(resCom, dim = 3.2, add = "unit", nm = unitsCO2)
   captureGeoStorage <- add_dimension(captureGeoStorage, dim = 3.2, add = "unit", nm = unitsCO2)  
-  TRANP <- add_dimension(TRANP, dim = 3.2, add = "unit", nm = units_grossCO2Supply)
-  TRANG <- add_dimension(TRANG, dim = 3.2, add = "unit", nm = units_grossCO2Supply)
-  Transformation <- add_dimension(Transformation, dim = 3.2, add = "unit", nm = units_grossCO2Supply)
+  TRANP <- add_dimension(TRANP, dim = 3.2, add = "unit", nm = unitsCO2)
+  TRANG <- add_dimension(TRANG, dim = 3.2, add = "unit", nm = unitsCO2)
+  Transformation <- add_dimension(Transformation, dim = 3.2, add = "unit", nm = unitsCO2)
 
   magpie_object <- mbind(
     emissionsNonCO2, EmissionsCo2, kyotoGases,
