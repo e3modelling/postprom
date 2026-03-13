@@ -217,7 +217,7 @@ reportEmissions <- function(path, regions, years) {
                                        "Emissions|CO2|Energy|Supply|Solids",
                                        "Emissions|CO2|Energy|Supply|Gases")]
   OtherFuelTransformation <- dimSums(OtherFuelTransformation, dim = 3, na.rm = TRUE)
-  getItems(OtherFuelTransformation, 3) <- "Emissions|CO2|Energy|Supply|Other Fuel OtherFuelTransformation"
+  getItems(OtherFuelTransformation, 3) <- "Emissions|CO2|Energy|Supply|Other Fuel Transformation"
   # =============================== Add Dimensions ============================
   emissionsNonCO2 <- add_dimension(
     emissionsNonCO2,
