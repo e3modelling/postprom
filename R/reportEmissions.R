@@ -198,6 +198,26 @@ reportEmissions <- function(path, regions, years) {
   captureGeoStorage <- captured[, , grepl("Geological Storage", getItems(captured, dim = 3))]
   getItems(captureGeoStorage, dim = 3) <- gsub("Carbon Removal", "Carbon Capture", getItems(captureGeoStorage, dim = 3))
 
+  # -------------------------- Transport Passenger -------
+  TRANP <- EmissionsCo2[, , c("Emissions|CO2|Energy|Demand|Transportation|Passenger Transport - Cars",
+                              "Emissions|CO2|Energy|Demand|Transportation|Passenger Transport - Busses",
+                              "Emissions|CO2|Energy|Demand|Transportation|Passenger Transport - Rail",
+                              "Emissions|CO2|Energy|Demand|Transportation|Passenger Transport - Inland Navigation",
+                              "Emissions|CO2|Energy|Demand|Transportation|Passenger Transport - Aviation")]
+  TRANP <- dimSums(TRANP, 3)
+  getItems(TRANP, 3.1) <- "Emissions|CO2|Energy|Demand|Transportation|Passenger"
+  # -------------------------- Transport Freight -------
+  TRANG <- EmissionsCo2[, , c("Emissions|CO2|Energy|Demand|Transportation|Goods Transport - Trucks",
+                              "Emissions|CO2|Energy|Demand|Transportation|Goods Transport - Rail",
+                              "Emissions|CO2|Energy|Demand|Transportation|Goods Transport - Inland Navigation")]
+  TRANG <- dimSums(TRANG, 3)
+  getItems(TRANG, 3.1) <- "Emissions|CO2|Energy|Demand|Transportation|Freight"
+  # -------------------------- Other Fuel Transformation (Liquids, Solids, Gases) -------
+  OtherFuelTransformation <- EmissionsCo2[, , c("Emissions|CO2|Energy|Supply|Liquids",
+                                       "Emissions|CO2|Energy|Supply|Solids",
+                                       "Emissions|CO2|Energy|Supply|Gases")]
+  OtherFuelTransformation <- dimSums(OtherFuelTransformation, dim = 3, na.rm = TRUE)
+  getItems(OtherFuelTransformation, 3) <- "Emissions|CO2|Energy|Supply|Other Fuel Transformation"
   # =============================== Add Dimensions ============================
   emissionsNonCO2 <- add_dimension(
     emissionsNonCO2,
@@ -214,10 +234,14 @@ reportEmissions <- function(path, regions, years) {
   sumIPEnergy <- add_dimension(sumIPEnergy, dim = 3.2, add = "unit", nm = unitsCO2)
   resCom <- add_dimension(resCom, dim = 3.2, add = "unit", nm = unitsCO2)
   captureGeoStorage <- add_dimension(captureGeoStorage, dim = 3.2, add = "unit", nm = unitsCO2)  
+  TRANP <- add_dimension(TRANP, dim = 3.2, add = "unit", nm = unitsCO2)
+  TRANG <- add_dimension(TRANG, dim = 3.2, add = "unit", nm = unitsCO2)
+  OtherFuelTransformation <- add_dimension(OtherFuelTransformation, dim = 3.2, add = "unit", nm = unitsCO2)
 
   magpie_object <- mbind(
     emissionsNonCO2, EmissionsCo2, kyotoGases,
-    Cumulated, sumIPEnergy, resCom, captured, captureGeoStorage
+    Cumulated, sumIPEnergy, resCom, captured, captureGeoStorage,
+    TRANP, TRANG, OtherFuelTransformation
   )
 
   return(magpie_object)
