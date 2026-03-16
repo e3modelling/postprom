@@ -30,7 +30,7 @@ reportGrowthRates <- function(reports) {
   arrange(DSBSpEF, unit, region, period) %>%
   group_by(DSBSpEF, unit, region) %>%
   mutate(
-    GrowthRate = ifelse(lag(value) == 0, NA, 100 * (value - lag(value)) / lag(value)),
+    GrowthRate = ifelse(lag(value) == 0, NA, 100 * (value - lag(value)) / abs(lag(value))),
     unit = "%",
     DSBSpEF = paste0("Growth Rate|", DSBSpEF)
   ) %>%
