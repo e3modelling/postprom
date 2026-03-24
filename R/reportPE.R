@@ -14,39 +14,26 @@
 #' @importFrom magclass getItems getNames add_dimension mbind
 #' @export
 reportPE <- function(path, regions, years) {
-  vars <- c("V03ConsGrssInl", "BALEF2EFS")
-  values <- readGDX(path, vars, field = 'l')
+  BALEFtoEF <- read.csv(
+    system.file("mappings", "BALEFtoEF.csv", package = "postprom")
+  ) %>%
+    separate_rows(EF) %>%
+    filter(BALEF %in% c(
+      "Coal", "Gas", "Nuclear", "Biofuels", "Oil", "Electricity", "Heat",
+      "Other fuels", "Solar", "Wind", "Geothermal and other renewable sources",
+      "Hydrogen", "Hydro"
+    ))
+  V03ProdPrimary <- readGDX(path, "V03ProdPrimary", field = "l")[regions, years, ]
 
-  V03ConsGrssInl <- values$V03ConsGrssInl[regions, years, ]
-  sets <- values$BALEF2EFS
-  names(sets) <- c("BAL", "EF")
-
-  replacements <- c(
-    "Gas fuels" = "Gases",
-    "Solids" = "Coal",
-    "Crude oil and Feedstocks" = "Oil",
-    "Nuclear heat" = "Nuclear",
-    "Solar energy" = "Solar",
-    "Geothermal heat" = "Geothermal",
-    "Steam" = "Heat"
+  V03ProdPrimary <- toolAggregate(V03ProdPrimary,
+    weight = NULL, dim = 3,
+    rel = BALEFtoEF, from = "BALEF", to = "EF"
   )
-  sets$BAL <- Reduce(function(x, pattern) {
-    gsub(pattern, replacements[pattern], x)
-  }, names(replacements), init = sets$BAL)
+  getItems(V03ProdPrimary, 3) <- paste0("Primary Energy|", getItems(V03ProdPrimary, 3))
 
-  V03ConsGrssInl <- toolAggregate(
-    V03ConsGrssInl[ , , unique(sets$EF)],
-    dim = 3,
-    rel = sets,
-    from = "EF",
-    to = "BAL"
-  )
-
-  # Update item names
-  getItems(V03ConsGrssInl, 3) <- paste0("Primary Energy|", getItems(V03ConsGrssInl, 3))
-  getNames(V03ConsGrssInl)[getNames(V03ConsGrssInl) == "Primary Energy|Total"] <- "Primary Energy"
+  magpie_object <- helperAggregateLevel(V03ProdPrimary, level = 1, recursive = TRUE)
 
   # Add dimensions and bind to magpie object
-  V03ConsGrssInl <- add_dimension(V03ConsGrssInl, dim = 3.2, add = "unit", nm = "Mtoe")
-  return(V03ConsGrssInl)
+  magpie_object <- add_dimension(magpie_object, dim = 3.2, add = "unit", nm = "Mtoe")
+  return(magpie_object)
 }
