@@ -61,19 +61,19 @@ Final Energy|Electricity,Electricity,yellow,bar
 Final Energy|Fossil Liquids,Fossil Liquids,grey,bar
 Final Energy|Heat,Heat,firebrick2,bar
 Final Energy|Other fuels,Other Fuels,darkorchid3,bar
-Emissions|CO2|Energy|Demand|Bunkers,Bunkers,yellow,bar
-Emissions|CO2|Energy|Supply,Supply,#bcbc6d,bar
-Emissions|CO2|Cumulated,Cumulated,#661a00,bar
+Emissions|CO2|Energy|Demand|Bunkers,Bunkers,yellow,area
+Emissions|CO2|Energy|Supply,Supply,#bcbc6d,area
+Emissions|CO2|Cumulated,Cumulated,#661a00,area
 Emissions|CO2|Budget1p5C,Budget1p5C,black,dLine
 Emissions|CO2|Budget2C,Budget2C,red,dLine
 Emissions|CO2,Total,black,solidLine
 Emissions|CO2|VAL,EDGAR,red,dLine
 Emissions|CO2|Validation,IEA|Projections,green,solidLine
-Emissions|CO2|Energy|Demand|Direct Air Capture,CDR,#87e6a4,bar
-Emissions|CO2|AFOLU,AFOLU,#595933,bar
-Emissions|CO2|Industrial Processes,Industrial Processes,#661a00,bar
-Emissions|CO2|Energy|Demand|Industry,Industry,orange,bar
-Emissions|CO2|Energy|Demand|Residential and Commercial,Res and Com,#0000FF,bar
-Emissions|CO2|Energy|Demand|Transportation,Transportation,#000000,bar
+Emissions|CO2|Energy|Demand|Direct Air Capture,CDR,#87e6a4,area
+Emissions|CO2|AFOLU,AFOLU,#595933,area
+Emissions|CO2|Industrial Processes,Industrial Processes,#661a00,area
+Emissions|CO2|Energy|Demand|Industry,Industry,orange,area
+Emissions|CO2|Energy|Demand|Residential and Commercial,Res and Com,#0000FF,area
+Emissions|CO2|Energy|Demand|Transportation,Transportation,#000000,area
 Price|Carbon,Price|Carbon,#661a00,dLine
-Gross Inland Consumption|Biomass and Waste,Biomass,#661a01,dLine
+Gross Inland Consumption|Biofuels,Biofuels,#661a01,dLine
