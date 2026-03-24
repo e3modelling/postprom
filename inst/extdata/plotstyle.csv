@@ -76,4 +76,4 @@ Emissions|CO2|Energy|Demand|Industry,Industry,orange,area
 Emissions|CO2|Energy|Demand|Residential and Commercial,Res and Com,#0000FF,area
 Emissions|CO2|Energy|Demand|Transportation,Transportation,#000000,area
 Price|Carbon,Price|Carbon,#661a00,dLine
-Gross Inland Consumption|Biomass and Waste,Biomass,#661a01,dLine
+Gross Inland Consumption|Biofuels,Biofuels,#661a01,dLine
