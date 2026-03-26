@@ -102,7 +102,8 @@ convertGDXtoMIF_single <- function(.path, path_mif, append, regions = NULL,
   reports <- mbind(reports, reportCostsPGtechnologies(path_gdx, regions, years))
   reports <- mbind(reports, reportVehicles(path_gdx, regions, years))
   reports <- mbind(reports, reportGrossInlandConsumption(path_gdx, regions, years))
-
+  reports <- mbind(reports, reportEquipmentCapacityShare(path_gdx, regions, years))
+  
   # reportLearningCurve <- reportLearningCurve(path_gdx, regions, years)
 
 
@@ -113,8 +114,8 @@ convertGDXtoMIF_single <- function(.path, path_mif, append, regions = NULL,
     magpieObject = reports, aggregate, budgetBaseYear = 2019,
     budget1p5 = 400, budget2c = 1150, probLabel = "67%"
   ))
-  #reports <- mbind(reports, reportGrowthRates(reports))
-
+  reports <- mbind(reports, reportGrowthRates(reports))
+  
   if (emissions == TRUE) generateEmissionsFile(.path, reports, years, scenario_name)
 
   if (save == TRUE) {
@@ -139,12 +140,12 @@ aggregateMIF <- function(report) {
   report_data <- report
   items <- getItems(report_data, 3)
 
-  # exclude Price|Final Energy, Price|Carbon, Activity growth rate
-  get_items_not <- items[!grepl("^Price|^Activity growth rate", items)]
+  # exclude Price|Final Energy, Price|Carbon, Activity growth rate, Share equipment capacity
+  get_items_not <- items[!grepl("^Price|^Activity growth rate|^Share Equipment Capacity", items)]
 
-  # take Price|Final Energy,Activity growth rate
+  # take Price|Final Energy,Activity growth rate, Share equipment capacity
   get_items <- items[
-    grep("^(Price|Activity growth rate)(?!.*Carbon)", items, perl = TRUE)
+    grep("^(Price|Activity growth rate|Share Equipment Capacity)(?!.*Carbon)", items, perl = TRUE)
   ]
 
   # take Price|Carbon
