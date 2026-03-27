@@ -27,18 +27,23 @@ reportGrowthRates <- function(reports) {
   ]
 
   EmissionsGrowthRateMP <- as.quitte(reports[,,get_items]) %>% 
-  arrange(DSBSpEF, unit, region, period) %>%
-  group_by(DSBSpEF, unit, region) %>%
-  mutate(
-    GrowthRate = ifelse(lag(value) == 0, NA, 100 * (value - lag(value)) / abs(lag(value))),
-    unit = "%",
-    DSBSpEF = paste0("Growth Rate|", DSBSpEF)
-  ) %>%
-  ungroup() %>% 
-  select("region", "period", "DSBSpEF", "unit", "GrowthRate") %>%
-  rename(variable = DSBSpEF) %>% 
-  rename(value = GrowthRate)  %>%
-  as.quitte() %>% as.magpie()
+    arrange(DSBSpEF, unit, region, period) %>%
+    group_by(DSBSpEF, unit, region) %>%
+    mutate(
+      GrowthRate = ifelse(
+        abs(lag(value)) < 1e-4, 
+        NA, 
+        round(100 * (value - lag(value)) / abs(lag(value)), 3)
+      ),
+      unit = "%",
+      DSBSpEF = paste0("Growth Rate|", DSBSpEF)
+    ) %>%
+    ungroup() %>% 
+    select("region", "period", "DSBSpEF", "unit", "GrowthRate") %>%
+    rename(variable = DSBSpEF) %>% 
+    rename(value = GrowthRate)  %>%
+    as.quitte() %>% 
+    as.magpie()
   
   EmissionsGrowthRateMP[is.na(EmissionsGrowthRateMP)] <- 0
 
