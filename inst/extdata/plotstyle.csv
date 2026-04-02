@@ -77,3 +77,15 @@ Emissions|CO2|Energy|Demand|Residential and Commercial,Res and Com,#0000FF,area
 Emissions|CO2|Energy|Demand|Transportation,Transportation,#000000,area
 Price|Carbon,Price|Carbon,#661a00,dLine
 Gross Inland Consumption|Biofuels,Biofuels,#661a01,dLine
+Gross Emissions|CO2|Energy|Supply,Supply,#595933,area
+Gross Emissions|CO2|Energy|Demand,Demand,#661a00,area
+Gross Emissions|CO2,Total,black,solidLine
+Carbon Capture|Energy|Demand,Demand,#661a00,area
+Carbon Capture|Energy|Supply,Supply,#595933,area
+Carbon Capture|Direct Air Capture,Direct Air Capture,#ffcc00,area
+Carbon Capture|Utilization,Utilization,#337fff,area
+Carbon Capture,Total,black,solidLine
+Carbon Removal|Geological Storage,Geological Storage,#661a00,area
+Carbon Removal|Land Use,Land Use,#595933,area
+Carbon Removal|Enhanced Weathering,Enhanced Weathering,#ffcc00,area
+Carbon Removal,Total,black,solidLine
