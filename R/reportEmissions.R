@@ -197,7 +197,6 @@ reportEmissions <- function(path, regions, years) {
   # ------------ Carbon Capture|Geological Storage|Direct Air Capture -------
   captureGeoStorage <- captured[, , grepl("Geological Storage", getItems(captured, dim = 3))]
   getItems(captureGeoStorage, dim = 3) <- gsub("Carbon Removal", "Carbon Capture", getItems(captureGeoStorage, dim = 3))
-
   # -------------------------- Transport Passenger -------
   TRANP <- EmissionsCo2[, , c("Emissions|CO2|Energy|Demand|Transportation|Passenger Transport - Cars",
                               "Emissions|CO2|Energy|Demand|Transportation|Passenger Transport - Busses",
@@ -218,6 +217,13 @@ reportEmissions <- function(path, regions, years) {
                                        "Emissions|CO2|Energy|Supply|Gases")]
   OtherFuelTransformation <- dimSums(OtherFuelTransformation, dim = 3, na.rm = TRUE)
   getItems(OtherFuelTransformation, 3) <- "Emissions|CO2|Energy|Supply|Other Fuel Transformation"
+  # -------------------------- Emissions|CO2 (w/o bunkers), Emissions|Kyoto Gases (w/o bunkers) -------
+  emissionsCO2woBunkers <- EmissionsCo2[, , "Emissions|CO2"] - EmissionsCo2[, , "Emissions|CO2|Energy|Demand|Bunkers"]
+  getItems(emissionsCO2woBunkers, dim = 3) <- "Emissions|CO2-(w/o bunkers)"
+  getSets(emissionsCO2woBunkers)[3] <- "DSBS"
+  emissionsKyotowoBunkers <- kyotoGases[, , "Emissions|Kyoto Gases"] - EmissionsCo2[, , "Emissions|CO2|Energy|Demand|Bunkers"]
+  getItems(emissionsKyotowoBunkers, dim = 3) <- "Emissions|Kyoto Gases-(w/o bunkers)"
+  getSets(emissionsKyotowoBunkers)[3] <- "DSBS"
   # =============================== Add Dimensions ============================
   emissionsNonCO2 <- add_dimension(
     emissionsNonCO2,
@@ -237,11 +243,13 @@ reportEmissions <- function(path, regions, years) {
   TRANP <- add_dimension(TRANP, dim = 3.2, add = "unit", nm = unitsCO2)
   TRANG <- add_dimension(TRANG, dim = 3.2, add = "unit", nm = unitsCO2)
   OtherFuelTransformation <- add_dimension(OtherFuelTransformation, dim = 3.2, add = "unit", nm = unitsCO2)
+  emissionsCO2woBunkers <- add_dimension(emissionsCO2woBunkers, dim = 3.2, add = "unit", nm = unitsCO2)
+  emissionsKyotowoBunkers <- add_dimension(emissionsKyotowoBunkers, dim = 3.2, add = "unit", nm =  "Mt CO2-equiv/yr")
 
   magpie_object <- mbind(
     emissionsNonCO2, EmissionsCo2, kyotoGases,
     Cumulated, sumIPEnergy, resCom, captured, captureGeoStorage,
-    TRANP, TRANG, OtherFuelTransformation
+    TRANP, TRANG, OtherFuelTransformation, emissionsCO2woBunkers, emissionsKyotowoBunkers
   )
 
   return(magpie_object)
