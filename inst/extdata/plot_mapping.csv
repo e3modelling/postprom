@@ -67,3 +67,15 @@ Capacity|Electricity|Total,Hydrogen
 Capacity|Electricity|Total,VAL
 Price|Carbon,Carbon
 Gross Inland Consumption|Biofuels,Biofuels
+Gross Emissions|CO2|Total,Energy|Supply
+Gross Emissions|CO2|Total,Energy|Demand
+Gross Emissions|CO2|Total,
+Carbon Capture|Total,Energy|Demand
+Carbon Capture|Total,Energy|Supply
+Carbon Capture|Total,Direct Air Capture
+Carbon Capture|Total,Utilization
+Carbon Capture|Total,
+Carbon Removal|Total,Geological Storage
+Carbon Removal|Total,Land Use
+Carbon Removal|Total,Enhanced Weathering
+Carbon Removal|Total,
