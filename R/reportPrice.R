@@ -23,37 +23,19 @@ reportPrice <- function(path, regions, years) {
   #add model OPEN-PROM data Electricity prices
 
   set_names <- c(
-    "iSet",
-    "rSet",
     "SECtoEF", # Link between Model Subsectors and Fuels
     "BALEF2EFS" # GAMS set used for reporting of Final Energy
   )
-  VPriceElecIndResConsu <- readGDX(path, "VmPriceElecIndResConsu", field = 'l')[regions, years, ]
   sets <- readGDX(path, set_names)
-
-  sets_i <- data.frame(iSet = sets$iSet)
-  sets_r <- data.frame(rSet = sets$rSet)
 
   names(sets$BALEF2EFS) <- c("BAL", "EF")
   sets$BALEF2EFS[["BAL"]] <- gsub("Gas fuels", "Gases", sets$BALEF2EFS[["BAL"]])
   sets$BALEF2EFS[["BAL"]] <- gsub("Steam", "Heat", sets$BALEF2EFS[["BAL"]])
 
-  elec_prices_Industry <- VPriceElecIndResConsu[,,sets_i[1,1]]
-  getNames(elec_prices_Industry) <- "Price|Final Energy|Industry|Electricity"
-
-  elec_prices_Residential <- VPriceElecIndResConsu[,,sets_r[1,1]]
-  getNames(elec_prices_Residential) <- "Price|Final Energy|Residential|Electricity"
-
-  elec_prices <- mbind(elec_prices_Industry, elec_prices_Residential)
-  elec_prices <- add_dimension(elec_prices, dim = 3.2, add = "unit", nm = sub(".*\\((.*)\\).*", "\\1", VPriceElecIndResConsu@description))
-  magpie_object <- mbind(NULL, elec_prices)
-
-
   sector <- c("TRANSE", "INDSE", "DOMSE", "NENSE", "PG")
   sector_name <- c("Transportation", "Industry", "Residential and Commercial", "Non Energy and Bunkers",
                    "Power and Steam Generation")
-
-
+  magpie_object <- NULL
   z <- NULL
   for (y in seq_along(sector)) {
     # read GAMS set used for reporting of Final Energy different for each sector
