@@ -43,6 +43,9 @@ reportVehicles <- function(path, regions, years) {
 
   NewRegPcTechYearly <- add_dimension(NewRegPcTechYearly, dim = 3.2, add = "unit", nm = units)
   StockPcYearlyTech <- add_dimension(StockPcYearlyTech, dim = 3.2, add = "unit", nm = units)
+
+  magpie_object <- mbind(NewRegPcTechYearly, StockPcYearlyTech)
+  magpie_object <- helperAggregateLevel(magpie_object, level = 2, recursive = TRUE)
   
-  return(mbind(NewRegPcTechYearly, StockPcYearlyTech))
+  return(magpie_object)
 }
