@@ -1,7 +1,34 @@
+#' Process and Aggregate Electricity Capacity Additions
+#'
+#' This function reads electricity capacity addition data from a GDX file and
+#' computes both gross and net capacity additions by region and year. It maps
+#' technologies to energy forms, applies technology fuel shares, distinguishes
+#' between CCS and non-CCS technologies, and aggregates results to reporting
+#' categories following the BALEF classification. The output is formatted as a
+#' magpie object with appropriate reporting names and units.
+#'
+#' @param path Character string specifying the file path to the GDX data file.
+#' @param regions Character vector of region names used to subset the data.
+#' @param years Numeric or character vector of years to include in the report.
+#'
+#' @return A magpie object containing aggregated gross and net electricity
+#'   capacity additions by region, year, technology category, and CCS status,
+#'   with units expressed in GW/yr.
+#'
+#' @examples
+#' \dontrun{
+#' result <- reportCapacityAdditions(
+#'   system.file("extdata", "blabla.gdx", package = "postprom"),
+#'   regions = c("MEA"),
+#'   years   = c(2030, 2040, 2050)
+#' )
+#' }
+#'
 #' @importFrom gdx readGDX
 #' @importFrom magclass getItems dimSums add_dimension mbind
 #' @importFrom madrat toolAggregate
 #' @importFrom stringr str_replace_all
+#' @importFrom dplyr %>% case_when
 #' @export
 reportCapacityAdditions <- function(path, regions, years) {
   VNewCapElec <- readGDX(path, "V04NewCapElec", field = "l")[regions, years, ]
@@ -17,7 +44,7 @@ reportCapacityAdditions <- function(path, regions, years) {
   getItems(netCapacityAdditions, 3) <- paste0("Net Capacity Additions|Electricity|", getItems(netCapacityAdditions, 3))
   
   magpie_object <- mbind(capacityAdditions, netCapacityAdditions)
-  magpie_object <- helperAggregateLevel(magpie_object, level = 1, recursive = TRUE)
+  magpie_object <- helperAggregateLevel(magpie_object, level = 2, recursive = TRUE)
   magpie_object <- add_dimension(magpie_object, dim = 3.2, add = "unit", nm = "GW/yr")
   return(magpie_object)
 }
