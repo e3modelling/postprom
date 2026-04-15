@@ -6,29 +6,54 @@
 reportCapacityAdditions <- function(path, regions, years) {
   VNewCapElec <- readGDX(path, "V04NewCapElec", field = "l")[regions, years, ]
   VNetNewCapElec <- readGDX(path, "V04NetNewCapElec", field = "l")[regions, years, ]
-  PGALLtoEF <- readGDX(path, "PGALLtoEF")
-  names(PGALLtoEF) <- c("PGALL", "EF")
-
-  magpie_object <- helper(VNewCapElec, "Capacity Additions")
-  magpie_object <- mbind(magpie_object, helper(VNetNewCapElec, "Net Capacity Additions"))
+  sharesTech <- readGDX(path, "i04ShareFuels", field = "l")[regions, , ]
+  TECHtoEF <- readGDX(path, "PGALLtoEF") %>%
+    rename(TECH = PGALL, EF = EFS)
+  CCS <- readGDX(path, "CCS")
+  NOCCS <- c(readGDX(path, "NOCCS"), "ATHOIL")
+  capacityAdditions <- getCapacityAddditions(TECHtoEF, VNewCapElec, CCS, NOCCS, sharesTech)
+  getItems(capacityAdditions, 3) <- paste0("Capacity Additions|Electricity|", getItems(capacityAdditions, 3))
+  netCapacityAdditions <- getCapacityAddditions(TECHtoEF, VNetNewCapElec, CCS, NOCCS, sharesTech)
+  getItems(netCapacityAdditions, 3) <- paste0("Net Capacity Additions|Electricity|", getItems(netCapacityAdditions, 3))
+  
+  magpie_object <- mbind(capacityAdditions, netCapacityAdditions)
+  magpie_object <- helperAggregateLevel(magpie_object, level = 1, recursive = TRUE)
+  magpie_object <- add_dimension(magpie_object, dim = 3.2, add = "unit", nm = "GW/yr")
   return(magpie_object)
 }
 
 # Helper ----------------------------------------------------------------------------------------
-helper <- function(variable, title) {
-  title <- paste0(title, "|Electricity|")
+getCapacityAddditions <- function(TECHtoEF, prod, CCS, NOCCS, sharesTech = NULL) {
+  BALEFtoEF <- read.csv(
+    system.file("mappings", "BALEFtoEF.csv", package = "postprom")
+  ) %>%
+    separate_rows(EF) %>%
+    filter(BALEF %in% c(
+      "Coal", "Gas", "Nuclear", "Biofuels", "Oil", "Electricity",
+      "Solar", "Wind", "Geothermal and other renewable sources", "Hydrogen", "Hydro"
+    ))
+  if (!is.null(sharesTech)) {
+    sharesTech <- sharesTech[, , paste0(TECHtoEF$TECH, ".", TECHtoEF$EF)]
+  }
+  TECHtoEF[, 2] <- paste0(TECHtoEF$TECH, ".", TECHtoEF$EF)
 
-  getItems(variable, 3) <- paste0(title, getItems(variable, 3))
+  prod <- toolAggregate(prod,
+    weight = sharesTech, dim = 3,
+    rel = TECHtoEF, from = "TECH", to = "EF"
+  )
 
-  magpie_object <- NULL
-  variable <- add_dimension(variable, dim = 3.2, add = "unit", nm = "GW/yr")
-  magpie_object <- mbind(magpie_object, variable)
+  prefix <- sub("\\..*", "", getItems(prod, 3))
+  withCCS <- case_when(
+    prefix %in% CCS ~ "w/ CCS",
+    prefix %in% NOCCS ~ "w/o CCS",
+    TRUE ~ ""
+  )
 
-  # electricity production
-  var_total <- dimSums(variable, dim = 3, na.rm = TRUE)
-  getItems(var_total, 3) <- title
+  prod <- add_dimension(prod, dim = 3.3, add = "CCS", nm = withCCS, expand = FALSE)
+  getItems(prod, 3.2) <- BALEFtoEF$BALEF[match(getItems(prod, 3.2), BALEFtoEF$EF)]
+  prod <- dimSums(prod, 3.1)
 
-  var_total <- add_dimension(var_total, dim = 3.2, add = "unit", nm = "GW/yr")
-  magpie_object <- mbind(magpie_object, var_total)
-  return(magpie_object)
+  name <- gsub("\\.", "|", sub("\\.NA$", "", getItems(prod, dim = 3)))
+  getItems(prod, 3) <- name
+  return(prod)
 }
