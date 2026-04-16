@@ -17,6 +17,7 @@ Authors@R: c(
       "Fotis", "Sioutas",
       email = "Fotis.Sioutas@ricardo.com",
       role = c("aut"),
+    ),
     person(
       "Alexandros", "Tsimpoukis",
       email = "Alexandros.Tsimpoukis@ricardo.com",
