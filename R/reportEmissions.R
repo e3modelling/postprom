@@ -128,12 +128,12 @@ reportEmissions <- function(path, regions, years) {
   CDR <- add_columns(
     CDR,
     addnm = paste0("Carbon Removal|Geological Storage|", c("Biomass", "Other Sources")),
-    dim = 3
+    dim = 3,
+    fill = 0
   )
+  
   CDR[, , "Carbon Removal|Geological Storage|Biomass"] <- dimSums(CCS[, , getItems(CCS, 3)[grepl("\\|Biofuels$", getItems(CCS, 3))]], 3.1)
-
-  CDR[, , "Carbon Removal|Geological Storage|Other Sources"] <- dimSums(CCS[, , getItems(CCS, 3)[grepl("\\|Fossil$", getItems(CCS, 3))]], 3.1)
-
+  
   captured <- mbind(CDR, CCS, AFOLU_CDR[, , "Carbon Removal|Land Use"])
   captured <- helperAggregateLevel(captured, level = 1, recursive = TRUE)
   # =============================== Non-CO2===================================
