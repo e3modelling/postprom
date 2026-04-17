@@ -69,7 +69,7 @@ Emissions|CO2|Budget2C,Budget2C,red,dLine
 Emissions|CO2,Total,black,solidLine
 Emissions|CO2|VAL,EDGAR,red,dLine
 Emissions|CO2|Validation,IEA|Projections,green,solidLine
-Emissions|CO2|Energy|Demand|Direct Air Capture,CDR,#87e6a4,area
+Emissions|CO2|Energy|Demand|Direct Air Capture,DAC,#87e6a4,area
 Emissions|CO2|AFOLU,AFOLU,#595933,area
 Emissions|CO2|Industrial Processes,Industrial Processes,#661a00,area
 Emissions|CO2|Energy|Demand|Industry,Industry,orange,area
