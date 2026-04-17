@@ -57,7 +57,7 @@ OPEN2MAgPIE <- function(path, pathPollutantPrices, pathBioenergyDemand, scenario
   names(regionMapping2)<-names(regionMapping)
   mapping <- left_join(regionMapping, regionMapping2, by=c("Full.Country.Name", "ISO3.Code"))
   
-  variables <- readGDX(path, c("VmcarVal", "V03ConsGrssInl"), field = "l")
+  variables <- readGDX(path, c("VmCarVal", "V03ConsGrssInl"), field = "l")
   
   co2 <- variables$VmCarVal[unique(regionMapping[,3]),,]
   
