@@ -21,22 +21,22 @@ reportEfficiency <- function(reports, path, regions, years, blabla_regions) {
   Energy <- reports[,,c("GDP|PPP.billion US$2015/yr", "Final Energy.Mtoe", "Primary Energy.Mtoe")]
   Energy <- collapseDim(Energy, dim = 3.2)
   EnergyEfficiency <- Energy[,,"GDP|PPP"] / Energy[,,"Final Energy"]
-  getItems(EnergyEfficiency, 3) <- "Energy Efficiency (GDP/TFC)"
+  getItems(EnergyEfficiency, 3) <- "Energy Efficiency GDP/TFC"
   names(dimnames(EnergyEfficiency))[3] <- "EnergyEfficiency"
   EnergyEfficiency <- add_dimension(EnergyEfficiency, dim = 3.2, add = "unit", nm = "billion US$2015/Mtoe")
   # ============ Energy intensity (TFC/GDP) =============================
   EnergyIntensity  <- Energy[,,"Final Energy"] / Energy[,,"GDP|PPP"]
-  getItems(EnergyIntensity, 3) <- "Energy Intensity (TFC/GDP)"
+  getItems(EnergyIntensity, 3) <- "Energy Intensity TFC/GDP"
   names(dimnames(EnergyIntensity))[3] <- "EnergyIntensity"
   EnergyIntensity <- add_dimension(EnergyIntensity, dim = 3.2, add = "unit", nm = "Mtoe/billion US$2015")
   # ============ Primary Energy Efficiency (GDP/TES),====================
   PrimaryEnergyEfficiency <- Energy[,,"GDP|PPP"] / Energy[,,"Primary Energy"]
-  getItems(PrimaryEnergyEfficiency, 3) <- "Primary Energy Efficiency (GDP/TES)"
+  getItems(PrimaryEnergyEfficiency, 3) <- "Primary Energy Efficiency GDP/TES"
   names(dimnames(PrimaryEnergyEfficiency))[3] <- "PrimaryEnergyEfficiency"
   PrimaryEnergyEfficiency <- add_dimension(PrimaryEnergyEfficiency, dim = 3.2, add = "unit", nm = "billion US$2015/Mtoe")
   # ============ Primary Energy intensity (TES/GDP) =============================
   PrimaryEnergyIntensity  <- Energy[,,"Primary Energy"] / Energy[,,"GDP|PPP"]
-  getItems(PrimaryEnergyIntensity, 3) <- "Primary Energy Intensity (TES/GDP)"
+  getItems(PrimaryEnergyIntensity, 3) <- "Primary Energy Intensity TES/GDP"
   names(dimnames(PrimaryEnergyIntensity))[3] <- "PrimaryEnergyIntensity"
   PrimaryEnergyIntensity <- add_dimension(PrimaryEnergyIntensity, dim = 3.2, add = "unit", nm = "Mtoe/billion US$2015")
   
@@ -44,7 +44,7 @@ reportEfficiency <- function(reports, path, regions, years, blabla_regions) {
   CO2Intensity <- reports[,,c("Emissions|CO2.Mt CO2/yr", "Secondary Energy|Electricity.TWh")]
   CO2Intensity <- collapseDim(CO2Intensity, dim = 3.2)
   CO2IntensityPower <- CO2Intensity[,,"Emissions|CO2"] / CO2Intensity[,,"Secondary Energy|Electricity"]
-  getItems(CO2IntensityPower, 3) <- "CO2 Intensity of Electricity Generation (Emissions / Electricity production)"
+  getItems(CO2IntensityPower, 3) <- "CO2 Intensity of Electricity Generation Emissions / Electricity production"
   names(dimnames(CO2IntensityPower))[3] <- "CO2IntensityPower"
   CO2IntensityPower <- add_dimension(CO2IntensityPower, dim = 3.2, add = "unit", nm = "Mt CO2/TWh")
   # ============ CO2 intensity of INDUSTRY (Emissions/Useful Energy)============
@@ -74,7 +74,7 @@ reportEfficiency <- function(reports, path, regions, years, blabla_regions) {
   }
   
   CO2IntensityofIndustry <- CO2Intensity / UsefulEnergyIndustry
-  getItems(CO2IntensityofIndustry, 3) <- "CO2 Intensity of Industry  (Emissions/Useful Energy)"
+  getItems(CO2IntensityofIndustry, 3) <- "CO2 Intensity of Industry Emissions/Useful Energy"
   names(dimnames(CO2IntensityofIndustry))[3] <- "CO2IntensityofIndustry"
   CO2IntensityofIndustry <- add_dimension(CO2IntensityofIndustry, dim = 3.2, add = "unit", nm = "Mt CO2/Mtoe")
   
@@ -83,7 +83,7 @@ reportEfficiency <- function(reports, path, regions, years, blabla_regions) {
   FEIndustry <- collapseDim(FEIndustry, dim = 3.2)
   
   EnergyIntensityofIndustry <- FEIndustry / UsefulEnergyIndustry
-  getItems(EnergyIntensityofIndustry, 3) <- "CO2 Intensity of Industry (TFC industry/Useful Energy)"
+  getItems(EnergyIntensityofIndustry, 3) <- "CO2 Intensity of Industry TFC Industry/Useful Energy"
   names(dimnames(EnergyIntensityofIndustry))[3] <- "EnergyIntensityofIndustry"
   EnergyIntensityofIndustry <- add_dimension(EnergyIntensityofIndustry, dim = 3.2, add = "unit", nm = "1")
   # ==================== Combine all indicators into a single magpie object ============================
