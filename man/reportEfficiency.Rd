@@ -5,7 +5,7 @@
 \title{Energy Efficiency (GDP/TFC) 
 Energy intensity (TFC/GDP)}
 \usage{
-reportEfficiency(reports, path, regions, years)
+reportEfficiency(reports, path, regions, years, blabla_regions)
 }
 \arguments{
 \item{reports}{Magpie object created from postprom.}
