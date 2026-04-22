@@ -13,7 +13,7 @@
 #' @importFrom quitte as.quitte
 #' @importFrom dplyr filter left_join mutate select group_by %>% arrange ungroup rename
 #' @export
-reportEfficiency <- function(reports, path, regions, years) {
+reportEfficiency <- function(reports, path, regions, years, blabla_regions) {
   
   items <- getItems(reports,3)
   
@@ -58,13 +58,20 @@ reportEfficiency <- function(reports, path, regions, years) {
     field = "l"
   )
   
-  V02DemSubUsefulSubsec <- variables$V02DemSubUsefulSubsec[regions, years,]
-  V02UsefulElecNonSubIndTert <- variables$V02UsefulElecNonSubIndTert[regions, years,]
+  V02DemSubUsefulSubsec <- variables$V02DemSubUsefulSubsec[blabla_regions, years,]
+  V02UsefulElecNonSubIndTert <- variables$V02UsefulElecNonSubIndTert[blabla_regions, years,]
   
   UsefulEnergy  <- V02DemSubUsefulSubsec + V02UsefulElecNonSubIndTert
   DSBSIndustry <- readGDX(path, "INDSE")
   UsefulEnergyIndustry <- UsefulEnergy[,,DSBSIndustry]
   UsefulEnergyIndustry <- dimSums(UsefulEnergyIndustry, dim = 3)
+  
+  if ("World" %in% regions) {
+    # Calculate the sum
+    add_region_GLO <- dimSums(UsefulEnergyIndustry, 1, na.rm = TRUE)
+    getItems(add_region_GLO, 1) <- "World"
+    UsefulEnergyIndustry <- mbind(UsefulEnergyIndustry, add_region_GLO)
+  }
   
   CO2IntensityofIndustry <- CO2Intensity / UsefulEnergyIndustry
   getItems(CO2IntensityofIndustry, 3) <- "CO2 Intensity of Industry  (Emissions/Useful Energy)"
