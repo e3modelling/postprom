@@ -44,7 +44,7 @@ reportEfficiency <- function(reports, path, regions, years, blabla_regions) {
   CO2Intensity <- reports[,,c("Emissions|CO2.Mt CO2/yr", "Secondary Energy|Electricity.TWh")]
   CO2Intensity <- collapseDim(CO2Intensity, dim = 3.2)
   CO2IntensityPower <- CO2Intensity[,,"Emissions|CO2"] / CO2Intensity[,,"Secondary Energy|Electricity"]
-  getItems(CO2IntensityPower, 3) <- "CO2 Intensity of Electricity Generation"
+  getItems(CO2IntensityPower, 3) <- "Carbon Intensity of Electricity Generation"
   names(dimnames(CO2IntensityPower))[3] <- "CO2IntensityPower"
   CO2IntensityPower <- add_dimension(CO2IntensityPower, dim = 3.2, add = "unit", nm = "Mt CO2/TWh")
   # ============ CO2 intensity of INDUSTRY (Emissions/Useful Energy)============
@@ -74,7 +74,7 @@ reportEfficiency <- function(reports, path, regions, years, blabla_regions) {
   }
   
   CO2IntensityofIndustry <- CO2Intensity / UsefulEnergyIndustry
-  getItems(CO2IntensityofIndustry, 3) <- "CO2 Intensity of Industry"
+  getItems(CO2IntensityofIndustry, 3) <- "Carbon Intensity of Industry"
   names(dimnames(CO2IntensityofIndustry))[3] <- "CO2IntensityofIndustry"
   CO2IntensityofIndustry <- add_dimension(CO2IntensityofIndustry, dim = 3.2, add = "unit", nm = "Mt CO2/Mtoe")
   
