@@ -47,7 +47,7 @@ reportEfficiency <- function(reports, path, regions, years) {
   getItems(CO2IntensityPower, 3) <- "CO2 Intensity of Electricity Generation (Emissions / Electricity production)"
   names(dimnames(CO2IntensityPower))[3] <- "CO2IntensityPower"
   CO2IntensityPower <- add_dimension(CO2IntensityPower, dim = 3.2, add = "unit", nm = "Mt CO2/TWh")
-  # ============ CO2 intensity of INDUSTRY (Emissions/Useful energy)============
+  # ============ CO2 intensity of INDUSTRY (Emissions/Useful Energy)============
   CO2Intensity <- reports[,,"Emissions|CO2|Energy|Demand|Industry.Mt CO2/yr"]
   CO2Intensity <- collapseDim(CO2Intensity, dim = 3.2)
   variables <- readGDX(
@@ -58,11 +58,37 @@ reportEfficiency <- function(reports, path, regions, years) {
     field = "l"
   )
   
-  V02DemSubUsefulSubsec <- variables$V02DemSubUsefulSubsec[regions, years]
-  V02UsefulElecNonSubIndTert <- variables$V02UsefulElecNonSubIndTert[regions, years]
+  V02DemSubUsefulSubsec <- variables$V02DemSubUsefulSubsec[regions, years,]
+  V02UsefulElecNonSubIndTert <- variables$V02UsefulElecNonSubIndTert[regions, years,]
+  
   UsefulEnergy  <- V02DemSubUsefulSubsec + V02UsefulElecNonSubIndTert
+  DSBSIndustry <- readGDX(path, "INDSE")
+  UsefulEnergyIndustry <- UsefulEnergy[,,DSBSIndustry]
+  UsefulEnergyIndustry <- dimSums(UsefulEnergyIndustry, dim = 3)
   
-  Energy_productivity[is.na(Energy_productivity)] <- 0
+  CO2IntensityofIndustry <- CO2Intensity / UsefulEnergyIndustry
+  getItems(CO2IntensityofIndustry, 3) <- "CO2 Intensity of Industry  (Emissions/Useful Energy)"
+  names(dimnames(CO2IntensityofIndustry))[3] <- "CO2IntensityofIndustry"
+  CO2IntensityofIndustry <- add_dimension(CO2IntensityofIndustry, dim = 3.2, add = "unit", nm = "Mt CO2/Mtoe")
   
-  return(Energy_productivity)
+  # ============Energy intensity of industry (TFC industry/Useful Energy)============
+  FEIndustry <- reports[,,"Final Energy|Industry.Mtoe"]
+  FEIndustry <- collapseDim(FEIndustry, dim = 3.2)
+  
+  EnergyIntensityofIndustry <- FEIndustry / UsefulEnergyIndustry
+  getItems(EnergyIntensityofIndustry, 3) <- "CO2 Intensity of Industry (TFC industry/Useful Energy)"
+  names(dimnames(EnergyIntensityofIndustry))[3] <- "EnergyIntensityofIndustry"
+  EnergyIntensityofIndustry <- add_dimension(EnergyIntensityofIndustry, dim = 3.2, add = "unit", nm = "1")
+  # ==================== Combine all indicators into a single magpie object ============================
+  magpie_object <- mbind(
+    EnergyEfficiency,
+    EnergyIntensity,
+    PrimaryEnergyEfficiency,
+    PrimaryEnergyIntensity,
+    CO2IntensityPower,
+    CO2IntensityofIndustry,
+    EnergyIntensityofIndustry
+  )
+  
+  return(magpie_object)
 }

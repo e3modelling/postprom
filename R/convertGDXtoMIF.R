@@ -116,7 +116,8 @@ convertGDXtoMIF_single <- function(.path, path_mif, append, regions = NULL,
     budget1p5 = 400, budget2c = 1150, probLabel = "67%"
   ))
   reports <- mbind(reports, reportGrowthRates(reports))
-
+  reports <- mbind(reports, reportEfficiency(reports, path, regions, years))
+  
   if (emissions == TRUE) generateEmissionsFile(.path, reports, years, scenario_name)
 
   if (save == TRUE) {
