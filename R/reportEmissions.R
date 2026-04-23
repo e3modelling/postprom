@@ -155,6 +155,7 @@ reportEmissions <- function(path, regions, years) {
     partrel = TRUE
   )
   # Convert CH4 and N20 from Mt Ceq to "Mt CH4/yr" or "kt N2O/yr"
+  # Note: HFCs are NOT converted here to preserve individual GWP values for calculateGhg
   allVariables <- getNames(emissionsNonCO2)
   ch4Vars <- grep("CH4", allVariables, value = TRUE)
   n2oVars <- grep("N2O", allVariables, value = TRUE)
@@ -169,6 +170,7 @@ reportEmissions <- function(path, regions, years) {
   names(dimnames(emissionsNonCO2))[3] <- "SBS"
   emissionsCO2eq <- calculateGhg(emissionsNonCO2)
   emissionsNonCO2 <- helperAggregateLevel(emissionsNonCO2, level = 2, recursive = TRUE)
+  emissionsNonCO2 <- emissionsNonCO2[, , c("Emissions|HFC", "Emissions|PFC"), invert = TRUE]
   # -------------------------- Kyoto Gases ------------------------------------
   kyotoGases <- dimSums(emissionsCO2eq, dim = 3)[, , ] + EmissionsCo2[, , "Emissions|CO2"]
   getItems(kyotoGases, 3.1) <- "Emissions|Kyoto Gases"
@@ -217,6 +219,40 @@ reportEmissions <- function(path, regions, years) {
                                        "Emissions|CO2|Energy|Supply|Gases")]
   OtherFuelTransformation <- dimSums(OtherFuelTransformation, dim = 3, na.rm = TRUE)
   getItems(OtherFuelTransformation, 3) <- "Emissions|CO2|Energy|Supply|Other Fuel Transformation"
+  # ------------ Emissions|HFC (all HFCs aggregated in HFC134a-equiv) -------
+  # Extract HFC CO2-equiv values and convert back to HFC134a-equiv using HFC134a GWP (1430/1000 = 1.43)
+  allHfcVars <- grep("Emissions\\|HFC", getNames(emissionsCO2eq), value = TRUE)
+  if (length(allHfcVars) > 0) {
+    HFCAgg <- emissionsCO2eq[, , allHfcVars]
+    # Convert CO2-equiv back to HFC134a-equiv: divide by (GWP_HFC134a / 1000)
+    HFCAgg <- HFCAgg / 1.43
+    HFCAgg <- dimSums(HFCAgg, 3)
+    getItems(HFCAgg, 3.1) <- "Emissions|HFC"
+  } else {
+    HFCAgg <- NULL
+  }
+  # ------------ Emissions|PFC (all PFCs aggregated in CF4-equiv) -------
+  # Extract PFC CO2-equiv values and convert back to CF4-equiv using CF4 GWP (7390/1000 = 7.39)
+  allPfcVars <- grep("Emissions\\|PFC", getNames(emissionsCO2eq), value = TRUE)
+  if (length(allPfcVars) > 0) {
+    PFCAgg <- emissionsCO2eq[, , allPfcVars]
+    # Convert CO2-equiv back to CF4-equiv: divide by (GWP_CF4 / 1000)
+    PFCAgg <- PFCAgg / 7.39
+    PFCAgg <- dimSums(PFCAgg, 3)
+    getItems(PFCAgg, 3.1) <- "Emissions|PFC"
+  } else {
+    PFCAgg <- NULL
+  }
+  # ------------ Emissions|F-gases (HFCs, PFCs, SF6 in CO2-equiv) -------
+  # Extract all F-gas components from CO2-equiv values
+  allFgasVars <- grep("Emissions\\|(HFC|PFC|SF6)", getNames(emissionsCO2eq), value = TRUE)
+  if (length(allFgasVars) > 0) {
+    FgasAgg <- emissionsCO2eq[, , allFgasVars]
+    FgasAgg <- dimSums(FgasAgg, 3)
+    getItems(FgasAgg, 3.1) <- "Emissions|F-gases"
+  } else {
+    FgasAgg <- NULL
+  }
   # -------------------------- Emissions|CO2 (w/o bunkers), Emissions|Kyoto Gases (w/o bunkers) -------
   emissionsCO2woBunkers <- EmissionsCo2[, , "Emissions|CO2"] - EmissionsCo2[, , "Emissions|CO2|Energy|Demand|Bunkers"]
   getItems(emissionsCO2woBunkers, dim = 3) <- "Emissions|CO2-(w/o bunkers)"
@@ -243,13 +279,17 @@ reportEmissions <- function(path, regions, years) {
   TRANP <- add_dimension(TRANP, dim = 3.2, add = "unit", nm = unitsCO2)
   TRANG <- add_dimension(TRANG, dim = 3.2, add = "unit", nm = unitsCO2)
   OtherFuelTransformation <- add_dimension(OtherFuelTransformation, dim = 3.2, add = "unit", nm = unitsCO2)
+  HFCAgg <- add_dimension(HFCAgg, dim = 3.2, add = "unit", nm = "kt HFC134a-equiv/yr")
+  PFCAgg <- add_dimension(PFCAgg, dim = 3.2, add = "unit", nm = "kt CF4-equiv/yr")
+  FgasAgg <- add_dimension(FgasAgg, dim = 3.2, add = "unit", nm = "Mt CO2-equiv/yr")
   emissionsCO2woBunkers <- add_dimension(emissionsCO2woBunkers, dim = 3.2, add = "unit", nm = unitsCO2)
   emissionsKyotowoBunkers <- add_dimension(emissionsKyotowoBunkers, dim = 3.2, add = "unit", nm =  "Mt CO2-equiv/yr")
 
   magpie_object <- mbind(
     emissionsNonCO2, EmissionsCo2, kyotoGases,
     Cumulated, sumIPEnergy, resCom, captured, captureGeoStorage,
-    TRANP, TRANG, OtherFuelTransformation, emissionsCO2woBunkers, emissionsKyotowoBunkers
+    TRANP, TRANG, OtherFuelTransformation,HFCAgg,PFCAgg,FgasAgg,
+    emissionsCO2woBunkers, emissionsKyotowoBunkers
   )
 
   return(magpie_object)
@@ -264,6 +304,10 @@ getUnit <- function(varName) {
   } else if (grepl("N2O", varName)) {
     # N2O is kt
     return("kt N2O/yr")
+  } else if (grepl("HFC", varName)) {
+    # Extract the HFC type (e.g., HFC134a, HFC152a) to preserve individual GWP info
+    gasName <- sub(".*\\|", "", varName)
+    return(paste0("kt ", gasName, "/yr"))
   } else {
     # Extract the "leaf" (everything after the last '|')
     # Example: "Emissions|HFC|HFC152a" -> "HFC152a"
