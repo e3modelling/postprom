@@ -222,37 +222,23 @@ reportEmissions <- function(path, regions, years) {
   # ------------ Emissions|HFC (all HFCs aggregated in HFC134a-equiv) -------
   # Extract HFC CO2-equiv values and convert back to HFC134a-equiv using HFC134a GWP (1430/1000 = 1.43)
   allHfcVars <- grep("Emissions\\|HFC", getNames(emissionsCO2eq), value = TRUE)
-  if (length(allHfcVars) > 0) {
-    HFCAgg <- emissionsCO2eq[, , allHfcVars]
-    # Convert CO2-equiv back to HFC134a-equiv: divide by (GWP_HFC134a / 1000)
-    HFCAgg <- HFCAgg / 1.43
-    HFCAgg <- dimSums(HFCAgg, 3)
-    getItems(HFCAgg, 3.1) <- "Emissions|HFC"
-  } else {
-    HFCAgg <- NULL
-  }
+  HFCAgg <- emissionsCO2eq[, , allHfcVars]
+  HFCAgg <- HFCAgg / 1.43
+  HFCAgg <- dimSums(HFCAgg, 3)
+  getItems(HFCAgg, 3.1) <- "Emissions|HFC"
   # ------------ Emissions|PFC (all PFCs aggregated in CF4-equiv) -------
   # Extract PFC CO2-equiv values and convert back to CF4-equiv using CF4 GWP (7390/1000 = 7.39)
   allPfcVars <- grep("Emissions\\|PFC", getNames(emissionsCO2eq), value = TRUE)
-  if (length(allPfcVars) > 0) {
-    PFCAgg <- emissionsCO2eq[, , allPfcVars]
-    # Convert CO2-equiv back to CF4-equiv: divide by (GWP_CF4 / 1000)
-    PFCAgg <- PFCAgg / 7.39
-    PFCAgg <- dimSums(PFCAgg, 3)
-    getItems(PFCAgg, 3.1) <- "Emissions|PFC"
-  } else {
-    PFCAgg <- NULL
-  }
+  PFCAgg <- emissionsCO2eq[, , allPfcVars]
+  PFCAgg <- PFCAgg / 7.39
+  PFCAgg <- dimSums(PFCAgg, 3)
+  getItems(PFCAgg, 3.1) <- "Emissions|PFC"
   # ------------ Emissions|F-gases (HFCs, PFCs, SF6 in CO2-equiv) -------
   # Extract all F-gas components from CO2-equiv values
   allFgasVars <- grep("Emissions\\|(HFC|PFC|SF6)", getNames(emissionsCO2eq), value = TRUE)
-  if (length(allFgasVars) > 0) {
-    FgasAgg <- emissionsCO2eq[, , allFgasVars]
-    FgasAgg <- dimSums(FgasAgg, 3)
-    getItems(FgasAgg, 3.1) <- "Emissions|F-gases"
-  } else {
-    FgasAgg <- NULL
-  }
+  FgasAgg <- emissionsCO2eq[, , allFgasVars]
+  FgasAgg <- dimSums(FgasAgg, 3)
+  getItems(FgasAgg, 3.1) <- "Emissions|F-gases"
   # -------------------------- Emissions|CO2 (w/o bunkers), Emissions|Kyoto Gases (w/o bunkers) -------
   emissionsCO2woBunkers <- EmissionsCo2[, , "Emissions|CO2"] - EmissionsCo2[, , "Emissions|CO2|Energy|Demand|Bunkers"]
   getItems(emissionsCO2woBunkers, dim = 3) <- "Emissions|CO2-(w/o bunkers)"
