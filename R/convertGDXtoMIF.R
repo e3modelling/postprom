@@ -76,7 +76,8 @@ convertGDXtoMIF <- function(.path, mif_name, regions = NULL, years = NULL,
 convertGDXtoMIF_single <- function(.path, path_mif, append, regions = NULL,
                                    years = NULL, scenario_name = NULL,
                                    aggregate = TRUE, emissions = TRUE, save = TRUE,
-                                   htmlReport = TRUE, projectReport = TRUE) {
+                                   htmlReport = TRUE, projectReport = TRUE,
+                                   dashboard = TRUE) {
   print(paste0("Region aggregation: ", aggregate))
   print(paste0("Processing path: ", .path))
   path_gdx <- file.path(.path, "blabla.gdx")
@@ -117,7 +118,7 @@ convertGDXtoMIF_single <- function(.path, path_mif, append, regions = NULL,
   ))
   reports <- mbind(reports, reportGrowthRates(reports))
   
-  rmarkdown::render(
+  if (dashboard == TRUE) rmarkdown::render(
     system.file("rmd", "dashboard.Rmd", package = "postprom"),
     output_file = normalizePath(file.path(dirname(path_gdx), "dashboard.html"), mustWork = FALSE),
     params = list(magpie_data = reports)

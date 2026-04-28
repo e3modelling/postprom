@@ -18,7 +18,7 @@ library(mip)
 library(quitte)
 
 data <- params$magpie_data
-data <- data[c("USA","CHA"), 2025:2050, ]
+#data <- data[c("USA","CHA"), 2025:2050, ]
 names(dimnames(data))[3] <- "variable.unit"
 ```
 
@@ -37,10 +37,15 @@ CO2emi <- as.quitte(data[, , vars]) %>%
 
 p <- ggplot(CO2emi, aes(period, value, fill = variable)) +
   geom_area() +
-  facet_wrap(~region) +
-  theme_minimal()
+  facet_wrap(~region, scales = "free_y", ncol = 6) +
+  theme_minimal() +
+    theme(
+    panel.spacing.x = unit(0.05, "lines"),
+    panel.spacing.y = unit(0.05, "lines")
+  )
 
-ggplotly(p)
+ggplotly(p) %>%
+  layout(autosize = TRUE)
 ```
 
 ---
@@ -51,11 +56,17 @@ ggplotly(p)
 PrC <- as.quitte(data[, , "Price|Carbon.US$2015/tn CO2"]) %>%
   select(-c(unit, model, scenario))
 
-p <- ggplot(PrC, aes(period, value, color = region)) +
+p <- ggplot(PrC, aes(period, value)) +
   geom_line() +
-  theme_minimal()
+  facet_wrap(~region, scales = "free_y", ncol = 6) +
+  theme_minimal() +
+    theme(
+    panel.spacing.x = unit(0.05, "lines"),
+    panel.spacing.y = unit(0.05, "lines")
+  )
 
-ggplotly(p)
+ggplotly(p) %>%
+  layout(autosize = TRUE)
 ```
 
 ---
@@ -85,8 +96,13 @@ elMix <- as.quitte(data[, , vars]) %>%
 
 p <- ggplot(elMix, aes(period, value, fill = variable)) +
   geom_area() +
-  facet_wrap(~region) +
-  theme_minimal()
+  facet_wrap(~region, scales = "free_y", ncol = 6) +
+  theme_minimal() +
+    theme(
+    panel.spacing.x = unit(0.05, "lines"),
+    panel.spacing.y = unit(0.05, "lines")
+  )
 
-ggplotly(p)
+ggplotly(p) %>%
+  layout(autosize = TRUE)
 ```
