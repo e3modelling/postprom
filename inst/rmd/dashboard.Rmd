@@ -74,7 +74,6 @@ vars <- c(
   "Secondary Energy|Electricity|Heat.TWh",
   "Secondary Energy|Electricity|Hydrogen.TWh",
   "Secondary Energy|Electricity|Oil.TWh",
-  "Secondary Energy|Electricity|Oil|w/o CCS.TWh",
   "Secondary Energy|Electricity|Hydro.TWh",
   "Secondary Energy|Electricity|Wind.TWh",
   "Secondary Energy|Electricity|Solar.TWh",
