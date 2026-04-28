@@ -1,0 +1,107 @@
+\documentclass{article}
+\usepackage[a4paper, margin=2cm]{geometry}
+\usepackage{hyperref}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{xcolor}
+\usepackage{colortbl}
+
+\title{OPEN-PROM: Plot report}
+\author{\textrm{\Sexpr{pdf_title}}}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\section*{Metadata}
+\begin{tabular}{|l|l|}
+\hline
+\textbf{fScenario} & \Sexpr{fScenario} \\
+\hline
+\end{tabular}
+
+\tableofcontents
+
+<<setup, echo=FALSE, warning=FALSE, message=FALSE>>=
+library(ggplot2)
+plot_list <- readRDS(plot_rds_path)
+
+# Initialize traffic light section - will be set by R if targets file was provided
+if (!exists("traffic_light_section")) {
+  traffic_light_section <- ""
+}
+@
+
+% ============================================================================
+% TRAFFIC LIGHT VALIDATION SECTION (Optional)
+% ============================================================================
+<<traffic_light, echo=FALSE, results='asis'>>=
+if (!is.null(traffic_light_section) && nchar(traffic_light_section) > 0) {
+  cat(traffic_light_section)
+} else {
+  # Traffic light section not generated (no targets file provided)
+}
+@
+
+\newpage
+
+<<generate_plots, echo=FALSE, results='asis', fig.width=10, fig.height=12, fig.pos='H'>>=
+### Function to extract regions from a single plot (facet strips)
+get_regions_from_plot <- function(p) {
+  facet_var <- names(p$facet$params$facets)
+
+  if (!is.null(facet_var) && facet_var %in% names(p$data)) {
+    regions <- unique(p$data[[facet_var]])
+  } else {
+    regions <- NULL
+  }
+
+  regions[!is.na(regions)]
+}
+
+### Function to reorder regions with "World" first
+reorder_regions <- function(regions) {
+  if ("World" %in% regions) {
+    c("World", setdiff(regions, "World"))
+  } else {
+    regions
+  }
+}
+
+### MAIN LOOP
+for (section_name in names(plot_list)) {
+
+  plots <- plot_list[[section_name]]
+
+  cat("\\newpage\n")
+
+  ### ---- SECTION TITLE (creates its own bookmark automatically) ----
+  cat(sprintf("\\section{%s}\n\n", section_name))
+
+  ### ---- LOOP OVER PLOTS ----
+  for (i in seq_along(plots)) {
+
+    p <- plots[[i]]
+
+    # Extract regions
+    regions <- get_regions_from_plot(p)
+    regions <- reorder_regions(regions)
+    region_subtitle <- paste(regions, collapse = ", ")
+
+    ### ---- PLOT-LEVEL BOOKMARK ONLY ----
+    cat(sprintf(
+      "\\pdfbookmark[3]{Regions: %s}{bookmark-%s-%d}\n",
+      region_subtitle, section_name, i
+    ))
+
+    ### ---- PRINTED SUBTITLE ----
+    cat(sprintf("\\subsection*{Regions: %s}\n\n", region_subtitle))
+
+    ### ---- PRINT PLOT ----
+    print(p)
+    cat("\n")
+  }
+}
+@
+
+\end{document}

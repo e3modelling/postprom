@@ -21,7 +21,7 @@ htmlReportValidation <- function(.path, openPromFile) {
   #   return(invisible(NULL))
   # }
 
-  configFile <- system.file(package = "postprom", file.path("extdata", "validationConfig_OPEN-PROM.csv"))
+  configFile <- system.file(package = "postprom", file.path("extdata", "validationConfig_NPI.csv"))
 
   # Activate pandoc latest version for creating html report
   pandoc_activate()
