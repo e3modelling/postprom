@@ -1,0 +1,213 @@
+---
+title: "Simple Dashboard"
+author: "Fotis Sioutas"
+output: 
+  flexdashboard::flex_dashboard:
+    vertical_layout: fill
+
+params:
+  magpie_data: NULL
+---
+
+```{r loading_required_libraries, include=FALSE}
+# Loading required libraries
+library(flexdashboard)
+library(ggplot2)
+library(plotly)
+library(magclass)
+library(mip)
+library(quitte)
+
+# Assign parameter
+data <- params$magpie_data
+data <- data[c("USA","CHA"),2025:2050,]
+names(dimnames(data))[3] <- c("variable.unit")
+
+```
+
+```{r creating_charts, include=FALSE}
+
+  plot <- NULL 
+
+  # CO2 emissions per sector
+  vars <- c("Emissions|CO2|Energy|Demand.Mt CO2/yr",
+            "Emissions|CO2|Energy|Supply.Mt CO2/yr",
+            "Emissions|CO2|Industrial Processes.Mt CO2/yr",
+            "Emissions|CO2|AFOLU.Mt CO2/yr")
+
+  CO2emi <- data[, , vars]
+
+  CO2emi <- as.quitte(CO2emi) %>% select(-c(unit, model, scenario))
+  
+  p <- ggplot(CO2emi, aes(x = period, y = value, fill = variable)) +
+    geom_area() +
+    facet_wrap(~region) +
+    theme_minimal() +
+    ylab("Mt CO2/yr")
+
+  plot$CO2emi <- ggplotly(p)
+
+  # CO2 price
+  PrC <- data[, , "Price|Carbon.US$2015/tn CO2"]
+  
+  PrC <- as.quitte(PrC) %>% select(-c(unit, model, scenario))
+
+  p <- ggplot(PrC, aes(x = period, y = value)) +
+    geom_line() +
+    facet_wrap(~region) +
+    theme_minimal() +
+    ylab("US$2015/tn CO2")
+
+  plot$CO2price <- ggplotly(p)
+  
+  # Electricity mix
+  vars <- c("Secondary Energy|Electricity|Biofuels|w/ CCS.TWh",
+            "Secondary Energy|Electricity|Biofuels|w/o CCS.TWh",
+            "Secondary Energy|Electricity|Coal|w/ CCS.TWh",
+            "Secondary Energy|Electricity|Coal|w/o CCS.TWh",
+            "Secondary Energy|Electricity|Gas|w/ CCS.TWh",
+            "Secondary Energy|Electricity|Gas|w/o CCS.TWh",
+            "Secondary Energy|Electricity|Heat.TWh",
+            "Secondary Energy|Electricity|Geothermal and other renewable sources.TWh",
+            "Secondary Energy|Electricity|Hydro.TWh",
+            "Secondary Energy|Electricity|Hydrogen.TWh",
+            "Secondary Energy|Electricity|Nuclear.TWh",
+            "Secondary Energy|Electricity|Oil.TWh",
+            "Secondary Energy|Electricity|Oil|w/o CCS.TWh",
+            "Secondary Energy|Electricity|Wind.TWh",
+            "Secondary Energy|Electricity|Solar.TWh")
+  
+  elMix <- data[, , vars]
+  
+  elMix <- as.quitte(elMix) %>% select(-c(unit, model, scenario))
+  
+  p <- ggplot(elMix, aes(x = period, y = value, fill = variable)) +
+    geom_area() +
+    facet_wrap(~region) +
+    theme_minimal() +
+    ylab("Secondary Energy|Electricity.TWh")
+  
+  plot$electricityMix <- ggplotly(p)
+
+```
+
+<!--############################# -->
+
+<!--#### START OF MENUS CODE #### -->
+
+<!--############################# -->
+
+<!-- ### Creating main emissions menu ### -->
+
+<!--Creating First Page - Emissions Page-->
+
+# Emissions {#emissions data-icon="glyphicon glyphicon-stats"}
+
+## Side Navigation {.sidebar data-width="60"}
+
+[ ](#emissions){.glyphicon .glyphicon-stats .sidebar-button .selected} [ ](#emissions-prices){.glyphicon .glyphicon-eur .sidebar-button}
+
+<!-- Dividing the page in two columns-->
+
+## Column
+
+<!-- creating a container to show the emissions quantitites-->
+
+### Emissions quantity
+
+```{r}
+ggplotly(plot$CO2emi)
+```
+
+<!-- Second column-->
+
+## Column
+
+<!-- creating two additional containers in the second column to show extra information-->
+
+### Emissions quantities empty container 1
+
+```{r}
+```
+
+### Emissions quantities empty container 2
+
+```{r}
+```
+
+<!-- Creating second page with emissions prices-->
+
+# Emissions Prices {#emissions-prices .hidden data-icon="glyphicon glyphicon-eur"}
+
+## Side Navigation {.sidebar data-width="60"}
+
+[ ](#emissions){.glyphicon .glyphicon-stats .sidebar-button} [ ](#emissions-prices){.glyphicon .glyphicon-eur .sidebar-button .selected}
+
+## Column
+
+<!-- dividing the page into two containers and showing prices chart in the second one-->
+
+### Emissions prices empty container 1
+
+```{r}
+```
+
+### Emissions prices
+
+```{r}
+ggplotly(plot$CO2price)
+```
+
+<!-- ### Creating electricity sector main menu ### -->
+
+# Electricity sector {data-icon="glyphicon glyphicon-scale"}
+
+<!-- dividing the page into two containers and showing the eelectricity sector chart in the first one -->
+
+<!-- creating a container to show the emissions quantitites-->
+
+### Electricity mix empty container 1
+
+```{r}
+```
+
+<!-- creating a container to show the emissions quantitites-->
+
+### Electricity mix
+
+```{r}
+ggplotly(plot$electricityMix)
+```
+
+<!-- ADVANCED: using CSS to define the appearance of the side bar -->
+
+<!-- CSS -->
+
+```{=html}
+<style type="text/css">
+
+  .sidebar-button {  /* sidebar size  */
+     display: inline-block;
+     font-size: 40px;
+     height: 80px;
+     padding-top: 20px
+  }
+  
+  .sidebar-button, .sidebar-button:hover {
+    text-decoration: none;
+  }
+  
+  .sidebar-button.selected, .sidebar-button.selected:hover {
+    opacity: 1;
+  }
+  
+  .sidebar-button {
+    opacity: 0.7;
+  }
+  
+  .sidebar-button:hover {
+    opacity: 0.4;
+  }
+
+</style>
+```

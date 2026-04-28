@@ -116,7 +116,13 @@ convertGDXtoMIF_single <- function(.path, path_mif, append, regions = NULL,
     budget1p5 = 400, budget2c = 1150, probLabel = "67%"
   ))
   reports <- mbind(reports, reportGrowthRates(reports))
-
+  
+  rmarkdown::render(
+    system.file("rmd", "dashboard.Rmd", package = "postprom"),
+    output_file = normalizePath(file.path(dirname(path_gdx), "dashboard.html"), mustWork = FALSE),
+    params = list(magpie_data = reports)
+  )
+  
   if (emissions == TRUE) generateEmissionsFile(.path, reports, years, scenario_name)
 
   if (save == TRUE) {
