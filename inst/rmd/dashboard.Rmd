@@ -65,8 +65,16 @@ ggplotly(p)
 ```{r}
 vars <- c(
   "Secondary Energy|Electricity|Biofuels|w/ CCS.TWh",
+  "Secondary Energy|Electricity|Biofuels|w/o CCS.TWh",
   "Secondary Energy|Electricity|Coal|w/ CCS.TWh",
+  "Secondary Energy|Electricity|Coal|w/o CCS.TWh",
+  "Secondary Energy|Electricity|Gas|w/ CCS.TWh",
   "Secondary Energy|Electricity|Gas|w/o CCS.TWh",
+  "Secondary Energy|Electricity|Geothermal and other renewable sources.TWh",
+  "Secondary Energy|Electricity|Heat.TWh",
+  "Secondary Energy|Electricity|Hydrogen.TWh",
+  "Secondary Energy|Electricity|Oil.TWh",
+  "Secondary Energy|Electricity|Oil|w/o CCS.TWh",
   "Secondary Energy|Electricity|Hydro.TWh",
   "Secondary Energy|Electricity|Wind.TWh",
   "Secondary Energy|Electricity|Solar.TWh",
