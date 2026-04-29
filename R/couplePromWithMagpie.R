@@ -70,11 +70,11 @@ couplePromToMagpie <- function(gdxPath,
 
   # ---- 1. read gdx
   co2   <- gdx::readGDX(gdxPath, "VmCarVal",        field = "l", restore_zeros = FALSE)
-  bio   <- gdx::readGDX(gdxPath, "V03InpTotTransf", field = "l", restore_zeros = FALSE)
+  bio   <- gdx::readGDX(gdxPath, "V03ProdPrimary", field = "l", restore_zeros = FALSE)
 
   # Slice: CO2 price under "TRADE", bioenergy under LQD.BMSWAS.
   co2 <- co2[, , "TRADE"]                    # 39 x 91 x 1
-  bio <- bio[, , "LQD.BMSWAS"]               # 39 x 91 x 1
+  bio <- bio[, , "BMSWAS"] * 0.4 + bio[, , "BGSL"] * 0.6  + bio[, , "BKRS"] * 0.6              # 39 x 91 x 1
 
   # Collapse the 3rd dim naming.
   co2 <- magclass::collapseDim(co2, dim = 3)
