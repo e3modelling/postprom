@@ -212,6 +212,8 @@ coupleMagpieToProm <- function(reportMifPath,
   # code (see notes/TASK7-implementation-plan.md §2.5).
   emi_vars <- c(
     "Emissions|CO2|Land (Mt CO2/yr)",
+    "Emissions|CO2|Land|+|Land-use Change (Mt CO2/yr)",
+    "Emissions|CO2|Land|+|Indirect (Mt CO2/yr)",
     "Emissions|BC|AFOLU|Land|Fires (Mt BC/yr)",
     "Emissions|CH4|Land (Mt CH4/yr)",
     "Emissions|CO|AFOLU|Land|Fires (Mt CO/yr)",
