@@ -25,11 +25,6 @@
 <<setup, echo=FALSE, warning=FALSE, message=FALSE>>=
 library(ggplot2)
 plot_list <- readRDS(plot_rds_path)
-
-# Initialize traffic light section - will be set by R if targets file was provided
-if (!exists("traffic_light_section")) {
-  traffic_light_section <- ""
-}
 @
 
 % ============================================================================

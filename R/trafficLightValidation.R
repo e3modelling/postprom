@@ -15,15 +15,29 @@ readPolicyTargets <- function(targets_file, target_sheet = "Targets") {
     stop("Targets file not found: ", targets_file)
   }
 
-  targets <- read_excel(targets_file)
-  
-  # Ensure required columns exist
-  required_cols <- c("Policy", "Region", "Year", "Target", "Variable", "Unit")
-  missing_cols <- setdiff(required_cols, names(targets))
-  
-  if (length(missing_cols) > 0) {
-    stop("Missing required columns in targets file: ", paste(missing_cols, collapse = ", "))
-  }
+  targets_raw <- read_excel(targets_file, sheet = target_sheet)
+
+  targets <- targets_raw |>
+    dplyr::rename(
+      Policy = Policy,
+      Region = Region,
+      Variable = Variable,
+      Target = Target,
+      Unit = Unit,
+      TargetType = `Target type`,
+      BaseYear = `Base Year`,
+      TargetYear = `Target Year`
+    ) |>
+    dplyr::mutate(
+      Policy = as.character(Policy),
+      Region = as.character(Region),
+      Variable = as.character(Variable),
+      Target = as.numeric(Target),
+      TargetType = tolower(as.character(TargetType)),
+      BaseYear = suppressWarnings(as.numeric(BaseYear)),
+      Year = suppressWarnings(as.numeric(TargetYear)),
+      Unit = as.character(Unit)
+    )
 
   return(targets)
 }
@@ -98,67 +112,78 @@ compareWithTargets <- function(magpie_obj, targets, threshold_green = 5, thresho
   result_df$Data <- as.character(result_df$variable)
   result_df$Value <- as.numeric(result_df$value)
   
-  # Ensure targets has proper types too
+
+  # Ensure targets types
   targets$Region <- as.character(targets$Region)
-  targets$Year <- as.numeric(targets$Year)
+  targets$Year <- as.numeric(targets$Year)      # Target Year
   targets$Variable <- as.character(targets$Variable)
   targets$Target <- as.numeric(targets$Target)
-  
-  # Merge targets with results - use base R if dplyr fails
-  tryCatch({
-    # Merge targets with results
-    comparison <- targets %>%
-      left_join(
-        result_df %>%
-          filter(.data$Data %in% targets$Variable) %>%
-          select(.data$Region, .data$Year, .data$Data, .data$Value),
-        by = c("Region" = "Region", "Year" = "Year", "Variable" = "Data")
-      ) %>%
-      mutate(
-        Value = as.numeric(.data$Value),
-        Target = as.numeric(.data$Target),
-        Deviation_pct = ifelse(
-          !is.na(.data$Value) & !is.na(.data$Target),
-          abs((.data$Value - .data$Target) / .data$Target) * 100,
-          NA_real_
-        ),
-        Status = mapply(
-          calculateStatus,
-          target = .data$Target,
-          result = .data$Value,
-          threshold_green = threshold_green,
-          threshold_yellow = threshold_yellow,
-          USE.NAMES = FALSE
-        )
-      )
-  }, error = function(e) {
-    # Fallback to base R merge if dplyr fails
-    message("Note: Using base R merge instead of dplyr")
-    result_subset <- result_df[result_df$Data %in% targets$Variable, 
-                               c("Region", "Year", "Data", "Value")]
-    comparison <- merge(
-      targets,
-      result_subset,
-      by.x = c("Region", "Year", "Variable"),
-      by.y = c("Region", "Year", "Data"),
-      all.x = TRUE
+  targets$TargetType <- tolower(as.character(targets$TargetType))
+
+  # Build target-year and base-year value tables
+  target_vals <- result_df |>
+    dplyr::select(Region, Year, Data, Value) |>
+    dplyr::rename(Variable = Data, Value_TY = Value)
+
+  base_vals <- result_df |>
+    dplyr::select(Region, Year, Data, Value) |>
+    dplyr::rename(Variable = Data, BaseYear = Year, Value_BY = Value)
+
+  comparison <- targets |>
+    dplyr::left_join(target_vals, by = c("Region", "Year", "Variable")) |>
+    dplyr::left_join(base_vals,   by = c("Region", "BaseYear", "Variable")) |>
+    dplyr::mutate(
+      # Default missing types to absolute
+      TargetType = dplyr::if_else(is.na(TargetType) | TargetType == "", "absolute", TargetType),
+
+      # Relative achieved percent of base (TargetYear/BaseYear * 100)
+      AchievedPct = dplyr::if_else(
+        TargetType == "relative" &
+          !is.na(Value_TY) & !is.na(Value_BY) & Value_BY != 0,
+        (Value_TY / Value_BY) * 100,
+        NA_real_
+      ),
+
+      # ---- Standardized "display" columns ----
+      Target_display = dplyr::if_else(
+        TargetType == "relative",
+        Target,         # percent target (e.g., 80)
+        Target          # absolute target level
+      ),
+
+      Result_display = dplyr::if_else(
+        TargetType == "relative",
+        AchievedPct,    # achieved percent of base
+        Value_TY        # absolute result at TargetYear
+      ),
+
+      Deviation_display = dplyr::case_when(
+        TargetType == "relative" & !is.na(AchievedPct) ~ abs(AchievedPct - Target),  # pp
+        TargetType == "absolute" & !is.na(Value_TY) & !is.na(Target) & Target != 0 ~ abs((Value_TY - Target) / Target) * 100, # %
+        TargetType == "absolute" & !is.na(Value_TY) & !is.na(Target) & Target == 0 ~ abs(Value_TY - Target), # fallback
+        TRUE ~ NA_real_
+      ),
+
+      Deviation_label = dplyr::if_else(TargetType == "relative", "pp", "%"),
+
+      # Status uses your existing calculateStatus() with type-specific direction
+      Status = mapply(
+        function(t, r, type) {
+          if (is.na(t) || is.na(r)) return(NA_character_)
+          if (type == "relative") {
+            # thresholds interpreted as percentage points
+            calculateStatus(t, r, threshold_green, threshold_yellow, direction = "absolute")
+          } else {
+            # thresholds interpreted as % of target
+            calculateStatus(t, r, threshold_green, threshold_yellow, direction = "relative")
+          }
+        },
+        t = Target_display,
+        r = Result_display,
+        type = TargetType,
+        USE.NAMES = FALSE
+      ),
     )
-    comparison$Value <- as.numeric(comparison$Value)
-    comparison$Target <- as.numeric(comparison$Target)
-    comparison$Deviation_pct <- ifelse(
-      !is.na(comparison$Value) & !is.na(comparison$Target),
-      abs((comparison$Value - comparison$Target) / comparison$Target) * 100,
-      NA_real_
-    )
-    comparison$Status <- mapply(
-      calculateStatus,
-      target = comparison$Target,
-      result = comparison$Value,
-      threshold_green = threshold_green,
-      threshold_yellow = threshold_yellow,
-      USE.NAMES = FALSE
-    )
-  })
 
   return(comparison)
 }
@@ -194,16 +219,11 @@ escapeLaTeX <- function(text) {
 }
 
 generateTrafficLightLatex <- function(comparison_df, title = "Policy Targets Validation",
-                                     color_green = "green!20", 
-                                     color_yellow = "yellow!40", 
+                                     color_green = "green!20",
+                                     color_yellow = "yellow!40",
                                      color_red = "red!20") {
-  
-  # Create color mapping
-  color_map <- list(
-    "Green" = color_green,
-    "Yellow" = color_yellow,
-    "Red" = color_red
-  )
+
+  color_map <- list("Green" = color_green, "Yellow" = color_yellow, "Red" = color_red)
 
   latex_lines <- c(
     "% Traffic Light Validation Table",
@@ -214,34 +234,36 @@ generateTrafficLightLatex <- function(comparison_df, title = "Policy Targets Val
     "\\small",
     "\\begin{tabular}{|l|l|r|r|r|c|}",
     "\\hline",
-    "\\textbf{Policy} & \\textbf{Region} & \\textbf{Target} & \\textbf{Result} & \\textbf{Dev. \\%} & \\textbf{Status} \\\\",
+    "\\textbf{Policy} & \\textbf{Region} & \\textbf{Target} & \\textbf{Result} & \\textbf{Dev.} & \\textbf{Status} \\\\",
     "\\hline"
   )
 
   for (i in seq_len(nrow(comparison_df))) {
     row <- comparison_df[i, ]
     status <- row[["Status"]]
-    color <- color_map[[status]]
-    
-    # Escape text fields - use [[ ]] to extract values from single-row df
+    color  <- color_map[[status]]
+
     policy_text <- escapeLaTeX(as.character(row[["Policy"]]))
     region_text <- escapeLaTeX(as.character(row[["Region"]]))
-    
+
     if (is.na(status)) {
       status_cell <- "\\cellcolor{gray!20}N/A"
     } else {
       status_cell <- sprintf("\\cellcolor{%s}%s", color, status)
     }
 
+    dev_label <- as.character(row[["Deviation_label"]])
+
     latex_lines <- c(
       latex_lines,
       sprintf(
-        "%s & %s & %.2f & %.2f & %.1f & %s \\\\",
+        "%s & %s & %.2f & %.2f & %.1f\\,%s & %s \\\\",
         policy_text,
         region_text,
-        as.numeric(row[["Target"]]),
-        as.numeric(row[["Value"]]),
-        as.numeric(row[["Deviation_pct"]]),
+        as.numeric(row[["Target_display"]]),
+        as.numeric(row[["Result_display"]]),
+        as.numeric(row[["Deviation_display"]]),
+        escapeLaTeX(dev_label),
         status_cell
       )
     )
@@ -255,7 +277,7 @@ generateTrafficLightLatex <- function(comparison_df, title = "Policy Targets Val
     ""
   )
 
-  return(paste(latex_lines, collapse = "\n"))
+  paste(latex_lines, collapse = "\n")
 }
 
 #' Create traffic light summary for PDF report
