@@ -81,35 +81,35 @@ couplePromToMagpie <- function(gdxPath,
   bio <- magclass::collapseDim(bio, dim = 3)
 
   # ---- 2. aggregate prom countries -> h12
-  co2_h12 <- .aggregateToH12_price(co2, bio)   # weight by bioenergy
-  bio_h12 <- .aggregateToH12_sum(bio)
+  co2H12 <- .aggregateToH12Price(co2, bio)   # weight by bioenergy
+  bioH12 <- .aggregateToH12Sum(bio)
 
   # ---- 3. unit conversion
   # CO2 price: US$2015/t CO2 -> US$2017/t CO2
-  co2_h12 <- co2_h12 * deflator15to17
+  co2H12 <- co2H12 * deflator15to17
   # Bioenergy: Mtoe/yr -> EJ/yr (1 Mtoe = 0.041868 EJ)
-  bio_h12 <- bio_h12 * 0.041868
+  bioH12 <- bioH12 * 0.041868
 
   # ---- 4. derive non-CO2 prices
   if (nonCo2Mode == "gwp") {
-    n2o_h12 <- co2_h12 * .GWP_N2O_AR6
-    ch4_h12 <- co2_h12 * .GWP_CH4_AR6
+    n2oH12 <- co2H12 * .GWP_N2O_AR6
+    ch4H12 <- co2H12 * .GWP_CH4_AR6
   } else {                                          # "zero"
-    n2o_h12 <- co2_h12 * 0
-    ch4_h12 <- co2_h12 * 0
+    n2oH12 <- co2H12 * 0
+    ch4H12 <- co2H12 * 0
   }
 
   # ---- 5. stamp variable labels (REMIND-style "Variable (Unit)")
-  co2_h12 <- magclass::setNames(co2_h12, "Price|Carbon (US$2017/t CO2)")
-  n2o_h12 <- magclass::setNames(n2o_h12, "Price|N2O (US$2017/t N2O)")
-  ch4_h12 <- magclass::setNames(ch4_h12, "Price|CH4 (US$2017/t CH4)")
-  bio_h12 <- magclass::setNames(
-    bio_h12,
+  co2H12 <- magclass::setNames(co2H12, "Price|Carbon (US$2017/t CO2)")
+  n2oH12 <- magclass::setNames(n2oH12, "Price|N2O (US$2017/t N2O)")
+  ch4H12 <- magclass::setNames(ch4H12, "Price|CH4 (US$2017/t CH4)")
+  bioH12 <- magclass::setNames(
+    bioH12,
     "Primary Energy Production|Biomass|Energy Crops (EJ/yr)"
   )
 
   # All four variables share same region/time structure -> mbind on dim 3.
-  out <- magclass::mbind(co2_h12, n2o_h12, ch4_h12, bio_h12)
+  out <- magclass::mbind(co2H12, n2oH12, ch4H12, bioH12)
 
   # ---- 6. add Model + Scenario dims (required for write.report)
   out <- magclass::add_dimension(out, dim = 3.1, add = "model",    nm = "OPENPROM")
@@ -127,10 +127,10 @@ couplePromToMagpie <- function(gdxPath,
 # ---------------- helpers: aggregation from OPEN-PROM (39 regions) to h12 ----
 
 # Sum bioenergy feedstock across 28 EU members -> EUR; other 11 regions 1:1.
-.aggregateToH12_sum <- function(m) {
+.aggregateToH12Sum <- function(m) {
   regs <- magclass::getRegions(m)
   eu   <- intersect(.EU28, regs)
-  non_eu_h12 <- setdiff(regs, eu)
+  nonEuH12 <- setdiff(regs, eu)
 
   # EU-28 sum -> EUR
   eur <- m[eu, , ]
@@ -138,8 +138,8 @@ couplePromToMagpie <- function(gdxPath,
   magclass::getItems(eur, dim = 1) <- "EUR"
 
   # The remaining regions must coincide with h12 codes (minus EUR).
-  stopifnot(all(non_eu_h12 %in% .H12))
-  out <- magclass::mbind(m[non_eu_h12, , ], eur)
+  stopifnot(all(nonEuH12 %in% .H12))
+  out <- magclass::mbind(m[nonEuH12, , ], eur)
 
   # Re-order canonically.
   out[.H12, , ]
@@ -147,10 +147,10 @@ couplePromToMagpie <- function(gdxPath,
 
 # EUR price = bioenergy-weighted average over EU-28; others 1:1.
 # If total bio across EU-28 in a given year is zero, fall back to simple mean.
-.aggregateToH12_price <- function(price, bio) {
+.aggregateToH12Price <- function(price, bio) {
   regs <- magclass::getRegions(price)
   eu   <- intersect(.EU28, regs)
-  non_eu_h12 <- setdiff(regs, eu)
+  nonEuH12 <- setdiff(regs, eu)
 
   # Weighted average by bioenergy across EU-28.
   num <- magclass::dimSums(price[eu, , ] * bio[eu, , ], dim = 1)
@@ -158,13 +158,13 @@ couplePromToMagpie <- function(gdxPath,
 
   # Fallback simple average where denominator is zero.
   eur <- num
-  mean_price <- magclass::dimSums(price[eu, , ], dim = 1) / length(eu)
-  eur[den == 0] <- mean_price[den == 0]
+  meanPrice <- magclass::dimSums(price[eu, , ], dim = 1) / length(eu)
+  eur[den == 0] <- meanPrice[den == 0]
   eur[den != 0] <- num[den != 0] / den[den != 0]
   magclass::getItems(eur, dim = 1) <- "EUR"
 
-  stopifnot(all(non_eu_h12 %in% .H12))
-  out <- magclass::mbind(price[non_eu_h12, , ], eur)
+  stopifnot(all(nonEuH12 %in% .H12))
+  out <- magclass::mbind(price[nonEuH12, , ], eur)
   out[.H12, , ]
 }
 
@@ -197,9 +197,9 @@ coupleMagpieToProm <- function(reportMifPath,
   # Strip model/scenario to leave just region x year x variable.
   rep <- magclass::collapseNames(rep)
 
-  # Strip single `+` markers globally so that emi_vars below can be specified
+  # Strip single `+` markers globally so that emiVars below can be specified
   # in their flattened IAMC form (parent-child expressed via `|` only).
-  # `++` markers are NOT stripped: ++ variables are not requested by emi_vars,
+  # `++` markers are NOT stripped: ++ variables are not requested by emiVars,
   # and stripping them too would risk name collisions with `+` siblings.
   magclass::getNames(rep) <- gsub("\\|\\+\\|", "|", magclass::getNames(rep))
 
@@ -252,7 +252,7 @@ coupleMagpieToProm <- function(reportMifPath,
   #     Why:    These are second-order derived quantities MAgPIE provides for
   #             IAMC reporting convenience; OPEN-PROM can compute them itself,
   #             so keeping them only duplicates storage.
-  #     Action: emi_vars excludes both families.
+  #     Action: emiVars excludes both families.
   #
   # (2) Drop the 8 |++| variants
   #     Native: `Emissions|CO2|Land|++|Above Ground Carbon`,
@@ -297,7 +297,7 @@ coupleMagpieToProm <- function(reportMifPath,
   #             splitting helpers like `helperAggregateLevel` would otherwise
   #             treat `+` as a real path component.
   #     Action: gsub `\|\+\|` → `\|` immediately after collapseNames (line 204);
-  #             emi_vars uses the flattened names directly so they match the
+  #             emiVars uses the flattened names directly so they match the
   #             stripped rep names exactly. `|++|` is left untouched by the gsub
   #             (to avoid name collisions with the stripped `+` siblings), but
   #             since (2) already drops all ++ variables this is a no-op.
@@ -453,223 +453,25 @@ coupleMagpieToProm <- function(reportMifPath,
   #             ├── Secondary Forest
   #             └── Timber Plantations
   # ============================================================================
-  emi_vars <- c(
-    # ----- BC (9 vars) -----
-    "Emissions|BC|AFOLU|Agriculture (Mt BC/yr)",
-    "Emissions|BC|AFOLU|Land|Fires (Mt BC/yr)",
-    "Emissions|BC|AFOLU|Land|Fires|Forest Burning (Mt BC/yr)",
-    "Emissions|BC|AFOLU|Land|Fires|Forest Burning|Boreal Forest (Mt BC/yr)",
-    "Emissions|BC|AFOLU|Land|Fires|Forest Burning|Temperate Forest (Mt BC/yr)",
-    "Emissions|BC|AFOLU|Land|Fires|Forest Burning|Tropical Forest (Mt BC/yr)",
-    "Emissions|BC|AFOLU|Land|Fires|Grassland Burning (Mt BC/yr)",
-    "Emissions|BC|AFOLU|Land|Fires|Peat Burning (Mt BC/yr)",
-    "Emissions|BC|Land|Biomass Burning|Burning of Crop Residues (Mt BC/yr)",
-    # ----- CH4 (14 vars) -----
-    "Emissions|CH4|AFOLU|Land|Fires (Mt CH4/yr)",
-    "Emissions|CH4|AFOLU|Land|Fires|Forest Burning (Mt CH4/yr)",
-    "Emissions|CH4|AFOLU|Land|Fires|Forest Burning|Boreal Forest (Mt CH4/yr)",
-    "Emissions|CH4|AFOLU|Land|Fires|Forest Burning|Temperate Forest (Mt CH4/yr)",
-    "Emissions|CH4|AFOLU|Land|Fires|Forest Burning|Tropical Forest (Mt CH4/yr)",
-    "Emissions|CH4|AFOLU|Land|Fires|Grassland Burning (Mt CH4/yr)",
-    "Emissions|CH4|AFOLU|Land|Fires|Peat Burning (Mt CH4/yr)",
-    "Emissions|CH4|Land (Mt CH4/yr)",
-    "Emissions|CH4|Land|Agriculture (Mt CH4/yr)",
-    "Emissions|CH4|Land|Agriculture|Animal waste management (Mt CH4/yr)",
-    "Emissions|CH4|Land|Agriculture|Enteric fermentation (Mt CH4/yr)",
-    "Emissions|CH4|Land|Agriculture|Rice (Mt CH4/yr)",
-    "Emissions|CH4|Land|Biomass Burning|Burning of Crop Residues (Mt CH4/yr)",
-    "Emissions|CH4|Land|Peatland|Managed (Mt CH4/yr)",
-    # ----- CO (9 vars) -----
-    "Emissions|CO|AFOLU|Agriculture (Mt CO/yr)",
-    "Emissions|CO|AFOLU|Land|Fires (Mt CO/yr)",
-    "Emissions|CO|AFOLU|Land|Fires|Forest Burning (Mt CO/yr)",
-    "Emissions|CO|AFOLU|Land|Fires|Forest Burning|Boreal Forest (Mt CO/yr)",
-    "Emissions|CO|AFOLU|Land|Fires|Forest Burning|Temperate Forest (Mt CO/yr)",
-    "Emissions|CO|AFOLU|Land|Fires|Forest Burning|Tropical Forest (Mt CO/yr)",
-    "Emissions|CO|AFOLU|Land|Fires|Grassland Burning (Mt CO/yr)",
-    "Emissions|CO|AFOLU|Land|Fires|Peat Burning (Mt CO/yr)",
-    "Emissions|CO|Land|Biomass Burning|Burning of Crop Residues (Mt CO/yr)",
-    # ----- CO2 (58 vars) -----
-    "Emissions|CO2|AFOLU|Agriculture (Mt CO2/yr)",
-    "Emissions|CO2|AFOLU|Land|Fires (Mt CO2/yr)",
-    "Emissions|CO2|AFOLU|Land|Fires|Forest Burning (Mt CO2/yr)",
-    "Emissions|CO2|AFOLU|Land|Fires|Forest Burning|Boreal Forest (Mt CO2/yr)",
-    "Emissions|CO2|AFOLU|Land|Fires|Forest Burning|Temperate Forest (Mt CO2/yr)",
-    "Emissions|CO2|AFOLU|Land|Fires|Forest Burning|Tropical Forest (Mt CO2/yr)",
-    "Emissions|CO2|AFOLU|Land|Fires|Grassland Burning (Mt CO2/yr)",
-    "Emissions|CO2|AFOLU|Land|Fires|Peat Burning (Mt CO2/yr)",
-    "Emissions|CO2|Land (Mt CO2/yr)",
-    "Emissions|CO2|Land|Biomass Burning|Burning of Crop Residues (Mt CO2/yr)",
-    "Emissions|CO2|Land|Indirect (Mt CO2/yr)",
-    "Emissions|CO2|Land|Land-use Change (Mt CO2/yr)",
-    "Emissions|CO2|Land|Land-use Change|Deforestation (Mt CO2/yr)",
-    "Emissions|CO2|Land|Land-use Change|Deforestation|Cropland Tree Cover (Mt CO2/yr)",
-    "Emissions|CO2|Land|Land-use Change|Deforestation|Forestry plantations (Mt CO2/yr)",
-    "Emissions|CO2|Land|Land-use Change|Deforestation|Primary forests (Mt CO2/yr)",
-    "Emissions|CO2|Land|Land-use Change|Deforestation|Secondary forests (Mt CO2/yr)",
-    "Emissions|CO2|Land|Land-use Change|Forest degradation (Mt CO2/yr)",
-    "Emissions|CO2|Land|Land-use Change|Forest degradation|Primary forests (Mt CO2/yr)",
-    "Emissions|CO2|Land|Land-use Change|Forest degradation|Secondary forests (Mt CO2/yr)",
-    "Emissions|CO2|Land|Land-use Change|Other land conversion (Mt CO2/yr)",
-    "Emissions|CO2|Land|Land-use Change|Peatland (Mt CO2/yr)",
-    "Emissions|CO2|Land|Land-use Change|Peatland|Negative (Mt CO2/yr)",
-    "Emissions|CO2|Land|Land-use Change|Peatland|Positive (Mt CO2/yr)",
-    "Emissions|CO2|Land|Land-use Change|Regrowth (Mt CO2/yr)",
-    "Emissions|CO2|Land|Land-use Change|Regrowth|CO2-price AR (Mt CO2/yr)",
-    "Emissions|CO2|Land|Land-use Change|Regrowth|CO2-price AR|Natural Forest (Mt CO2/yr)",
-    "Emissions|CO2|Land|Land-use Change|Regrowth|CO2-price AR|Plantation (Mt CO2/yr)",
-    "Emissions|CO2|Land|Land-use Change|Regrowth|Cropland Tree Cover (Mt CO2/yr)",
-    "Emissions|CO2|Land|Land-use Change|Regrowth|NPI_NDC AR (Mt CO2/yr)",
-    "Emissions|CO2|Land|Land-use Change|Regrowth|Other Land (Mt CO2/yr)",
-    "Emissions|CO2|Land|Land-use Change|Regrowth|Secondary Forest (Mt CO2/yr)",
-    "Emissions|CO2|Land|Land-use Change|Regrowth|Timber Plantations (Mt CO2/yr)",
-    "Emissions|CO2|Land|Land-use Change|Residual (Mt CO2/yr)",
-    "Emissions|CO2|Land|Land-use Change|Residual|Negative (Mt CO2/yr)",
-    "Emissions|CO2|Land|Land-use Change|Residual|Positive (Mt CO2/yr)",
-    "Emissions|CO2|Land|Land-use Change|Soil (Mt CO2/yr)",
-    "Emissions|CO2|Land|Land-use Change|Soil|Cropland management (Mt CO2/yr)",
-    "Emissions|CO2|Land|Land-use Change|Soil|Cropland management|Emissions (Mt CO2/yr)",
-    "Emissions|CO2|Land|Land-use Change|Soil|Cropland management|Withdrawals (Mt CO2/yr)",
-    "Emissions|CO2|Land|Land-use Change|Soil|Land Conversion (Mt CO2/yr)",
-    "Emissions|CO2|Land|Land-use Change|Soil|Land Conversion|Emissions (Mt CO2/yr)",
-    "Emissions|CO2|Land|Land-use Change|Soil|Land Conversion|Withdrawals (Mt CO2/yr)",
-    "Emissions|CO2|Land|Land-use Change|Soil|Soil Carbon Management (Mt CO2/yr)",
-    "Emissions|CO2|Land|Land-use Change|Soil|Soil Carbon Management|Emissions (Mt CO2/yr)",
-    "Emissions|CO2|Land|Land-use Change|Soil|Soil Carbon Management|Withdrawals (Mt CO2/yr)",
-    "Emissions|CO2|Land|Land-use Change|Timber (Mt CO2/yr)",
-    "Emissions|CO2|Land|Land-use Change|Timber|Release from HWP (Mt CO2/yr)",
-    "Emissions|CO2|Land|Land-use Change|Timber|Release from HWP|Buildings (Mt CO2/yr)",
-    "Emissions|CO2|Land|Land-use Change|Timber|Release from HWP|Industrial Roundwood (Mt CO2/yr)",
-    "Emissions|CO2|Land|Land-use Change|Timber|Storage in HWP (Mt CO2/yr)",
-    "Emissions|CO2|Land|Land-use Change|Timber|Storage in HWP|Buildings (Mt CO2/yr)",
-    "Emissions|CO2|Land|Land-use Change|Timber|Storage in HWP|Industrial Roundwood (Mt CO2/yr)",
-    "Emissions|CO2|Land|Land-use Change|Wood Harvest (Mt CO2/yr)",
-    "Emissions|CO2|Land|Land-use Change|Wood Harvest|Other Land (Mt CO2/yr)",
-    "Emissions|CO2|Land|Land-use Change|Wood Harvest|Primary Forest (Mt CO2/yr)",
-    "Emissions|CO2|Land|Land-use Change|Wood Harvest|Secondary Forest (Mt CO2/yr)",
-    "Emissions|CO2|Land|Land-use Change|Wood Harvest|Timber Plantations (Mt CO2/yr)",
-    # ----- N2O (20 vars) -----
-    "Emissions|N2O|AFOLU|Land|Fires (Mt N2O/yr)",
-    "Emissions|N2O|AFOLU|Land|Fires|Forest Burning (Mt N2O/yr)",
-    "Emissions|N2O|AFOLU|Land|Fires|Forest Burning|Boreal Forest (Mt N2O/yr)",
-    "Emissions|N2O|AFOLU|Land|Fires|Forest Burning|Temperate Forest (Mt N2O/yr)",
-    "Emissions|N2O|AFOLU|Land|Fires|Forest Burning|Tropical Forest (Mt N2O/yr)",
-    "Emissions|N2O|AFOLU|Land|Fires|Grassland Burning (Mt N2O/yr)",
-    "Emissions|N2O|AFOLU|Land|Fires|Peat Burning (Mt N2O/yr)",
-    "Emissions|N2O|Land (Mt N2O/yr)",
-    "Emissions|N2O|Land|Agriculture (Mt N2O/yr)",
-    "Emissions|N2O|Land|Agriculture|Agricultural Soils (Mt N2O/yr)",
-    "Emissions|N2O|Land|Agriculture|Agricultural Soils|Decay of Crop Residues (Mt N2O/yr)",
-    "Emissions|N2O|Land|Agriculture|Agricultural Soils|Inorganic Fertilizers (Mt N2O/yr)",
-    "Emissions|N2O|Land|Agriculture|Agricultural Soils|Inorganic Fertilizers|Cropland (Mt N2O/yr)",
-    "Emissions|N2O|Land|Agriculture|Agricultural Soils|Inorganic Fertilizers|Pasture (Mt N2O/yr)",
-    "Emissions|N2O|Land|Agriculture|Agricultural Soils|Manure applied to Croplands (Mt N2O/yr)",
-    "Emissions|N2O|Land|Agriculture|Agricultural Soils|Pasture (Mt N2O/yr)",
-    "Emissions|N2O|Land|Agriculture|Agricultural Soils|Soil Organic Matter Loss (Mt N2O/yr)",
-    "Emissions|N2O|Land|Agriculture|Animal Waste Management (Mt N2O/yr)",
-    "Emissions|N2O|Land|Biomass Burning|Burning of Crop Residues (Mt N2O/yr)",
-    "Emissions|N2O|Land|Peatland|Managed (Mt N2O/yr)",
-    # ----- NH3 (20 vars) -----
-    "Emissions|NH3|AFOLU|Land|Fires (Mt NH3/yr)",
-    "Emissions|NH3|AFOLU|Land|Fires|Forest Burning (Mt NH3/yr)",
-    "Emissions|NH3|AFOLU|Land|Fires|Forest Burning|Boreal Forest (Mt NH3/yr)",
-    "Emissions|NH3|AFOLU|Land|Fires|Forest Burning|Temperate Forest (Mt NH3/yr)",
-    "Emissions|NH3|AFOLU|Land|Fires|Forest Burning|Tropical Forest (Mt NH3/yr)",
-    "Emissions|NH3|AFOLU|Land|Fires|Grassland Burning (Mt NH3/yr)",
-    "Emissions|NH3|AFOLU|Land|Fires|Peat Burning (Mt NH3/yr)",
-    "Emissions|NH3|Land (Mt NH3/yr)",
-    "Emissions|NH3|Land|Agriculture (Mt NH3/yr)",
-    "Emissions|NH3|Land|Agriculture|Agricultural Soils (Mt NH3/yr)",
-    "Emissions|NH3|Land|Agriculture|Agricultural Soils|Decay of Crop Residues (Mt NH3/yr)",
-    "Emissions|NH3|Land|Agriculture|Agricultural Soils|Inorganic Fertilizers (Mt NH3/yr)",
-    "Emissions|NH3|Land|Agriculture|Agricultural Soils|Inorganic Fertilizers|Cropland (Mt NH3/yr)",
-    "Emissions|NH3|Land|Agriculture|Agricultural Soils|Inorganic Fertilizers|Pasture (Mt NH3/yr)",
-    "Emissions|NH3|Land|Agriculture|Agricultural Soils|Manure applied to Croplands (Mt NH3/yr)",
-    "Emissions|NH3|Land|Agriculture|Agricultural Soils|Pasture (Mt NH3/yr)",
-    "Emissions|NH3|Land|Agriculture|Agricultural Soils|Soil Organic Matter Loss (Mt NH3/yr)",
-    "Emissions|NH3|Land|Agriculture|Animal Waste Management (Mt NH3/yr)",
-    "Emissions|NH3|Land|Biomass Burning|Burning of Crop Residues (Mt NH3/yr)",
-    "Emissions|NH3|Land|Peatland|Managed (Mt NH3/yr)",
-    # ----- NO2 (20 vars) -----
-    "Emissions|NO2|AFOLU|Land|Fires (Mt NO2/yr)",
-    "Emissions|NO2|AFOLU|Land|Fires|Forest Burning (Mt NO2/yr)",
-    "Emissions|NO2|AFOLU|Land|Fires|Forest Burning|Boreal Forest (Mt NO2/yr)",
-    "Emissions|NO2|AFOLU|Land|Fires|Forest Burning|Temperate Forest (Mt NO2/yr)",
-    "Emissions|NO2|AFOLU|Land|Fires|Forest Burning|Tropical Forest (Mt NO2/yr)",
-    "Emissions|NO2|AFOLU|Land|Fires|Grassland Burning (Mt NO2/yr)",
-    "Emissions|NO2|AFOLU|Land|Fires|Peat Burning (Mt NO2/yr)",
-    "Emissions|NO2|Land (Mt NO2/yr)",
-    "Emissions|NO2|Land|Agriculture (Mt NO2/yr)",
-    "Emissions|NO2|Land|Agriculture|Agricultural Soils (Mt NO2/yr)",
-    "Emissions|NO2|Land|Agriculture|Agricultural Soils|Decay of Crop Residues (Mt NO2/yr)",
-    "Emissions|NO2|Land|Agriculture|Agricultural Soils|Inorganic Fertilizers (Mt NO2/yr)",
-    "Emissions|NO2|Land|Agriculture|Agricultural Soils|Inorganic Fertilizers|Cropland (Mt NO2/yr)",
-    "Emissions|NO2|Land|Agriculture|Agricultural Soils|Inorganic Fertilizers|Pasture (Mt NO2/yr)",
-    "Emissions|NO2|Land|Agriculture|Agricultural Soils|Manure applied to Croplands (Mt NO2/yr)",
-    "Emissions|NO2|Land|Agriculture|Agricultural Soils|Pasture (Mt NO2/yr)",
-    "Emissions|NO2|Land|Agriculture|Agricultural Soils|Soil Organic Matter Loss (Mt NO2/yr)",
-    "Emissions|NO2|Land|Agriculture|Animal Waste Management (Mt NO2/yr)",
-    "Emissions|NO2|Land|Biomass Burning|Burning of Crop Residues (Mt NO2/yr)",
-    "Emissions|NO2|Land|Peatland|Managed (Mt NO2/yr)",
-    # ----- NO3- (13 vars) -----
-    "Emissions|NO3-|Land (Mt NO3-/yr)",
-    "Emissions|NO3-|Land|Agriculture (Mt NO3-/yr)",
-    "Emissions|NO3-|Land|Agriculture|Agricultural Soils (Mt NO3-/yr)",
-    "Emissions|NO3-|Land|Agriculture|Agricultural Soils|Decay of Crop Residues (Mt NO3-/yr)",
-    "Emissions|NO3-|Land|Agriculture|Agricultural Soils|Inorganic Fertilizers (Mt NO3-/yr)",
-    "Emissions|NO3-|Land|Agriculture|Agricultural Soils|Inorganic Fertilizers|Cropland (Mt NO3-/yr)",
-    "Emissions|NO3-|Land|Agriculture|Agricultural Soils|Inorganic Fertilizers|Pasture (Mt NO3-/yr)",
-    "Emissions|NO3-|Land|Agriculture|Agricultural Soils|Manure applied to Croplands (Mt NO3-/yr)",
-    "Emissions|NO3-|Land|Agriculture|Agricultural Soils|Pasture (Mt NO3-/yr)",
-    "Emissions|NO3-|Land|Agriculture|Agricultural Soils|Soil Organic Matter Loss (Mt NO3-/yr)",
-    "Emissions|NO3-|Land|Agriculture|Animal Waste Management (Mt NO3-/yr)",
-    "Emissions|NO3-|Land|Biomass Burning|Burning of Crop Residues (Mt NO3-/yr)",
-    "Emissions|NO3-|Land|Peatland|Managed (Mt NO3-/yr)",
-    # ----- OC (9 vars) -----
-    "Emissions|OC|AFOLU|Agriculture (Mt OC/yr)",
-    "Emissions|OC|AFOLU|Land|Fires (Mt OC/yr)",
-    "Emissions|OC|AFOLU|Land|Fires|Forest Burning (Mt OC/yr)",
-    "Emissions|OC|AFOLU|Land|Fires|Forest Burning|Boreal Forest (Mt OC/yr)",
-    "Emissions|OC|AFOLU|Land|Fires|Forest Burning|Temperate Forest (Mt OC/yr)",
-    "Emissions|OC|AFOLU|Land|Fires|Forest Burning|Tropical Forest (Mt OC/yr)",
-    "Emissions|OC|AFOLU|Land|Fires|Grassland Burning (Mt OC/yr)",
-    "Emissions|OC|AFOLU|Land|Fires|Peat Burning (Mt OC/yr)",
-    "Emissions|OC|Land|Biomass Burning|Burning of Crop Residues (Mt OC/yr)",
-    # ----- SO2 (9 vars) -----
-    "Emissions|SO2|AFOLU|Agriculture (Mt SO2/yr)",
-    "Emissions|SO2|AFOLU|Land|Fires (Mt SO2/yr)",
-    "Emissions|SO2|AFOLU|Land|Fires|Forest Burning (Mt SO2/yr)",
-    "Emissions|SO2|AFOLU|Land|Fires|Forest Burning|Boreal Forest (Mt SO2/yr)",
-    "Emissions|SO2|AFOLU|Land|Fires|Forest Burning|Temperate Forest (Mt SO2/yr)",
-    "Emissions|SO2|AFOLU|Land|Fires|Forest Burning|Tropical Forest (Mt SO2/yr)",
-    "Emissions|SO2|AFOLU|Land|Fires|Grassland Burning (Mt SO2/yr)",
-    "Emissions|SO2|AFOLU|Land|Fires|Peat Burning (Mt SO2/yr)",
-    "Emissions|SO2|Land|Biomass Burning|Burning of Crop Residues (Mt SO2/yr)",
-    # ----- VOC (9 vars) -----
-    "Emissions|VOC|AFOLU|Agriculture (Mt VOC/yr)",
-    "Emissions|VOC|AFOLU|Land|Fires (Mt VOC/yr)",
-    "Emissions|VOC|AFOLU|Land|Fires|Forest Burning (Mt VOC/yr)",
-    "Emissions|VOC|AFOLU|Land|Fires|Forest Burning|Boreal Forest (Mt VOC/yr)",
-    "Emissions|VOC|AFOLU|Land|Fires|Forest Burning|Temperate Forest (Mt VOC/yr)",
-    "Emissions|VOC|AFOLU|Land|Fires|Forest Burning|Tropical Forest (Mt VOC/yr)",
-    "Emissions|VOC|AFOLU|Land|Fires|Grassland Burning (Mt VOC/yr)",
-    "Emissions|VOC|AFOLU|Land|Fires|Peat Burning (Mt VOC/yr)",
-    "Emissions|VOC|Land|Biomass Burning|Burning of Crop Residues (Mt VOC/yr)"
-  )
-  missing_emi <- setdiff(emi_vars, magclass::getNames(rep))
-  if (length(missing_emi) > 0) {
+  emiVars <- read.csv(
+    system.file("extdata", "magpie-afolu-emission-variables.csv",
+                package = "postprom"),
+    stringsAsFactors = FALSE
+  )[["variable"]]
+  missingEmi <- setdiff(emiVars, magclass::getNames(rep))
+  if (length(missingEmi) > 0) {
     warning(sprintf(
       "Missing %d AFOLU emission variables in mif, skipped: %s",
-      length(missing_emi), paste(missing_emi, collapse = "; ")
+      length(missingEmi), paste(missingEmi, collapse = "; ")
     ))
-    emi_vars <- intersect(emi_vars, magclass::getNames(rep))
+    emiVars <- intersect(emiVars, magclass::getNames(rep))
   }
-  emi <- rep[, , emi_vars]
+  emi <- rep[, , emiVars]
 
   # Drop World row if present; keep only h12.
-  h12_present <- intersect(.H12, magclass::getRegions(price))
-  price <- price[h12_present, , ]
-  emi   <- emi[h12_present, , ]
+  h12Present <- intersect(.H12, magclass::getRegions(price))
+  price <- price[h12Present, , ]
+  emi   <- emi[h12Present, , ]
 
   # ---- 2. unit conversion: US$2017/GJ -> k$2015/toe (price only)
   price <- price * (deflator17to15 * .GJ_PER_TOE / 1000)
@@ -697,13 +499,13 @@ coupleMagpieToProm <- function(reportMifPath,
   # For each resCy region we find its h12 membership; EU-28 members map to EUR,
   # the 11 non-EU resCy regions are themselves h12 codes.
   resCy   <- unique(mapping[["Region.Code"]])
-  h12_for <- ifelse(resCy %in% .EU28, "EUR", resCy)
-  ok      <- h12_for %in% h12_present
+  h12For <- ifelse(resCy %in% .EU28, "EUR", resCy)
+  ok      <- h12For %in% h12Present
   resCy   <- resCy[ok]
-  h12_for <- h12_for[ok]
+  h12For <- h12For[ok]
 
-  price_resCy <- .broadcastToResCy(price, resCy, h12_for)
-  emi_resCy   <- .broadcastToResCy(emi,   resCy, h12_for)
+  priceResCy <- .broadcastToResCy(price, resCy, h12For)
+  emiResCy   <- .broadcastToResCy(emi,   resCy, h12For)
 
   # ---- 4. read SBS for broadcasting prices across subsectors
   SBS <- gdx::readGDX(gdxPath, "SBS")
@@ -716,55 +518,55 @@ coupleMagpieToProm <- function(reportMifPath,
   # YTIME set (core/sets.gms:115 defines `ytime /%fStartHorizon%*%fEndHorizon%/`
   # which expands to 2010..2100 as plain numeric labels). A "y" prefix causes
   # GAMS Error 170 (domain violation) when the CSV is $included.
-  year_cols <- as.character(magclass::getYears(price_resCy, as.integer = TRUE))
-  header    <- paste(c("dummy", "dummy", year_cols), collapse = ",")
+  yearCols <- as.character(magclass::getYears(priceResCy, as.integer = TRUE))
+  header    <- paste(c("dummy", "dummy", yearCols), collapse = ",")
 
   # ---- 5a. write iPrices_magpie.csv   (region, SBS, years...)
-  price_arr <- as.array(price_resCy)[, , 1, drop = FALSE]   # resCy x year x 1
-  price_mat <- price_arr[, , 1]                             # resCy x year
-  rows_p <- vector("list", length = nrow(price_mat) * length(SBS))
+  priceArr <- as.array(priceResCy)[, , 1, drop = FALSE]   # resCy x year x 1
+  priceMat <- priceArr[, , 1]                             # resCy x year
+  rowsP <- vector("list", length = nrow(priceMat) * length(SBS))
   k <- 1
-  for (r in rownames(price_mat)) {
-    vals <- formatC(price_mat[r, ], digits = 6, format = "g")
+  for (r in rownames(priceMat)) {
+    vals <- formatC(priceMat[r, ], digits = 6, format = "g")
     for (s in SBS) {
-      rows_p[[k]] <- paste(c(r, s, vals), collapse = ",")
+      rowsP[[k]] <- paste(c(r, s, vals), collapse = ",")
       k <- k + 1
     }
   }
   dir.create(dirname(outCsvPath), showWarnings = FALSE, recursive = TRUE)
   con <- file(outCsvPath, open = "w")
   writeLines(header, con)
-  writeLines(unlist(rows_p), con)
+  writeLines(unlist(rowsP), con)
   close(con)
   message(sprintf(
     "[coupleMagpieToProm] wrote iPrices_magpie.csv: %s  (%d regions x %d SBS x %d years)",
-    outCsvPath, nrow(price_mat), length(SBS), length(year_cols)
+    outCsvPath, nrow(priceMat), length(SBS), length(yearCols)
   ))
 
   # ---- 5b. write iEmissions_magpie.csv (region, variable, years...)
   # Strip "(Mt X/yr)" suffix from variable names so the CSV stores the variable
   # stem only — matches the convention in the previous linkPromToMagpie.R output.
-  emi_names_raw  <- magclass::getNames(emi_resCy)
-  emi_names_stem <- trimws(sub("\\s*\\([^)]*\\)\\s*$", "", emi_names_raw))
+  emiNamesRaw  <- magclass::getNames(emiResCy)
+  emiNamesStem <- trimws(sub("\\s*\\([^)]*\\)\\s*$", "", emiNamesRaw))
 
-  emi_arr <- as.array(emi_resCy)                            # resCy x year x variable
-  rows_e  <- vector("list", length = dim(emi_arr)[1] * dim(emi_arr)[3])
+  emiArr <- as.array(emiResCy)                            # resCy x year x variable
+  rowsE  <- vector("list", length = dim(emiArr)[1] * dim(emiArr)[3])
   k <- 1
-  for (r in dimnames(emi_arr)[[1]]) {
-    for (i in seq_along(emi_names_raw)) {
-      vals <- formatC(emi_arr[r, , i], digits = 6, format = "g")
-      rows_e[[k]] <- paste(c(r, emi_names_stem[i], vals), collapse = ",")
+  for (r in dimnames(emiArr)[[1]]) {
+    for (i in seq_along(emiNamesRaw)) {
+      vals <- formatC(emiArr[r, , i], digits = 6, format = "g")
+      rowsE[[k]] <- paste(c(r, emiNamesStem[i], vals), collapse = ",")
       k <- k + 1
     }
   }
   dir.create(dirname(outEmissionsCsvPath), showWarnings = FALSE, recursive = TRUE)
   con <- file(outEmissionsCsvPath, open = "w")
   writeLines(header, con)
-  writeLines(unlist(rows_e), con)
+  writeLines(unlist(rowsE), con)
   close(con)
   message(sprintf(
     "[coupleMagpieToProm] wrote iEmissions_magpie.csv: %s  (%d regions x %d vars x %d years)",
-    outEmissionsCsvPath, dim(emi_arr)[1], dim(emi_arr)[3], length(year_cols)
+    outEmissionsCsvPath, dim(emiArr)[1], dim(emiArr)[3], length(yearCols)
   ))
 
   invisible(list(prices = outCsvPath, emissions = outEmissionsCsvPath))
@@ -774,12 +576,12 @@ coupleMagpieToProm <- function(reportMifPath,
 #
 # `m`        : magpie at h12 scale (regions x year x [variable])
 # `resCy`    : character vector of resCy region codes
-# `h12_for`  : same length as resCy; the h12 region each resCy pulls from
+# `h12For`  : same length as resCy; the h12 region each resCy pulls from
 #
 # Returns a magpie at resCy x year x [variable] with values copied from parent
 # h12. Preserves variable names on dim 3. Resolves the getItems<- deprecation
 # via direct dimnames assignment on the resulting array.
-.broadcastToResCy <- function(m, resCy, h12_for) {
+.broadcastToResCy <- function(m, resCy, h12For) {
   years <- magclass::getYears(m)
   vars  <- magclass::getNames(m)
   if (is.null(vars)) vars <- "value"
@@ -789,12 +591,12 @@ coupleMagpieToProm <- function(reportMifPath,
     dim      = c(length(resCy), length(years), length(vars)),
     dimnames = list(resCy, years, vars)
   )
-  m_arr <- as.array(m)
-  if (length(dim(m_arr)) == 2) dim(m_arr) <- c(dim(m_arr), 1)
-  dimnames(m_arr)[[3]] <- vars
+  mArr <- as.array(m)
+  if (length(dim(mArr)) == 2) dim(mArr) <- c(dim(mArr), 1)
+  dimnames(mArr)[[3]] <- vars
 
   for (i in seq_along(resCy)) {
-    arr[i, , ] <- m_arr[h12_for[i], , ]
+    arr[i, , ] <- mArr[h12For[i], , ]
   }
   magclass::as.magpie(arr, spatial = 1, temporal = 2)
 }
