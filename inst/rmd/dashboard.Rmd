@@ -105,4 +105,35 @@ p <- ggplot(elMix, aes(period, value, fill = variable)) +
 
 ggplotly(p) %>%
   layout(autosize = TRUE)
+
+p <- ggplot(elMix, aes(period, value, fill = variable)) +
+  geom_area() +
+  facet_wrap(~region, scales = "free_y", ncol = 6) +
+  theme_minimal() +
+  theme(
+    panel.spacing.x = unit(0.05, "lines"),
+    panel.spacing.y = unit(0.05, "lines"),
+    legend.position = "bottom",
+    legend.title = element_blank(),
+    legend.text = element_text(size = 5),
+    legend.key.size = unit(0.2, "cm")
+  ) +
+  guides(fill = guide_legend(ncol = 5))   # key for compact legend
+
+ggplotly(p) %>%
+  layout(
+    legend = list(
+      orientation = "h",
+      x = 0,
+      y = -0.25,
+
+      font = list(size = 5),
+
+      itemwidth = 12,
+      itemsizing = "constant",
+      traceorder = "normal"
+    ),
+    margin = list(l = 20, r = 20, t = 20, b = 90),
+    autosize = TRUE
+  )
 ```
