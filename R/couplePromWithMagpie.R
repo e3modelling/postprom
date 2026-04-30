@@ -197,6 +197,12 @@ coupleMagpieToProm <- function(reportMifPath,
   # Strip model/scenario to leave just region x year x variable.
   rep <- magclass::collapseNames(rep)
 
+  # Strip single `+` markers globally so that emi_vars below can be specified
+  # in their flattened IAMC form (parent-child expressed via `|` only).
+  # `++` markers are NOT stripped: ++ variables are not requested by emi_vars,
+  # and stripping them too would risk name collisions with `+` siblings.
+  magclass::getNames(rep) <- gsub("\\|\\+\\|", "|", magclass::getNames(rep))
+
   if (!(biomassVariable %in% magclass::getNames(rep))) {
     stop(sprintf(
       "Variable %s not found in %s. Available Price* variables:\n  %s",
@@ -206,24 +212,449 @@ coupleMagpieToProm <- function(reportMifPath,
   }
   price <- rep[, , biomassVariable]             # h12 + World, years x 1
 
-  # Land-use / AFOLU emission variables. No unit conversion: the csv preserves
-  # MAgPIE's native "Mt <pollutant>/yr" units so downstream consumers can
-  # decide what to do. The file is not currently $include'd by OPEN-PROM GAMS
-  # code (see notes/TASK7-implementation-plan.md §2.5).
+  # ============================================================================
+  # AFOLU emission variables: extraction & cleanup
+  # ============================================================================
+  #
+  # The native MAgPIE report.mif uses IAMC naming conventions:
+  #
+  # * Names are `|`-separated hierarchical paths, e.g.
+  #   `Emissions|CO2|Land|+|Land-use Change|+|Deforestation`
+  # * Two markers encode aggregation relationships:
+  #     `|+|`   sum-to-parent partition: parent = sum of all +-marked siblings
+  #             (mutually-exclusive slices along one dimension)
+  #     `|++|`  orthogonal alternate decomposition: a parallel slicing of the same
+  #             node from a different perspective (e.g. + slices by "use", ++
+  #             slices by "carbon-pool location"). Sum of + siblings = sum of ++
+  #             siblings = parent.
+  # * 11 gases/pollutants: BC, CH4, CO, CO2, N2O, NH3, NO2, NO3-, OC, SO2, VOC.
+  # * Three parallel layer-3 subtrees per gas, with distinct provenance — they
+  #   are NOT in a parent-child relationship:
+  #     |<gas>|Land|*               endogenous output of MAgPIE's 76_emissions
+  #                                 module (land-system equilibrium)
+  #     |<gas>|AFOLU|Land|Fires|*   exogenous GFED fire data, split by climate zone
+  #     |<gas>|AFOLU|Agriculture    exogenous GAINS/CEDS agricultural activity
+  #                                 (non-zero only for BC/CO/OC/SO2/VOC)
+  #     |CO2|Land Carbon Sink|*     post-processing mapping (Grassi NGHGI alias +
+  #                                 full LPJmL carbon flux)
+  # * Two derived families we do NOT extract: `|GWP100AR6|...` (× CO2eq weighting)
+  #   and `|...|Cumulative|...` (cumulative integrals). OPEN-PROM does its own
+  #   weighting and accumulation; keeping these would just duplicate storage.
+  # * Overall scale: ~700+ emission variables in the raw mif.
+  #
+  # ----------------------------------------------------------------------------
+  # Modifications applied to the native data
+  # ----------------------------------------------------------------------------
+  #
+  # (1) Drop GWP100AR6 weighted columns and Cumulative integrals
+  #     Native: `Emissions|GWP100AR6|Land`, `Emissions|N2O_GWP100AR6|Land*`,
+  #             `Emissions|<gas>|...|Cumulative|...`
+  #     Why:    These are second-order derived quantities MAgPIE provides for
+  #             IAMC reporting convenience; OPEN-PROM can compute them itself,
+  #             so keeping them only duplicates storage.
+  #     Action: emi_vars excludes both families.
+  #
+  # (2) Drop the 8 |++| variants
+  #     Native: `Emissions|CO2|Land|++|Above Ground Carbon`,
+  #             `...|Land|++|Below Ground Carbon`,
+  #             `...|Indirect|++|Above/Below`,
+  #             `...|Land-use Change|++|Above/Below`,
+  #             `...|Soil|++|Emissions/Withdrawals`
+  #     Why:    ++ provides an alternate slicing parallel to +. Under the same
+  #             parent, + siblings and ++ siblings each sum back to the parent,
+  #             so keeping both is redundant — and mixing them is error-prone
+  #             (++ slices by carbon-pool location, + slices by use).
+  #     Action: keep the + decomposition (mainline, by use), drop all ++.
+  #
+  # (3) Drop 1 cross-tree alias
+  #     Native: `Emissions|CO2|Land Carbon Sink|Grassi|Managed Land|Managed Forest`
+  #     Why:    For every region and year this series is **identical** to
+  #             `Emissions|CO2|Land|+|Indirect`. MAgPIE reports both to satisfy
+  #             two naming conventions (IAMC mif `Land|+|Indirect` vs. IPCC
+  #             NGHGI `Land Carbon Sink|Grassi|...`). OPEN-PROM does no NGHGI
+  #             reporting, so the alias only adds double-count risk.
+  #     Action: keep only the `|Land|+|Indirect` form.
+  #
+  # (4) Drop 10 structural single-child parents (5 gases × 2 places)
+  #     Native: `Emissions|<gas>|Land|+|Biomass Burning` and
+  #             `Emissions|<gas>|Land|+|Peatland`,
+  #             where <gas> ∈ {CH4, N2O, NH3, NO2, NO3-}
+  #     Why:    In the mif each of these parents has structurally exactly ONE
+  #             child (`|+|Burning of Crop Residues` and `|+|Managed`), so the
+  #             parent value always equals the child value, and the child name
+  #             carries strictly more information.
+  #     Action: keep the more specific children (e.g.
+  #             `|Land|Biomass Burning|Burning of Crop Residues`), drop the
+  #             redundant parents.
+  #
+  # (5) Strip `|+|` markers globally
+  #     Native: variable names look like
+  #             `Emissions|CO2|Land|+|Land-use Change|+|Deforestation`
+  #     Why:    The + marker is a hint for IAMC reporting tooling (piamInterfaces
+  #             / mip / IIASA Scenario Explorer) to identify which siblings sum
+  #             to a given parent row. Downstream OPEN-PROM consumes this csv by
+  #             selecting on names, so the marker is unnecessary; worse, level-
+  #             splitting helpers like `helperAggregateLevel` would otherwise
+  #             treat `+` as a real path component.
+  #     Action: gsub `\|\+\|` → `\|` immediately after collapseNames (line 204);
+  #             emi_vars uses the flattened names directly so they match the
+  #             stripped rep names exactly. `|++|` is left untouched by the gsub
+  #             (to avoid name collisions with the stripped `+` siblings), but
+  #             since (2) already drops all ++ variables this is a no-op.
+  #
+  # ----------------------------------------------------------------------------
+  # Extraction result: 190 variables
+  # ----------------------------------------------------------------------------
+  #
+  #   BC  9    CH4  14    CO  9    CO2 58    N2O 20    NH3 20
+  #   NO2 20   NO3- 13    OC  9    SO2 9     VOC 9              total 190
+  #
+  # Ordering: DFS (depth-first); each parent is followed immediately by its
+  #           children.
+  # Name format: flattened IAMC, no `+` / `++` markers.
+  # Units: native MAgPIE "Mt <pollutant>/yr", kept as-is.
+  # NOx is reported under MAgPIE's `NO2` label.
+  # `|<gas>|AFOLU|Agriculture` is all-zero in the current scenario for 6 gases
+  #   (BC/CO/CO2/OC/SO2/VOC); kept for structural completeness (it can be non-
+  #   zero under other GAINS/CEDS scenarios).
+  #
+  # ----------------------------------------------------------------------------
+  # Tree diagrams (per gas)
+  # ----------------------------------------------------------------------------
+  #
+  # === BC, CO, OC, SO2, VOC (9 vars each) ===
+  # Emissions|<gas>
+  # ├── AFOLU|Agriculture                                           (zero in this scenario)
+  # └── AFOLU|Land|Fires
+  #     ├── Forest Burning
+  #     │   ├── Boreal Forest
+  #     │   ├── Temperate Forest
+  #     │   └── Tropical Forest
+  #     ├── Grassland Burning
+  #     └── Peat Burning
+  # Emissions|<gas>|Land|Biomass Burning|Burning of Crop Residues   (orphan leaf;
+  #   |Land| and |Land|Biomass Burning| not present in mif for these 5 gases)
+  #
+  # === CH4 (14 vars) ===
+  # Emissions|CH4
+  # ├── AFOLU|Land|Fires
+  # │   ├── Forest Burning
+  # │   │   ├── Boreal Forest
+  # │   │   ├── Temperate Forest
+  # │   │   └── Tropical Forest
+  # │   ├── Grassland Burning
+  # │   └── Peat Burning
+  # └── Land
+  #     ├── Agriculture
+  #     │   ├── Animal waste management
+  #     │   ├── Enteric fermentation
+  #     │   └── Rice
+  #     ├── Biomass Burning|Burning of Crop Residues  (single-child parent |Biomass Burning| stripped)
+  #     └── Peatland|Managed                          (single-child parent |Peatland| stripped)
+  #
+  # === N2O, NH3, NO2 (20 vars each) ===
+  # Emissions|<gas>
+  # ├── AFOLU|Land|Fires
+  # │   ├── Forest Burning
+  # │   │   ├── Boreal Forest
+  # │   │   ├── Temperate Forest
+  # │   │   └── Tropical Forest
+  # │   ├── Grassland Burning
+  # │   └── Peat Burning
+  # └── Land
+  #     ├── Agriculture
+  #     │   ├── Agricultural Soils
+  #     │   │   ├── Decay of Crop Residues
+  #     │   │   ├── Inorganic Fertilizers
+  #     │   │   │   ├── Cropland
+  #     │   │   │   └── Pasture
+  #     │   │   ├── Manure applied to Croplands
+  #     │   │   ├── Pasture
+  #     │   │   └── Soil Organic Matter Loss
+  #     │   └── Animal Waste Management
+  #     ├── Biomass Burning|Burning of Crop Residues  (single-child parent stripped)
+  #     └── Peatland|Managed                          (single-child parent stripped)
+  #
+  # === NO3- (13 vars, no |AFOLU| subtree) ===
+  # Emissions|NO3-|Land
+  # ├── Agriculture
+  # │   ├── Agricultural Soils
+  # │   │   ├── Decay of Crop Residues
+  # │   │   ├── Inorganic Fertilizers
+  # │   │   │   ├── Cropland
+  # │   │   │   └── Pasture
+  # │   │   ├── Manure applied to Croplands
+  # │   │   ├── Pasture
+  # │   │   └── Soil Organic Matter Loss
+  # │   └── Animal Waste Management
+  # ├── Biomass Burning|Burning of Crop Residues  (single-child parent stripped)
+  # └── Peatland|Managed                          (single-child parent stripped)
+  #
+  # === CO2 (58 vars) ===
+  # Emissions|CO2
+  # ├── AFOLU|Agriculture                                           (zero in this scenario)
+  # ├── AFOLU|Land|Fires
+  # │   ├── Forest Burning
+  # │   │   ├── Boreal Forest
+  # │   │   ├── Temperate Forest
+  # │   │   └── Tropical Forest
+  # │   ├── Grassland Burning
+  # │   └── Peat Burning
+  # └── Land
+  #     ├── Biomass Burning|Burning of Crop Residues   (orphan leaf, no |Biomass Burning| parent)
+  #     ├── Indirect                                    (Grassi NGHGI managed-forest sink;
+  #     │                                                negative over the historical calibration
+  #     │                                                period, all-zero from 2030 onwards)
+  #     └── Land-use Change
+  #         ├── Deforestation
+  #         │   ├── Cropland Tree Cover
+  #         │   ├── Forestry plantations
+  #         │   ├── Primary forests
+  #         │   └── Secondary forests
+  #         ├── Forest degradation
+  #         │   ├── Primary forests
+  #         │   └── Secondary forests
+  #         ├── Other land conversion
+  #         ├── Peatland
+  #         │   ├── Negative
+  #         │   └── Positive
+  #         ├── Regrowth
+  #         │   ├── CO2-price AR
+  #         │   │   ├── Natural Forest
+  #         │   │   └── Plantation
+  #         │   ├── Cropland Tree Cover
+  #         │   ├── NPI_NDC AR
+  #         │   ├── Other Land
+  #         │   ├── Secondary Forest
+  #         │   └── Timber Plantations
+  #         ├── Residual
+  #         │   ├── Negative
+  #         │   └── Positive
+  #         ├── Soil
+  #         │   ├── Cropland management
+  #         │   │   ├── Emissions
+  #         │   │   └── Withdrawals
+  #         │   ├── Land Conversion
+  #         │   │   ├── Emissions
+  #         │   │   └── Withdrawals
+  #         │   └── Soil Carbon Management
+  #         │       ├── Emissions
+  #         │       └── Withdrawals
+  #         ├── Timber
+  #         │   ├── Release from HWP
+  #         │   │   ├── Buildings
+  #         │   │   └── Industrial Roundwood
+  #         │   └── Storage in HWP
+  #         │       ├── Buildings
+  #         │       └── Industrial Roundwood
+  #         └── Wood Harvest
+  #             ├── Other Land
+  #             ├── Primary Forest
+  #             ├── Secondary Forest
+  #             └── Timber Plantations
+  # ============================================================================
   emi_vars <- c(
-    "Emissions|CO2|Land (Mt CO2/yr)",
-    "Emissions|CO2|Land|+|Land-use Change (Mt CO2/yr)",
-    "Emissions|CO2|Land|+|Indirect (Mt CO2/yr)",
+    # ----- BC (9 vars) -----
+    "Emissions|BC|AFOLU|Agriculture (Mt BC/yr)",
     "Emissions|BC|AFOLU|Land|Fires (Mt BC/yr)",
+    "Emissions|BC|AFOLU|Land|Fires|Forest Burning (Mt BC/yr)",
+    "Emissions|BC|AFOLU|Land|Fires|Forest Burning|Boreal Forest (Mt BC/yr)",
+    "Emissions|BC|AFOLU|Land|Fires|Forest Burning|Temperate Forest (Mt BC/yr)",
+    "Emissions|BC|AFOLU|Land|Fires|Forest Burning|Tropical Forest (Mt BC/yr)",
+    "Emissions|BC|AFOLU|Land|Fires|Grassland Burning (Mt BC/yr)",
+    "Emissions|BC|AFOLU|Land|Fires|Peat Burning (Mt BC/yr)",
+    "Emissions|BC|Land|Biomass Burning|Burning of Crop Residues (Mt BC/yr)",
+    # ----- CH4 (14 vars) -----
+    "Emissions|CH4|AFOLU|Land|Fires (Mt CH4/yr)",
+    "Emissions|CH4|AFOLU|Land|Fires|Forest Burning (Mt CH4/yr)",
+    "Emissions|CH4|AFOLU|Land|Fires|Forest Burning|Boreal Forest (Mt CH4/yr)",
+    "Emissions|CH4|AFOLU|Land|Fires|Forest Burning|Temperate Forest (Mt CH4/yr)",
+    "Emissions|CH4|AFOLU|Land|Fires|Forest Burning|Tropical Forest (Mt CH4/yr)",
+    "Emissions|CH4|AFOLU|Land|Fires|Grassland Burning (Mt CH4/yr)",
+    "Emissions|CH4|AFOLU|Land|Fires|Peat Burning (Mt CH4/yr)",
     "Emissions|CH4|Land (Mt CH4/yr)",
+    "Emissions|CH4|Land|Agriculture (Mt CH4/yr)",
+    "Emissions|CH4|Land|Agriculture|Animal waste management (Mt CH4/yr)",
+    "Emissions|CH4|Land|Agriculture|Enteric fermentation (Mt CH4/yr)",
+    "Emissions|CH4|Land|Agriculture|Rice (Mt CH4/yr)",
+    "Emissions|CH4|Land|Biomass Burning|Burning of Crop Residues (Mt CH4/yr)",
+    "Emissions|CH4|Land|Peatland|Managed (Mt CH4/yr)",
+    # ----- CO (9 vars) -----
+    "Emissions|CO|AFOLU|Agriculture (Mt CO/yr)",
     "Emissions|CO|AFOLU|Land|Fires (Mt CO/yr)",
+    "Emissions|CO|AFOLU|Land|Fires|Forest Burning (Mt CO/yr)",
+    "Emissions|CO|AFOLU|Land|Fires|Forest Burning|Boreal Forest (Mt CO/yr)",
+    "Emissions|CO|AFOLU|Land|Fires|Forest Burning|Temperate Forest (Mt CO/yr)",
+    "Emissions|CO|AFOLU|Land|Fires|Forest Burning|Tropical Forest (Mt CO/yr)",
+    "Emissions|CO|AFOLU|Land|Fires|Grassland Burning (Mt CO/yr)",
+    "Emissions|CO|AFOLU|Land|Fires|Peat Burning (Mt CO/yr)",
+    "Emissions|CO|Land|Biomass Burning|Burning of Crop Residues (Mt CO/yr)",
+    # ----- CO2 (58 vars) -----
+    "Emissions|CO2|AFOLU|Agriculture (Mt CO2/yr)",
+    "Emissions|CO2|AFOLU|Land|Fires (Mt CO2/yr)",
+    "Emissions|CO2|AFOLU|Land|Fires|Forest Burning (Mt CO2/yr)",
+    "Emissions|CO2|AFOLU|Land|Fires|Forest Burning|Boreal Forest (Mt CO2/yr)",
+    "Emissions|CO2|AFOLU|Land|Fires|Forest Burning|Temperate Forest (Mt CO2/yr)",
+    "Emissions|CO2|AFOLU|Land|Fires|Forest Burning|Tropical Forest (Mt CO2/yr)",
+    "Emissions|CO2|AFOLU|Land|Fires|Grassland Burning (Mt CO2/yr)",
+    "Emissions|CO2|AFOLU|Land|Fires|Peat Burning (Mt CO2/yr)",
+    "Emissions|CO2|Land (Mt CO2/yr)",
+    "Emissions|CO2|Land|Biomass Burning|Burning of Crop Residues (Mt CO2/yr)",
+    "Emissions|CO2|Land|Indirect (Mt CO2/yr)",
+    "Emissions|CO2|Land|Land-use Change (Mt CO2/yr)",
+    "Emissions|CO2|Land|Land-use Change|Deforestation (Mt CO2/yr)",
+    "Emissions|CO2|Land|Land-use Change|Deforestation|Cropland Tree Cover (Mt CO2/yr)",
+    "Emissions|CO2|Land|Land-use Change|Deforestation|Forestry plantations (Mt CO2/yr)",
+    "Emissions|CO2|Land|Land-use Change|Deforestation|Primary forests (Mt CO2/yr)",
+    "Emissions|CO2|Land|Land-use Change|Deforestation|Secondary forests (Mt CO2/yr)",
+    "Emissions|CO2|Land|Land-use Change|Forest degradation (Mt CO2/yr)",
+    "Emissions|CO2|Land|Land-use Change|Forest degradation|Primary forests (Mt CO2/yr)",
+    "Emissions|CO2|Land|Land-use Change|Forest degradation|Secondary forests (Mt CO2/yr)",
+    "Emissions|CO2|Land|Land-use Change|Other land conversion (Mt CO2/yr)",
+    "Emissions|CO2|Land|Land-use Change|Peatland (Mt CO2/yr)",
+    "Emissions|CO2|Land|Land-use Change|Peatland|Negative (Mt CO2/yr)",
+    "Emissions|CO2|Land|Land-use Change|Peatland|Positive (Mt CO2/yr)",
+    "Emissions|CO2|Land|Land-use Change|Regrowth (Mt CO2/yr)",
+    "Emissions|CO2|Land|Land-use Change|Regrowth|CO2-price AR (Mt CO2/yr)",
+    "Emissions|CO2|Land|Land-use Change|Regrowth|CO2-price AR|Natural Forest (Mt CO2/yr)",
+    "Emissions|CO2|Land|Land-use Change|Regrowth|CO2-price AR|Plantation (Mt CO2/yr)",
+    "Emissions|CO2|Land|Land-use Change|Regrowth|Cropland Tree Cover (Mt CO2/yr)",
+    "Emissions|CO2|Land|Land-use Change|Regrowth|NPI_NDC AR (Mt CO2/yr)",
+    "Emissions|CO2|Land|Land-use Change|Regrowth|Other Land (Mt CO2/yr)",
+    "Emissions|CO2|Land|Land-use Change|Regrowth|Secondary Forest (Mt CO2/yr)",
+    "Emissions|CO2|Land|Land-use Change|Regrowth|Timber Plantations (Mt CO2/yr)",
+    "Emissions|CO2|Land|Land-use Change|Residual (Mt CO2/yr)",
+    "Emissions|CO2|Land|Land-use Change|Residual|Negative (Mt CO2/yr)",
+    "Emissions|CO2|Land|Land-use Change|Residual|Positive (Mt CO2/yr)",
+    "Emissions|CO2|Land|Land-use Change|Soil (Mt CO2/yr)",
+    "Emissions|CO2|Land|Land-use Change|Soil|Cropland management (Mt CO2/yr)",
+    "Emissions|CO2|Land|Land-use Change|Soil|Cropland management|Emissions (Mt CO2/yr)",
+    "Emissions|CO2|Land|Land-use Change|Soil|Cropland management|Withdrawals (Mt CO2/yr)",
+    "Emissions|CO2|Land|Land-use Change|Soil|Land Conversion (Mt CO2/yr)",
+    "Emissions|CO2|Land|Land-use Change|Soil|Land Conversion|Emissions (Mt CO2/yr)",
+    "Emissions|CO2|Land|Land-use Change|Soil|Land Conversion|Withdrawals (Mt CO2/yr)",
+    "Emissions|CO2|Land|Land-use Change|Soil|Soil Carbon Management (Mt CO2/yr)",
+    "Emissions|CO2|Land|Land-use Change|Soil|Soil Carbon Management|Emissions (Mt CO2/yr)",
+    "Emissions|CO2|Land|Land-use Change|Soil|Soil Carbon Management|Withdrawals (Mt CO2/yr)",
+    "Emissions|CO2|Land|Land-use Change|Timber (Mt CO2/yr)",
+    "Emissions|CO2|Land|Land-use Change|Timber|Release from HWP (Mt CO2/yr)",
+    "Emissions|CO2|Land|Land-use Change|Timber|Release from HWP|Buildings (Mt CO2/yr)",
+    "Emissions|CO2|Land|Land-use Change|Timber|Release from HWP|Industrial Roundwood (Mt CO2/yr)",
+    "Emissions|CO2|Land|Land-use Change|Timber|Storage in HWP (Mt CO2/yr)",
+    "Emissions|CO2|Land|Land-use Change|Timber|Storage in HWP|Buildings (Mt CO2/yr)",
+    "Emissions|CO2|Land|Land-use Change|Timber|Storage in HWP|Industrial Roundwood (Mt CO2/yr)",
+    "Emissions|CO2|Land|Land-use Change|Wood Harvest (Mt CO2/yr)",
+    "Emissions|CO2|Land|Land-use Change|Wood Harvest|Other Land (Mt CO2/yr)",
+    "Emissions|CO2|Land|Land-use Change|Wood Harvest|Primary Forest (Mt CO2/yr)",
+    "Emissions|CO2|Land|Land-use Change|Wood Harvest|Secondary Forest (Mt CO2/yr)",
+    "Emissions|CO2|Land|Land-use Change|Wood Harvest|Timber Plantations (Mt CO2/yr)",
+    # ----- N2O (20 vars) -----
+    "Emissions|N2O|AFOLU|Land|Fires (Mt N2O/yr)",
+    "Emissions|N2O|AFOLU|Land|Fires|Forest Burning (Mt N2O/yr)",
+    "Emissions|N2O|AFOLU|Land|Fires|Forest Burning|Boreal Forest (Mt N2O/yr)",
+    "Emissions|N2O|AFOLU|Land|Fires|Forest Burning|Temperate Forest (Mt N2O/yr)",
+    "Emissions|N2O|AFOLU|Land|Fires|Forest Burning|Tropical Forest (Mt N2O/yr)",
+    "Emissions|N2O|AFOLU|Land|Fires|Grassland Burning (Mt N2O/yr)",
+    "Emissions|N2O|AFOLU|Land|Fires|Peat Burning (Mt N2O/yr)",
     "Emissions|N2O|Land (Mt N2O/yr)",
+    "Emissions|N2O|Land|Agriculture (Mt N2O/yr)",
+    "Emissions|N2O|Land|Agriculture|Agricultural Soils (Mt N2O/yr)",
+    "Emissions|N2O|Land|Agriculture|Agricultural Soils|Decay of Crop Residues (Mt N2O/yr)",
+    "Emissions|N2O|Land|Agriculture|Agricultural Soils|Inorganic Fertilizers (Mt N2O/yr)",
+    "Emissions|N2O|Land|Agriculture|Agricultural Soils|Inorganic Fertilizers|Cropland (Mt N2O/yr)",
+    "Emissions|N2O|Land|Agriculture|Agricultural Soils|Inorganic Fertilizers|Pasture (Mt N2O/yr)",
+    "Emissions|N2O|Land|Agriculture|Agricultural Soils|Manure applied to Croplands (Mt N2O/yr)",
+    "Emissions|N2O|Land|Agriculture|Agricultural Soils|Pasture (Mt N2O/yr)",
+    "Emissions|N2O|Land|Agriculture|Agricultural Soils|Soil Organic Matter Loss (Mt N2O/yr)",
+    "Emissions|N2O|Land|Agriculture|Animal Waste Management (Mt N2O/yr)",
+    "Emissions|N2O|Land|Biomass Burning|Burning of Crop Residues (Mt N2O/yr)",
+    "Emissions|N2O|Land|Peatland|Managed (Mt N2O/yr)",
+    # ----- NH3 (20 vars) -----
+    "Emissions|NH3|AFOLU|Land|Fires (Mt NH3/yr)",
+    "Emissions|NH3|AFOLU|Land|Fires|Forest Burning (Mt NH3/yr)",
+    "Emissions|NH3|AFOLU|Land|Fires|Forest Burning|Boreal Forest (Mt NH3/yr)",
+    "Emissions|NH3|AFOLU|Land|Fires|Forest Burning|Temperate Forest (Mt NH3/yr)",
+    "Emissions|NH3|AFOLU|Land|Fires|Forest Burning|Tropical Forest (Mt NH3/yr)",
+    "Emissions|NH3|AFOLU|Land|Fires|Grassland Burning (Mt NH3/yr)",
+    "Emissions|NH3|AFOLU|Land|Fires|Peat Burning (Mt NH3/yr)",
     "Emissions|NH3|Land (Mt NH3/yr)",
+    "Emissions|NH3|Land|Agriculture (Mt NH3/yr)",
+    "Emissions|NH3|Land|Agriculture|Agricultural Soils (Mt NH3/yr)",
+    "Emissions|NH3|Land|Agriculture|Agricultural Soils|Decay of Crop Residues (Mt NH3/yr)",
+    "Emissions|NH3|Land|Agriculture|Agricultural Soils|Inorganic Fertilizers (Mt NH3/yr)",
+    "Emissions|NH3|Land|Agriculture|Agricultural Soils|Inorganic Fertilizers|Cropland (Mt NH3/yr)",
+    "Emissions|NH3|Land|Agriculture|Agricultural Soils|Inorganic Fertilizers|Pasture (Mt NH3/yr)",
+    "Emissions|NH3|Land|Agriculture|Agricultural Soils|Manure applied to Croplands (Mt NH3/yr)",
+    "Emissions|NH3|Land|Agriculture|Agricultural Soils|Pasture (Mt NH3/yr)",
+    "Emissions|NH3|Land|Agriculture|Agricultural Soils|Soil Organic Matter Loss (Mt NH3/yr)",
+    "Emissions|NH3|Land|Agriculture|Animal Waste Management (Mt NH3/yr)",
+    "Emissions|NH3|Land|Biomass Burning|Burning of Crop Residues (Mt NH3/yr)",
+    "Emissions|NH3|Land|Peatland|Managed (Mt NH3/yr)",
+    # ----- NO2 (20 vars) -----
+    "Emissions|NO2|AFOLU|Land|Fires (Mt NO2/yr)",
+    "Emissions|NO2|AFOLU|Land|Fires|Forest Burning (Mt NO2/yr)",
+    "Emissions|NO2|AFOLU|Land|Fires|Forest Burning|Boreal Forest (Mt NO2/yr)",
+    "Emissions|NO2|AFOLU|Land|Fires|Forest Burning|Temperate Forest (Mt NO2/yr)",
+    "Emissions|NO2|AFOLU|Land|Fires|Forest Burning|Tropical Forest (Mt NO2/yr)",
+    "Emissions|NO2|AFOLU|Land|Fires|Grassland Burning (Mt NO2/yr)",
+    "Emissions|NO2|AFOLU|Land|Fires|Peat Burning (Mt NO2/yr)",
     "Emissions|NO2|Land (Mt NO2/yr)",
+    "Emissions|NO2|Land|Agriculture (Mt NO2/yr)",
+    "Emissions|NO2|Land|Agriculture|Agricultural Soils (Mt NO2/yr)",
+    "Emissions|NO2|Land|Agriculture|Agricultural Soils|Decay of Crop Residues (Mt NO2/yr)",
+    "Emissions|NO2|Land|Agriculture|Agricultural Soils|Inorganic Fertilizers (Mt NO2/yr)",
+    "Emissions|NO2|Land|Agriculture|Agricultural Soils|Inorganic Fertilizers|Cropland (Mt NO2/yr)",
+    "Emissions|NO2|Land|Agriculture|Agricultural Soils|Inorganic Fertilizers|Pasture (Mt NO2/yr)",
+    "Emissions|NO2|Land|Agriculture|Agricultural Soils|Manure applied to Croplands (Mt NO2/yr)",
+    "Emissions|NO2|Land|Agriculture|Agricultural Soils|Pasture (Mt NO2/yr)",
+    "Emissions|NO2|Land|Agriculture|Agricultural Soils|Soil Organic Matter Loss (Mt NO2/yr)",
+    "Emissions|NO2|Land|Agriculture|Animal Waste Management (Mt NO2/yr)",
+    "Emissions|NO2|Land|Biomass Burning|Burning of Crop Residues (Mt NO2/yr)",
+    "Emissions|NO2|Land|Peatland|Managed (Mt NO2/yr)",
+    # ----- NO3- (13 vars) -----
     "Emissions|NO3-|Land (Mt NO3-/yr)",
+    "Emissions|NO3-|Land|Agriculture (Mt NO3-/yr)",
+    "Emissions|NO3-|Land|Agriculture|Agricultural Soils (Mt NO3-/yr)",
+    "Emissions|NO3-|Land|Agriculture|Agricultural Soils|Decay of Crop Residues (Mt NO3-/yr)",
+    "Emissions|NO3-|Land|Agriculture|Agricultural Soils|Inorganic Fertilizers (Mt NO3-/yr)",
+    "Emissions|NO3-|Land|Agriculture|Agricultural Soils|Inorganic Fertilizers|Cropland (Mt NO3-/yr)",
+    "Emissions|NO3-|Land|Agriculture|Agricultural Soils|Inorganic Fertilizers|Pasture (Mt NO3-/yr)",
+    "Emissions|NO3-|Land|Agriculture|Agricultural Soils|Manure applied to Croplands (Mt NO3-/yr)",
+    "Emissions|NO3-|Land|Agriculture|Agricultural Soils|Pasture (Mt NO3-/yr)",
+    "Emissions|NO3-|Land|Agriculture|Agricultural Soils|Soil Organic Matter Loss (Mt NO3-/yr)",
+    "Emissions|NO3-|Land|Agriculture|Animal Waste Management (Mt NO3-/yr)",
+    "Emissions|NO3-|Land|Biomass Burning|Burning of Crop Residues (Mt NO3-/yr)",
+    "Emissions|NO3-|Land|Peatland|Managed (Mt NO3-/yr)",
+    # ----- OC (9 vars) -----
+    "Emissions|OC|AFOLU|Agriculture (Mt OC/yr)",
     "Emissions|OC|AFOLU|Land|Fires (Mt OC/yr)",
+    "Emissions|OC|AFOLU|Land|Fires|Forest Burning (Mt OC/yr)",
+    "Emissions|OC|AFOLU|Land|Fires|Forest Burning|Boreal Forest (Mt OC/yr)",
+    "Emissions|OC|AFOLU|Land|Fires|Forest Burning|Temperate Forest (Mt OC/yr)",
+    "Emissions|OC|AFOLU|Land|Fires|Forest Burning|Tropical Forest (Mt OC/yr)",
+    "Emissions|OC|AFOLU|Land|Fires|Grassland Burning (Mt OC/yr)",
+    "Emissions|OC|AFOLU|Land|Fires|Peat Burning (Mt OC/yr)",
+    "Emissions|OC|Land|Biomass Burning|Burning of Crop Residues (Mt OC/yr)",
+    # ----- SO2 (9 vars) -----
+    "Emissions|SO2|AFOLU|Agriculture (Mt SO2/yr)",
     "Emissions|SO2|AFOLU|Land|Fires (Mt SO2/yr)",
-    "Emissions|VOC|AFOLU|Land|Fires (Mt VOC/yr)"
+    "Emissions|SO2|AFOLU|Land|Fires|Forest Burning (Mt SO2/yr)",
+    "Emissions|SO2|AFOLU|Land|Fires|Forest Burning|Boreal Forest (Mt SO2/yr)",
+    "Emissions|SO2|AFOLU|Land|Fires|Forest Burning|Temperate Forest (Mt SO2/yr)",
+    "Emissions|SO2|AFOLU|Land|Fires|Forest Burning|Tropical Forest (Mt SO2/yr)",
+    "Emissions|SO2|AFOLU|Land|Fires|Grassland Burning (Mt SO2/yr)",
+    "Emissions|SO2|AFOLU|Land|Fires|Peat Burning (Mt SO2/yr)",
+    "Emissions|SO2|Land|Biomass Burning|Burning of Crop Residues (Mt SO2/yr)",
+    # ----- VOC (9 vars) -----
+    "Emissions|VOC|AFOLU|Agriculture (Mt VOC/yr)",
+    "Emissions|VOC|AFOLU|Land|Fires (Mt VOC/yr)",
+    "Emissions|VOC|AFOLU|Land|Fires|Forest Burning (Mt VOC/yr)",
+    "Emissions|VOC|AFOLU|Land|Fires|Forest Burning|Boreal Forest (Mt VOC/yr)",
+    "Emissions|VOC|AFOLU|Land|Fires|Forest Burning|Temperate Forest (Mt VOC/yr)",
+    "Emissions|VOC|AFOLU|Land|Fires|Forest Burning|Tropical Forest (Mt VOC/yr)",
+    "Emissions|VOC|AFOLU|Land|Fires|Grassland Burning (Mt VOC/yr)",
+    "Emissions|VOC|AFOLU|Land|Fires|Peat Burning (Mt VOC/yr)",
+    "Emissions|VOC|Land|Biomass Burning|Burning of Crop Residues (Mt VOC/yr)"
   )
   missing_emi <- setdiff(emi_vars, magclass::getNames(rep))
   if (length(missing_emi) > 0) {
