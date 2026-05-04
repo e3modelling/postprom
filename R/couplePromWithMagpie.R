@@ -172,14 +172,18 @@ couplePromToMagpie <- function(gdxPath,
 # ========================================================== backward: magpie -> prom
 
 #' @param reportMifPath Absolute path to MAgPIE output `report.mif`.
-#' @param outCsvPath    Absolute path to write `iPrices_magpie.csv`.
-#' @param outEmissionsCsvPath Absolute path to write `iEmissions_magpie.csv`.
-#'                      Even though OPEN-PROM's current GAMS code does not
-#'                      `$include` this file, it is produced for consistency
-#'                      with the existing workflow and for downstream reporting.
+#' @param outCsvPath    Absolute path to write `iPrices_magpie.csv` (GAMS-table
+#'                      CSV format; consumed by OPEN-PROM round-2 GAMS).
+#' @param outEmissionsMifPath Absolute path to write `iEmissions_magpie.mif`
+#'                      (IAMC standard mif format with `|+|` markers preserved).
+#'                      OPEN-PROM's current GAMS code does not `$include` this
+#'                      file; it is produced for downstream reporting and
+#'                      future use.
 #' @param gdxPath       Absolute path to an OPEN-PROM `blabla.gdx`, used only
 #'                      to read the runtime `SBS` set (so we can broadcast the
 #'                      price across all subsectors).
+#' @param scenario      Scenario label embedded in the output mif (Scenario
+#'                      column). Defaults to "OPEN-PROM-MAgPIE".
 #' @param biomassVariable MAgPIE variable name to extract. Defaults to the
 #'                      one present in current report.mif.
 #' @param deflator17to15 US$2017 -> US$2015 deflator. Default 0.96.
@@ -187,8 +191,9 @@ couplePromToMagpie <- function(gdxPath,
 #' @export
 coupleMagpieToProm <- function(reportMifPath,
                                outCsvPath,
-                               outEmissionsCsvPath,
+                               outEmissionsMifPath,
                                gdxPath,
+                               scenario        = "OPEN-PROM-MAgPIE",
                                biomassVariable = "Prices|Bioenergy (US$2017/GJ)",
                                deflator17to15  = 0.96) {
 
@@ -197,11 +202,9 @@ coupleMagpieToProm <- function(reportMifPath,
   # Strip model/scenario to leave just region x year x variable.
   rep <- magclass::collapseNames(rep)
 
-  # Strip single `+` markers globally so that emiVars below can be specified
-  # in their flattened IAMC form (parent-child expressed via `|` only).
-  # `++` markers are NOT stripped: ++ variables are not requested by emiVars,
-  # and stripping them too would risk name collisions with `+` siblings.
-  magclass::getNames(rep) <- gsub("\\|\\+\\|", "|", magclass::getNames(rep))
+  # Variable names keep their native IAMC form, including `|+|` and `|++|`
+  # markers. emiVars below is curated to the same form so intersect() matches
+  # exactly. Preserving + makes the output mif IAMC-standard compliant.
 
   if (!(biomassVariable %in% magclass::getNames(rep))) {
     stop(sprintf(
@@ -287,20 +290,19 @@ coupleMagpieToProm <- function(reportMifPath,
   #             `|Land|Biomass Burning|Burning of Crop Residues`), drop the
   #             redundant parents.
   #
-  # (5) Strip `|+|` markers globally
+  # (5) Preserve `|+|` markers (IAMC standard form)
   #     Native: variable names look like
   #             `Emissions|CO2|Land|+|Land-use Change|+|Deforestation`
-  #     Why:    The + marker is a hint for IAMC reporting tooling (piamInterfaces
-  #             / mip / IIASA Scenario Explorer) to identify which siblings sum
-  #             to a given parent row. Downstream OPEN-PROM consumes this csv by
-  #             selecting on names, so the marker is unnecessary; worse, level-
-  #             splitting helpers like `helperAggregateLevel` would otherwise
-  #             treat `+` as a real path component.
-  #     Action: gsub `\|\+\|` → `\|` immediately after collapseNames (line 204);
-  #             emiVars uses the flattened names directly so they match the
-  #             stripped rep names exactly. `|++|` is left untouched by the gsub
-  #             (to avoid name collisions with the stripped `+` siblings), but
-  #             since (2) already drops all ++ variables this is a no-op.
+  #     Why:    The + marker is the IAMC convention for indicating sum-to-parent
+  #             siblings. Downstream tooling (piamInterfaces / mip / IIASA
+  #             Scenario Explorer) relies on these markers, and the output
+  #             written by write.report() is meant to be a standard mif. Earlier
+  #             versions stripped + globally, but this made the output non-
+  #             standard and required the emiVars csv to be in flattened form.
+  #     Action: emiVars in `magpie-afolu-emission-variables.csv` is curated to
+  #             the same `|+|`-marked form as MAgPIE's native report, so
+  #             intersect(emiVars, getNames(rep)) matches 1-to-1. `|++|`
+  #             variants are still dropped per item (2).
   #
   # ----------------------------------------------------------------------------
   # Extraction result: 190 variables
@@ -311,7 +313,8 @@ coupleMagpieToProm <- function(reportMifPath,
   #
   # Ordering: DFS (depth-first); each parent is followed immediately by its
   #           children.
-  # Name format: flattened IAMC, no `+` / `++` markers.
+  # Name format: IAMC standard with `|+|` markers preserved; `|++|` variants
+  #              are excluded per item (2).
   # Units: native MAgPIE "Mt <pollutant>/yr", kept as-is.
   # NOx is reported under MAgPIE's `NO2` label.
   # `|<gas>|AFOLU|Agriculture` is all-zero in the current scenario for 6 gases
@@ -543,33 +546,26 @@ coupleMagpieToProm <- function(reportMifPath,
     outCsvPath, nrow(priceMat), length(SBS), length(yearCols)
   ))
 
-  # ---- 5b. write iEmissions_magpie.csv (region, variable, years...)
-  # Strip "(Mt X/yr)" suffix from variable names so the CSV stores the variable
-  # stem only — matches the convention in the previous linkPromToMagpie.R output.
-  emiNamesRaw  <- magclass::getNames(emiResCy)
-  emiNamesStem <- trimws(sub("\\s*\\([^)]*\\)\\s*$", "", emiNamesRaw))
-
-  emiArr <- as.array(emiResCy)                            # resCy x year x variable
-  rowsE  <- vector("list", length = dim(emiArr)[1] * dim(emiArr)[3])
-  k <- 1
-  for (r in dimnames(emiArr)[[1]]) {
-    for (i in seq_along(emiNamesRaw)) {
-      vals <- formatC(emiArr[r, , i], digits = 6, format = "g")
-      rowsE[[k]] <- paste(c(r, emiNamesStem[i], vals), collapse = ",")
-      k <- k + 1
-    }
-  }
-  dir.create(dirname(outEmissionsCsvPath), showWarnings = FALSE, recursive = TRUE)
-  con <- file(outEmissionsCsvPath, open = "w")
-  writeLines(header, con)
-  writeLines(unlist(rowsE), con)
-  close(con)
+  # ---- 5b. write iEmissions_magpie.mif via magclass::write.report
+  # Output is standard IAMC mif: ;-delimited Model;Scenario;Region;Variable;Unit;<years>
+  # Variable names retain `|+|` markers (matching MAgPIE source convention).
+  # write.report auto-extracts the "(Mt X/yr)" suffix in variable names into
+  # the dedicated Unit column.
+  emiOut <- magclass::add_dimension(emiResCy, dim = 3.1, add = "model",
+                                    nm = "OPENPROM")
+  emiOut <- magclass::add_dimension(emiOut,   dim = 3.2, add = "scenario",
+                                    nm = scenario)
+  dir.create(dirname(outEmissionsMifPath), showWarnings = FALSE, recursive = TRUE)
+  magclass::write.report(emiOut, file = outEmissionsMifPath, ndigit = 4)
   message(sprintf(
-    "[coupleMagpieToProm] wrote iEmissions_magpie.csv: %s  (%d regions x %d vars x %d years)",
-    outEmissionsCsvPath, dim(emiArr)[1], dim(emiArr)[3], length(yearCols)
+    "[coupleMagpieToProm] wrote iEmissions_magpie.mif: %s  (%d regions x %d vars x %d years)",
+    outEmissionsMifPath,
+    magclass::nregions(emiResCy),
+    length(magclass::getNames(emiResCy)),
+    length(yearCols)
   ))
 
-  invisible(list(prices = outCsvPath, emissions = outEmissionsCsvPath))
+  invisible(list(prices = outCsvPath, emissions = outEmissionsMifPath))
 }
 
 # ------- helper: broadcast h12-resolution magpie to 39 OPEN-PROM resCy regions
