@@ -108,8 +108,9 @@ reportEmissions <- function(path, regions, years) {
     getNames(AFOLU_CDR) <- varNames
     varsNoUnits <- trimws(gsub("\\s*\\(.*\\)$", "", getItems(AFOLU_CDR, dim = 3)))
     getItems(AFOLU_CDR, 3.1) <- varsNoUnits
-    AFOLUCO2 <- AFOLU_CDR[, , c("Emissions|CO2|AFOLU|Land",
-      "Emissions|CO2|AFOLU|Agriculture","Emissions|CO2|AFOLU|Land|Fires")]
+    varsCO2 <- c("Emissions|CO2|AFOLU|Land",
+      "Emissions|CO2|AFOLU|Agriculture", "Emissions|CO2|AFOLU|Land|Fires")
+    AFOLUCO2 <- AFOLU_CDR[, , varsCO2]
   } else {
     # Use default sources
     AFOLU_CDR <- mbind(
@@ -195,8 +196,9 @@ reportEmissions <- function(path, regions, years) {
     emissionsN2O <- getNames(AFOLU_CDR)[grepl("N2O", getNames(AFOLU_CDR))]
     AFOLU_CDR[, , emissionsN2O] <- AFOLU_CDR[, , emissionsN2O] * 1000 # "kt N2O/yr"
     # Extract CH4 and N2O variables from AFOLU_CDR
-    AFOLUCh4N2o <- AFOLU_CDR[, , c("Emissions|CH4|AFOLU|Land", "Emissions|CH4|AFOLU|Land|Fires"
-                                    , "Emissions|N2O|AFOLU|Land", "Emissions|N2O|AFOLU|Land|Fires")]
+    varsCH4N2O <- c("Emissions|CH4|AFOLU|Land", "Emissions|CH4|AFOLU|Land|Fires"
+                                    , "Emissions|N2O|AFOLU|Land", "Emissions|N2O|AFOLU|Land|Fires")
+    AFOLUCh4N2o <- AFOLU_CDR[, , varsCH4N2O]
 
     emissionsNonCO2NonAFOLU <- getNames(emissionsNonCO2)[!grepl("AFOLU", getNames(emissionsNonCO2))]
     emissionsNonCO2 <- emissionsNonCO2[, , emissionsNonCO2NonAFOLU]
@@ -296,7 +298,7 @@ reportEmissions <- function(path, regions, years) {
       nm = unname(sapply(getNames(AFOLU_CDR), getUnit)),
       expand = FALSE
     )
-    magpie_object <- mbind(magpie_object, AFOLU_CDR)
+    magpie_object <- mbind(magpie_object, AFOLU_CDR[, , !(getNames(AFOLU_CDR) %in% c(varsCO2, varsCH4N2O))])
   }
 
   return(magpie_object)
