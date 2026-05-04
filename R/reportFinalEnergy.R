@@ -35,28 +35,19 @@ reportFinalEnergy <- function(path, regions, years) {
     as.data.frame() %>%
     filter(. != "BU") %>%
     mutate(SBS = "Non-Energy Use")
-  DSBS_SBS <- bind_rows(DSBS_Industry, DSBS_Transport, DSBS_NonEnergy) %>%
+  DSBS_CDR <- readGDX(path, "CDR") %>%
+    as.data.frame() %>%
+    mutate(SBS = "Carbon Management")
+  DSBS_SBS <- bind_rows(DSBS_Industry, DSBS_Transport, DSBS_NonEnergy, DSBS_CDR) %>%
     rename(DSBS = 1) %>%
     left_join(DSBSTable, by = c("DSBS" = "SBS")) %>%
     select(-DSBS) %>%
     rename(DSBS = .te)
   lookup <- setNames(DSBS_SBS$SBS, DSBS_SBS$DSBS)
   # -------------------------- Prepare data --------------------------------------
-  fuel <- readGDX(path, "VmConsFuel", field = "l")[regions, years, ]
-  VFuelTransport <- readGDX(path, "VmDemFinEneTranspPerFuel", field = "l")[regions, years, ]
-  fuel[, , getItems(VFuelTransport, 3)] <- VFuelTransport[, , getItems(VFuelTransport, 3)]
-  VFuelCDR <- readGDX(path, "VmConsFuelTechCDRProd", field = "l")[regions, years, ]
-  # Divide CDR into TEW and DAC to add all DAC technologies by fuel
-  TEWnames <- grepl("TEW", getItems(VFuelCDR, 3))
-  TEW <- VFuelCDR[, , TEWnames]
-  DAC <- VFuelCDR[, , !TEWnames]
-  DACbyFuel <- dimSums(DAC, dim = "CDRTECH")
-  dimnames(DACbyFuel)[[3]] <- paste0("DAC.", getItems(DACbyFuel, 3))
-  dimnames(TEW)[[3]] <- gsub("TEW.", "EW.", getItems(TEW, 3))
-  fuel[, , getItems(TEW, 3)] <- TEW[, , getItems(TEW, 3)]
-  fuel[, , getItems(DACbyFuel, 3)] <- DACbyFuel[, , getItems(DACbyFuel, 3)]
-  fuel <- fuel[, , EFSTable$EF]
-
+  fuel <- readGDX(path, "VmFinalEnergy", field = "l")[regions, years, ]
+  units <- sub(".*\\((.*)\\).*", "\\1", fuel@description)
+  # fuel <- fuel[, , EFSTable$EF]
   # -------------------------- Fuel Aggregations ------------------------------
   BALEFtoEF <- read.csv(
     system.file("mappings", "BALEFtoEF.csv", package = "postprom")
@@ -97,23 +88,15 @@ reportFinalEnergy <- function(path, regions, years) {
   getItems(fuel, 3) <- paste0("Final Energy|", name)
 
   fuel <- helperAggregateLevel(fuel, level = 1, recursive = TRUE)
+
   # =========================== Auxiliary variables ======================
   # --------------------------- Residential & Comercial ------------------
   resCom <- fuel[, , c("Final Energy|Residential", "Final Energy|Commercial", "Final Energy|Agriculture, Fishing, Forestry")]
   resCom <- dimSums(resCom, 3)
   getItems(resCom, 3.1) <- "Final Energy|Residential and Commercial"
-  # --------------------------- Include carbon management category ---------
-  dimnames(fuel)[[3]] <- gsub("Final Energy\\|Direct Air Capture", "Final Energy|Carbon Management|Direct Air Capture", getItems(fuel, dim = 3))
-  dimnames(fuel)[[3]] <- gsub("Final Energy\\|Enhanced Weathering", "Final Energy|Carbon Management|Enhanced Weathering", getItems(fuel, dim = 3))
-  DACEW <- fuel[, , c("Final Energy|Carbon Management|Direct Air Capture", "Final Energy|Carbon Management|Enhanced Weathering")]
-  DACEW <- dimSums(DACEW, 3)
-  getItems(DACEW, 3.1) <- c("Final Energy|Carbon Management")
-  # ------------------------------- Add units ----------------------------
+
   # ============================ Add units ================================
-  magpie_object <- mbind(
-    fuel, finalPerFuel, fuelWOBunkers, resCom,
-    finalPerFuelAggregated, DACEW
-  )
-  magpie_object <- add_dimension(magpie_object, dim = 3.2, add = "unit", nm = sub(".*\\((.*)\\).*", "\\1", VFuelTransport@description))
+  magpie_object <- mbind(fuel, finalPerFuel, fuelWOBunkers, resCom, finalPerFuelAggregated)
+  magpie_object <- add_dimension(magpie_object, dim = 3.2, add = "unit", nm = units)
   return(magpie_object)
 }
