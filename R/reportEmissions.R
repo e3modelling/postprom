@@ -291,14 +291,15 @@ reportEmissions <- function(path, regions, years) {
   )
   # Add other emissions from magpie run if they are available
   if (file.exists(iEmissions_magpie)) {
-    AFOLU_CDR <- add_dimension(
-      AFOLU_CDR,
+    extraAFOLU <- AFOLU_CDR[, , !(getNames(AFOLU_CDR) %in% c(varsCO2, varsCH4N2O))]
+    extraAFOLU <- add_dimension(
+      extraAFOLU,
       dim = 3.2,
       add = "unit",
-      nm = unname(sapply(getNames(AFOLU_CDR), getUnit)),
+      nm = unname(sapply(getNames(extraAFOLU), getUnit)),
       expand = FALSE
     )
-    magpie_object <- mbind(magpie_object, AFOLU_CDR[, , !(getNames(AFOLU_CDR) %in% c(varsCO2, varsCH4N2O))])
+    magpie_object <- mbind(magpie_object, extraAFOLU)
   }
 
   return(magpie_object)
