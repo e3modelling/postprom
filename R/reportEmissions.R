@@ -287,6 +287,17 @@ reportEmissions <- function(path, regions, years) {
     Cumulated, sumIPEnergy, resCom, captured, captureGeoStorage,
     TRANP, TRANG, OtherFuelTransformation, emissionsCO2woBunkers, emissionsKyotowoBunkers
   )
+  # Add other emissions from magpie run if they are available
+  if (file.exists(iEmissions_magpie)) {
+    AFOLU_CDR <- add_dimension(
+      AFOLU_CDR,
+      dim = 3.2,
+      add = "unit",
+      nm = unname(sapply(getNames(AFOLU_CDR), getUnit)),
+      expand = FALSE
+    )
+    magpie_object <- mbind(magpie_object, AFOLU_CDR)
+  }
 
   return(magpie_object)
 }
@@ -300,12 +311,29 @@ getUnit <- function(varName) {
   } else if (grepl("N2O", varName)) {
     # N2O is kt
     return("kt N2O/yr")
-  } else {
-    # Extract the "leaf" (everything after the last '|')
-    # Example: "Emissions|HFC|HFC152a" -> "HFC152a"
-    gasName <- sub(".*\\|", "", varName)
+  } else if (grepl("HFC|PFC|CF4|C2F6|C6F14|SF6", varName)) {
+    # HFC, PFC, CF4, C2F6, C6F14 are kt
+    # Extract the gas name (second element after splitting by |)
+    # Example: "Emissions|HFC|HFC152a" -> "HFC"
+    gasNameParts <- strsplit(varName, "\\|")[[1]]
+    if (length(gasNameParts) > 1) {
+      gasName <- gasNameParts[2]
+    } else {
+      gasName <- sub(".*\\|", "", varName)
+    }
     # Return the kt unit
     return(paste0("kt ", gasName, "/yr"))
+  } else {
+    # For any other gases, default to Mt and extract the gas name (second element)
+    # Example: "Emissions|VOC|AFOLU|Land|..." -> "VOC"
+    gasNameParts <- strsplit(varName, "\\|")[[1]]
+    if (length(gasNameParts) > 1) {
+      gasName <- gasNameParts[2]
+    } else {
+      gasName <- sub(".*\\|", "", varName)
+    }
+    # Return the Mt unit
+    return(paste0("Mt ", gasName, "/yr"))
   }
 }
 # Sum CO2 and Non-CO2 for a specific category - to be used in the future
