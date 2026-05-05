@@ -73,22 +73,24 @@ g <- ggplotly(p) %>%
     margin = list(l = 20, r = 20, t = 20, b = 110)
   )
 
-# 🔧 Fix domains WITHOUT breaking grid
+# 🔧 Fix domains WITHOUT breaking grid + add spacing
 xaxes <- grep("^xaxis", names(g$x$layout), value = TRUE)
 
-# Extract current domains
-domains <- lapply(xaxes, function(ax) g$x$layout[[ax]]$domain)
-
-# Get unique widths (Plotly messes these up)
-width <- min(sapply(domains, function(d) diff(d)))
-
-# Reassign evenly spaced domains (6 columns)
 ncol <- 6
+gap_inner <- 0.01   # spacing between panels
+gap_outer <- 0.003  # spacing at edges (left/right)
+
 for(i in seq_along(xaxes)) {
   col <- (i - 1) %% ncol
-  g$x$layout[[xaxes[i]]]$domain <- c(col/ncol, (col+1)/ncol)
+  
+  start <- col / ncol
+  end   <- (col + 1) / ncol
+  
+  left_gap  <- if(col == 0) gap_outer else gap_inner
+  right_gap <- if(col == ncol - 1) gap_outer else gap_inner
+  
+  g$x$layout[[xaxes[i]]]$domain <- c(start + left_gap, end - right_gap)
 }
-
 
 g
 ```
@@ -139,22 +141,24 @@ g <- ggplotly(p) %>%
     margin = list(l = 20, r = 20, t = 20, b = 110)
   )
 
-# 🔧 Fix domains WITHOUT breaking grid
+# 🔧 Fix domains WITHOUT breaking grid + add spacing
 xaxes <- grep("^xaxis", names(g$x$layout), value = TRUE)
 
-# Extract current domains
-domains <- lapply(xaxes, function(ax) g$x$layout[[ax]]$domain)
-
-# Get unique widths (Plotly messes these up)
-width <- min(sapply(domains, function(d) diff(d)))
-
-# Reassign evenly spaced domains (6 columns)
 ncol <- 6
+gap_inner <- 0.01   # spacing between panels
+gap_outer <- 0.003  # spacing at edges (left/right)
+
 for(i in seq_along(xaxes)) {
   col <- (i - 1) %% ncol
-  g$x$layout[[xaxes[i]]]$domain <- c(col/ncol, (col+1)/ncol)
+  
+  start <- col / ncol
+  end   <- (col + 1) / ncol
+  
+  left_gap  <- if(col == 0) gap_outer else gap_inner
+  right_gap <- if(col == ncol - 1) gap_outer else gap_inner
+  
+  g$x$layout[[xaxes[i]]]$domain <- c(start + left_gap, end - right_gap)
 }
-
 
 g
 ```
@@ -222,22 +226,24 @@ g <- ggplotly(p) %>%
     margin = list(l = 20, r = 20, t = 20, b = 110)
   )
 
-# 🔧 Fix domains WITHOUT breaking grid
+# 🔧 Fix domains WITHOUT breaking grid + add spacing
 xaxes <- grep("^xaxis", names(g$x$layout), value = TRUE)
 
-# Extract current domains
-domains <- lapply(xaxes, function(ax) g$x$layout[[ax]]$domain)
-
-# Get unique widths (Plotly messes these up)
-width <- min(sapply(domains, function(d) diff(d)))
-
-# Reassign evenly spaced domains (6 columns)
 ncol <- 6
+gap_inner <- 0.01   # spacing between panels
+gap_outer <- 0.003  # spacing at edges (left/right)
+
 for(i in seq_along(xaxes)) {
   col <- (i - 1) %% ncol
-  g$x$layout[[xaxes[i]]]$domain <- c(col/ncol, (col+1)/ncol)
+  
+  start <- col / ncol
+  end   <- (col + 1) / ncol
+  
+  left_gap  <- if(col == 0) gap_outer else gap_inner
+  right_gap <- if(col == ncol - 1) gap_outer else gap_inner
+  
+  g$x$layout[[xaxes[i]]]$domain <- c(start + left_gap, end - right_gap)
 }
-
 
 g
 ```
