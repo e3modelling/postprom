@@ -157,7 +157,19 @@ reportEmissions <- function(path, regions, years) {
   
   CDR[, , "Carbon Removal|Geological Storage|Biomass"] <- dimSums(CCS[, , getItems(CCS, 3)[grepl("\\|Biofuels$", getItems(CCS, 3))]], 3.1)
   
-  captured <- mbind(CDR, CCS, AFOLU_CDR[, , "Carbon Removal|Land Use"])
+  if (file.exists(iEmissions_magpie)) {
+    magpieCDRmapping <- toolGetMapping("open-prom-magpie-CDR-mapping.csv", type = "sectoral", where = "postprom")
+    CDRCO2 <- suppressMessages(toolAggregate(
+    AFOLU_CDR,
+    dim = 3,
+    rel = magpieCDRmapping,
+    partrel = TRUE
+    ))
+  }
+  else {
+     CDRCO2 <- AFOLU_CDR[, , "Carbon Removal|Land Use"]
+  }
+  captured <- mbind(CDR, CCS, CDRCO2)
   captured <- helperAggregateLevel(captured, level = 1, recursive = TRUE)
   # =============================== Non-CO2===================================
   emissionsNonCO2 <- readGDX(path, "V07EmiActBySrcRegTim", field = "l")[regions, years, ]
