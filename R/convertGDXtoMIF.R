@@ -145,51 +145,71 @@ convertGDXtoMIF_single <- function(.path, path_mif, append, regions = NULL,
 }
 
 aggregateMIF <- function(report) {
-  report_data <- report
-  items <- getItems(report_data, 3)
+  reportData <- report
+  items <- getItems(reportData, 3)
+  worldCodes <- getRegions(reportData)
+  
+  # --- Define Item Categories ---
+  # Exclude Price|Final Energy, Price|Carbon, Activity growth rate
+  itemsToSum <- items[!grepl("^Price|^Activity growth rate", items)]
+  
+  # Take Price|Final Energy, Activity growth rate (excluding Carbon)
+  itemsWeightedGdp <- items[grep("^(Price|Activity growth rate)(?!.*Carbon)", items, perl = TRUE)]
+  itemPriceCarbon <- "Price|Carbon"
+  
+  # --- Extract Weights ---
+  gdp <- reportData[, , "GDP|PPP.billion US$2015/yr"]
+  emissions <- reportData[, , "Emissions|CO2"]
 
-  # exclude Price|Final Energy, Price|Carbon, Activity growth rate, Share Equipment Capacity
-  get_items_not <- items[!grepl("^Price|^Activity growth rate|^Share Equipment Capacity", items)]
+  # --- Helper Function for region aggregation ---
+  aggregateRegion <- function(regionName, regionCodes) {
+    
+    # Subset data and weights for the target region
+    regionData <- reportData[regionCodes, , ]
+    regionGdp <- gdp[regionCodes, , ]
+    regionEmissions <- emissions[regionCodes, , ]
+    
+    # Create mapping data frame for toolAggregate
+    rmap <- data.frame(regionCode = regionCodes, targetRegion = regionName)
+    
+    # Sum aggregation
+    sumAgg <- dimSums(regionData[, , itemsToSum], 1, na.rm = TRUE)
+    getItems(sumAgg, 1) <- regionName
+    
+    # Weighted mean aggregation (GDP)
+    gdpMeanAgg <- toolAggregate(
+      regionData[, , itemsWeightedGdp],
+      weight = regionGdp, 
+      rel = rmap, 
+      from = "regionCode", 
+      to = "targetRegion"
+    )
+    getItems(gdpMeanAgg, 1) <- regionName
+    
+    # Weighted mean aggregation (Emissions) for Price|Carbon
+    carbonPriceMeanAgg <- toolAggregate(
+      regionData[, , itemPriceCarbon],
+      weight = regionEmissions,
+      rel = rmap, 
+      from = "regionCode",
+      to = "targetRegion"
+    )
+    getItems(carbonPriceMeanAgg, 1) <- regionName
+    
+    # Combine and return the aggregated parts
+    return(mbind(sumAgg, gdpMeanAgg, carbonPriceMeanAgg))
+  }
+  # --- Calculate World Aggregation ---
+  worldRegion <- aggregateRegion(regionName = "World", regionCodes = worldCodes)
+  
+  # --- Calculate EU-27 Aggregation ---
+  regionMapping <- toolGetMapping(name = "EU28.csv", type = "regional", where = "mrprom")
+  regionsEu27 <- regionMapping$ISO3.Code[regionMapping$ISO3.Code != "GBR"]
+  eu27Region <- aggregateRegion(regionName = "EU", regionCodes = regionsEu27)
 
-  # take Price|Final Energy,Activity growth rate
-  get_items <- items[
-    grep("^(Price|Activity growth rate|Share Equipment Capacity)(?!.*Carbon)", items, perl = TRUE)
-  ]
-
-  # take Price|Carbon
-  PrCarbon <- report_data[, , "Price|Carbon"]
-
-  # Calculate the sum for the 'not Price' items
-  add_region_GLO <- dimSums(report_data[, , get_items_not], 1, na.rm = TRUE)
-  getItems(add_region_GLO, 1) <- "World"
-
-  # Extract GDP data and region map
-  gdp <- report_data[, , "GDP|PPP.billion US$2015/yr"]
-  rmap_world <- as.data.frame(getRegions(report_data))
-  names(rmap_world) <- "Region.Code"
-  rmap_world$V2 <- "World" # V2 is just a placeholder
-
-  # Aggregate the data for "Price" items using the GDP as weights
-  add_region_GLO_mean <- toolAggregate(
-    report_data[, , get_items],
-    weight = gdp, rel = rmap_world, from = "Region.Code", to = "V2"
-  )
-  getItems(add_region_GLO_mean, 1) <- "World"
-
-  # Aggregate the data for "Price|Carbom" items using the emissions as weights
-  Emissions <- report_data[, , "Emissions|CO2"]
-  add_region_GLO_mean_CarbonPrice <- toolAggregate(
-    PrCarbon,
-    weight = Emissions, rel = rmap_world, from = "Region.Code", to = "V2"
-  )
-  getItems(add_region_GLO_mean_CarbonPrice, 1) <- "World"
-
-  # Combine the calculated regions
-  world_reg <- mbind(add_region_GLO, add_region_GLO_mean, add_region_GLO_mean_CarbonPrice)
-
-  # Bind the new aggregated data with the original report
-  report <- mbind(report_data, world_reg)
-  return(report)
+  reportOut <- mbind(reportData, worldRegion, eu27Region)
+  
+  return(reportOut)
 }
 
 appendValidationMIF <- function(runpath, path_mif) {
