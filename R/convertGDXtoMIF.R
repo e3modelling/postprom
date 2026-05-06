@@ -135,10 +135,11 @@ convertGDXtoMIF_single <- function(.path, path_mif, append, regions = NULL,
       append = append
     )
     print(paste0("Saving mif file in ", path_mif))
-
+    
     if (htmlReport == TRUE) htmlReportValidation(.path, path_mif)
-
     if (projectReport == TRUE) projectReport(.path, path_mif)
+    if (htmlReport == TRUE & dashboard == TRUE) combinedhtml(.path)
+
   }
 
   return(reports)

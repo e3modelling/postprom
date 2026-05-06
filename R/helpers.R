@@ -291,3 +291,42 @@ convertUnitsToExpected <- function(magpieObj, unitTable, usd2015to2010,
 
   return(list(object = magpieObj, log = auditDf, skipped = unique(skipped)))
 }
+
+#' Append the content of one HTML file into another and save the result as a new HTML file.
+#' dashboard and validation_cfg
+#'
+#' @param .path the path of the folder
+#' 
+#' @return combined.html
+#'
+#' @examples
+#' \dontrun{
+#' combinedhtml <- combinedhtml(reports)
+#' }
+#'
+#' @importFrom xml2 read_html xml_find_first xml_children xml_add_child write_html
+#' @importFrom rvest read_html
+#' @export
+combinedhtml <- function(.path) {
+  
+  files <- list.files(
+    path = .path,
+    pattern = "^validation_cfg.*\\.html$",
+    full.names = TRUE
+  )
+  
+  name <- files[which.max(file.info(files)$mtime)]
+  
+  doc1 <- read_html(file.path(.path, "dashboard.html"))
+  doc2 <- read_html(file.path(.path, basename(name)))
+  
+  body1 <- xml_find_first(doc1, "//body")
+  body2 <- xml_find_first(doc2, "//body")
+  
+  # paste everything inside body2 as text
+  xml_add_child(body1, body2)
+  
+  write_html(doc1, file.path(.path, "combined.html"))
+  
+  return()
+}

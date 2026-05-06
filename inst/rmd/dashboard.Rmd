@@ -24,7 +24,7 @@ names(dimnames(data))[3] <- "variable.unit"
 
 # Emissions CO2 {data-icon="glyphicon glyphicon-stats"}
 
-```{r}
+```{r Emissions CO2 plot}
 vars <- c(
   "Emissions|CO2|Energy|Demand.Mt CO2/yr",
   "Emissions|CO2|Energy|Supply.Mt CO2/yr",
@@ -99,21 +99,9 @@ g
 
 # Carbon Prices {data-icon="glyphicon glyphicon-eur"}
 
-```{r}
+```{r Carbon Prices plot}
 PrC <- as.quitte(data[, , "Price|Carbon.US$2015/tn CO2"]) %>%
   select(-c(unit, model, scenario))
-
-# p <- ggplot(PrC, aes(period, value)) +
-#   geom_line() +
-#   facet_wrap(~region, scales = "free_y", ncol = 6) +
-#   theme_minimal() +
-#     theme(
-#     panel.spacing.x = unit(0.05, "lines"),
-#     panel.spacing.y = unit(0.05, "lines")
-#   )
-# 
-# ggplotly(p) %>%
-#   layout(autosize = TRUE)
 
 p <- ggplot(PrC, aes(period, value)) +
   geom_line() +
@@ -167,7 +155,7 @@ g
 
 # Secondary Energy Electricity {data-icon="glyphicon glyphicon-scale"}
 
-```{r}
+```{r Secondary Energy Electricity plot}
 vars <- c(
   "Secondary Energy|Electricity|Biofuels|w/ CCS.TWh",
   "Secondary Energy|Electricity|Biofuels|w/o CCS.TWh",

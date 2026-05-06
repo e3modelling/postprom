@@ -32,7 +32,7 @@ LazyData: true
 Depends:
     mrprom
 Imports: gdx, madrat, magclass, stringr, quitte, rlang, plotly, flexdashboard,
-         tidyr, dplyr, purrr, ggplot2, rmarkdown, knitr, mip,
+         tidyr, dplyr, purrr, ggplot2, rmarkdown, knitr, mip, xml2, rvest,
          piamValidation, rmarkdown, pandoc, grDevices, grid, gridExtra
 RoxygenNote: 7.3.3
 Suggests: 
