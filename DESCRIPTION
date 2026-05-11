@@ -35,7 +35,8 @@ Imports: gdx, madrat, magclass, stringr, quitte, rlang,
          tidyr, dplyr, purrr, ggplot2, rmarkdown, knitr, mip,
          piamValidation, rmarkdown, pandoc, grDevices, grid, gridExtra
 RoxygenNote: 7.3.3
-Suggests: 
+Suggests:
     testthat (>= 3.0.0),
-    tinytex
+    tinytex,
+    magpie4
 Config/testthat/edition: 3

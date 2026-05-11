@@ -40,19 +40,37 @@
 #'     `inst/extdata/magpie-afolu-emission-variables.csv`), disaggregate
 #'     12 h12 -> 39 resCy as an extensive variable:
 #'       - 11 non-EU regions: 1:1 (each is its own h12, no split needed).
-#'       - 28 EU members under EUR: two-pass split over the IAMC `|+|`
-#'         tree (parsed from variable names). Leaves get weighted splits;
-#'         parents are derived as Σ direct children, so country-level
-#'         sum-to-parent identities hold automatically.
-#'     Two leaf-weight paradigms:
-#'       (a) MAgPIE cell-level land area (135/136 leaves) — aggregate
+#'       - 28 EU members under EUR: leaves split via one of three paradigms
+#'         (selected per leaf by the csv); parents are derived as Σ direct
+#'         children, so country-level sum-to-parent identities hold
+#'         automatically.
+#'     Three leaf-disaggregation paradigms:
+#'       (A) MAgPIE cell-level land area (~118 leaves) — aggregate
 #'           `cell.{land,land_split,peatland}_0.5.mz` to country via the
-#'           run's clustermap, use as proportional weight. Self-contained
-#'           (no external data), time-varying, sign-safe.
-#'       (b) ClimateWatch year-2010 LULUCF CO2 signed weights (1 leaf:
-#'           `Land|+|Indirect`) — needed because per-Mha forest sink
-#'           density varies ~8x across EU climate zones, making uniform-
-#'           area weighting biased for forest carbon flux.
+#'           run's clustermap, use as proportional weight. Self-contained,
+#'           time-varying, sign-safe. Default for variables whose per-Mha
+#'           flux density is roughly uniform across EU climate zones
+#'           (agricultural N/CH4, soil C management, fires, etc.).
+#'       (B) Cluster-aware MAgPIE flux (16 LUC leaves) — read cluster-
+#'           level CO2 flux from `fulldata.gdx` via `magpie4::emisCO2(
+#'           level="cell")`, split each cluster's flux across the
+#'           countries it overlaps using cluster-internal area weights.
+#'             country[k,t] = Σ_c  f[c,t]  ×  w[c,k,t] / Σ_k' w[c,k',t]
+#'           Sum-conserving (Σ_k country[k] = EUR), preserves climate-
+#'           heterogeneity that paradigm (A) flattens. Used for 4
+#'           Deforestation leaves, 2 Forest degradation, 5 Regrowth, 4
+#'           Wood Harvest, 1 Other-land-conversion leaf (16 total).
+#'           Path (B) is enabled per-leaf by the `magpie_emisco2_type`
+#'           and `magpie_emisco2_land` columns in the csv. Falls back to
+#'           paradigm (A) if fulldata.gdx is missing.
+#'       (C) ClimateWatch year-2010 LULUCF CO2 signed weights (1 leaf:
+#'           `Land|+|Indirect`) — Method G (history baseline + delta).
+#'           Needed because Indirect is an exogenous Grassi NGHGI
+#'           correction (single EUR-level series, no cluster-level analog
+#'           inside MAgPIE) and per-Mha forest sink density varies ~8x
+#'           across EU climate zones, making uniform-area weighting
+#'           strongly biased. CW historical NGHGI country pattern is
+#'           inlined in `.loadCwWeights()`.
 #'     Output: `iEmissions_magpie.mif` (IAMC standard, `|+|` markers
 #'     preserved for IAMC-tooling compatibility, `|++|` variants excluded
 #'     to avoid double-count).
@@ -60,7 +78,10 @@
 #' @importFrom gdx readGDX
 #' @importFrom magclass as.magpie read.report write.report getRegions getYears
 #'   getNames dimSums collapseDim setNames mbind new.magpie add_dimension
-#' @importFrom madrat toolGetMapping
+#' @importFrom madrat toolGetMapping toolAggregate
+# magpie4::emisCO2 is reached via requireNamespace() inside .loadClusterEmissions
+# (kept as Suggests, not Imports, since paradigm B falls back gracefully when
+# magpie4 is absent — see DESCRIPTION).
 NULL
 
 # ------------------------------------------------------------------- constants
@@ -508,26 +529,43 @@ coupleMagpieToProm <- function(reportMifPath,
 
   # Emissions (extensive, Mt/yr): split EUR into 28 EU country values.
   # The disaggregator uses the IAMC `|+|` hierarchy parsed from variable
-  # names: leaves are split with their assigned weight; parents take the
-  # per-country sum of their direct children, so country-level `|+|` sum-
-  # to-parent identities hold automatically.
+  # names: leaves are split via one of three paradigms (per the csv);
+  # parents take the per-country sum of their direct children, so country-
+  # level `|+|` sum-to-parent identities hold automatically.
   #
-  # Two weight paradigms (leaves only):
-  #   * `magpie_*` — non-negative cell-level land area (135/136 leaves).
+  # Three weight paradigms (leaves only):
+  #   (A) `magpie_*` — non-negative cell-level land area (~118 leaves).
   #     Aggregated from `cell.{land,land_split,peatland}_0.5.mz` per
-  #     country; used as proportional weight. Self-consistent with model
-  #     physics, time-varying, sign-safe by construction.
-  #   * `cw_lulucf_co2` — ClimateWatch year-2010 LULUCF CO2 signed weights
-  #     (1 leaf: `Land|+|Indirect`). Used because per-Mha forest sink
-  #     density varies ~8x across EU climate zones, making uniform-area
-  #     weighting biased for forest carbon flux. Branch uses Method G
-  #     (history baseline + delta).
-  outputdir <- dirname(reportMifPath)
+  #     country; used as proportional weight. Sign-safe by construction.
+  #     Appropriate when per-Mha flux is uniform across climate zones.
+  #   (B) `magpie_emisco2_type` + `magpie_emisco2_land` populated (16
+  #     LUC leaves) — cluster-aware: read MAgPIE's own cluster-level CO2
+  #     flux from `fulldata.gdx`, then split each cluster's flux to its
+  #     countries using cluster-internal area shares. Captures climate
+  #     heterogeneity that (A) flattens. The csv's `weight_source` for
+  #     these rows is still consulted: it picks WHICH driver area defines
+  #     the cluster-internal share (e.g. secondary-forest share for
+  #     Regrowth|Secondary Forest).
+  #   (C) `cw_lulucf_co2` (1 leaf: `Land|+|Indirect`) — ClimateWatch
+  #     historical NGHGI signed weights, Method G (history baseline +
+  #     delta). Needed because Indirect is an exogenous Grassi correction
+  #     (no cluster-level analog) AND per-Mha forest sink density varies
+  #     ~8x across EU climate zones.
+  outputdir   <- dirname(reportMifPath)
   cellWeights <- .buildCellLevelWeights(outputdir, .EU28)
   cwWeights   <- .loadCwWeights()
 
+  # Cluster-level data for paradigm (B). Both loaders look at fulldata.gdx
+  # and clustermap_*.rds inside `outputdir`; both return NULL if the gdx
+  # is missing, which makes (B) variables fall back to paradigm (A).
+  magpieGdxPath  <- file.path(outputdir, "fulldata.gdx")
+  clusterEmi     <- .loadClusterEmissions(magpieGdxPath, emiCsv,
+                                          eurRegion = "EUR")
+  clusterWeights <- .buildClusterCountryWeights(outputdir, .EU28)
+
   emiResCy <- .disaggregateToResCy(emi, resCy, h12For, emiCsv,
-                                   cellWeights, cwWeights)
+                                   cellWeights, cwWeights,
+                                   clusterEmi, clusterWeights)
 
   # ---- 4. read SBS for broadcasting prices across subsectors
   SBS <- gdx::readGDX(gdxPath, "SBS")
@@ -762,30 +800,338 @@ coupleMagpieToProm <- function(reportMifPath,
 
 
 # ============================================================================
-# helper: load static ClimateWatch country weights
+# helper: static ClimateWatch country weights (inlined)
 # ============================================================================
 #
-# Loads the narrow CW weights csv shipped with postprom. Currently used by
-# exactly one variable (Indirect, weight_source = "cw_lulucf_co2"); see
-# build_climatewatch_eu28_weights.R header for why this single variable
-# needs an external NGHGI-aligned weight pattern instead of MAgPIE's own
-# uniform-area cell-level weight.
+# Used by exactly one variable in the AFOLU disaggregation pipeline:
+#   `Emissions|CO2|Land|+|Indirect` (weight_source = "cw_lulucf_co2").
+# See postprom/inst/scripts/build_climatewatch_eu28_weights.R for why this
+# single variable needs an external NGHGI-aligned weight pattern instead of
+# MAgPIE's own uniform-area cell-level weight, and why the year 2010
+# baseline was chosen.
+#
+# Values: ClimateWatch 2010 EU28 LULUCF CO2 (Mt CO2/yr, signed; negative = sink).
+# Σw (signed) ≈ -262 Mt/yr (matches NGHGI long-term EU LULUCF sink).
+#
+# To refresh after a ClimateWatch upstream data update (internal use,
+# requires OneDrive access to the CW source csv):
+#     source("postprom/inst/scripts/build_climatewatch_eu28_weights.R")
+#     refreshFromUpstream()
+# then copy the printed code block and replace the body of cwLulucfCo2
+# below; commit the change.
 #
 # Returns a named list keyed by weight_source; each entry is a named numeric
 # vector (ISO -> signed weight value).
 #
 .loadCwWeights <- function() {
-  cwPath <- system.file("extdata",
-                        "climatewatch-eu28-lulucf-co2-weights.csv",
-                        package = "postprom")
-  if (!nzchar(cwPath)) {
-    stop("[loadCwWeights] Missing climatewatch-eu28-lulucf-co2-weights.csv ",
-         "in postprom/inst/extdata/. Run build_climatewatch_eu28_weights.R ",
-         "and reinstall postprom.")
+  cwLulucfCo2 <- c(
+    AUT =  -5.95, BEL =  -2.97, BGR = -23.63, CYP =  -0.26,
+    CZE =  -0.80, DEU =  -0.33, DNK =   1.20, ESP = -31.08,
+    EST =   1.40, FIN =  -8.60, FRA = -65.31, GBR =  12.30,
+    GRC =   1.19, HRV =  -0.82, HUN =   2.01, IRL =   6.68,
+    ITA = -34.80, LTU =   5.05, LUX =  -0.52, LVA = -10.93,
+    MLT =   0.00, NLD =   5.04, POL = -53.38, PRT =  -0.42,
+    ROU = -24.59, SVK =  -8.37, SVN =  -9.37, SWE = -14.73
+  )
+  list(cw_lulucf_co2 = cwLulucfCo2)
+}
+
+
+# ============================================================================
+# helper: load cluster-level CO2 fluxes from fulldata.gdx (paradigm B)
+# ============================================================================
+#
+# Reads `magpie4::emisCO2(level="cell")` from `gdxPath` and, for each
+# emission variable that has a (type, land) mapping in the csv, builds the
+# per-cluster flux time series. Returns a named list keyed by IAMC variable
+# name (with units), each entry a numeric matrix [cluster x year] for the
+# 12 EUR clusters only.
+#
+# Returns NULL (silently) if:
+#   * gdxPath does not exist (e.g. when running on a synthetic report.mif
+#     without the gdx — paradigm B falls back to paradigm A in this case)
+#   * the `magpie4` package is not available
+#
+# emisCO2(level="cell") returns a magpie object with:
+#   * spatial dim: 200 clusters, named "REGION.id" (e.g. "EUR.25" .. "EUR.36")
+#   * d3 axis: land x c_pools x type (e.g. "secdforest.Below Ground Carbon.lu_regrowth")
+#
+# Variable->cluster mapping per csv row:
+#   * `magpie_emisco2_type` — selects the emisCO2 type slice
+#     (lu_deforestation / lu_degrad / lu_other_conversion / lu_regrowth /
+#      lu_harvest); rows with empty type are not loaded here.
+#   * `magpie_emisco2_land` — comma-separated land categories to sum
+#     (e.g. "primforest" or "other_othernat,other_youngsecdf").
+#     Special value "*" means "sum across all land categories".
+#
+# Cluster sum equals report.mif EUR value exactly (verified): no smoothing
+# is applied here, so the downstream disaggregator's sum-conservation
+# matches the upstream report.mif EUR row to machine precision.
+#
+.loadClusterEmissions <- function(gdxPath, emiCsv, eurRegion = "EUR") {
+  if (!file.exists(gdxPath)) {
+    message("[loadClusterEmissions] fulldata.gdx not found at ", gdxPath,
+            "\n  -> paradigm-B leaves will fall back to paradigm-A area weights.")
+    return(NULL)
   }
-  df <- read.csv(cwPath, stringsAsFactors = FALSE)
-  split_keys <- split(df, df$weight_source)
-  lapply(split_keys, function(d) setNames(d$value_mtco2_yr, d$iso))
+  if (!requireNamespace("magpie4", quietly = TRUE)) {
+    warning("[loadClusterEmissions] package magpie4 not available; ",
+            "paradigm-B leaves will fall back to paradigm-A area weights.")
+    return(NULL)
+  }
+
+  # Read cluster-level CO2 flux: dim = clusters x years x (land.c_pools.type)
+  # `sum_land=FALSE, sum_cpool=FALSE` keeps the (land, c_pools) granularity.
+  emisRaw <- suppressWarnings(magpie4::emisCO2(gdxPath, level = "cell",
+                                               unit       = "gas",
+                                               sum_land   = FALSE,
+                                               sum_cpool  = FALSE))
+
+  # Restrict to EUR clusters (12 of them at c200/h12).
+  eurCells <- grep(paste0("^", eurRegion, "\\."),
+                   magclass::getCells(emisRaw), value = TRUE)
+  if (length(eurCells) == 0) {
+    warning(sprintf("[loadClusterEmissions] no clusters under region '%s' in gdx; ",
+                    eurRegion))
+    return(NULL)
+  }
+  emisEur <- emisRaw[eurCells, , ]
+
+  # Sum out c_pools (we only need total CO2 flux per land x type, not the
+  # above/below-ground split — same convention magpie4::reportEmissions uses).
+  emisEur <- magclass::dimSums(emisEur, dim = "c_pools")
+  # `emisEur` now has d3 dims = (land, type); shape: clusters x years x (12 x 15)
+
+  # Build mapping: only rows with a non-empty magpie_emisco2_type are paradigm B.
+  bRows <- emiCsv[nzchar(emiCsv$magpie_emisco2_type) &
+                  nzchar(emiCsv$magpie_emisco2_land), ]
+  if (nrow(bRows) == 0) return(NULL)
+
+  yrs <- magclass::getYears(emisEur)
+  availTypes <- unique(sapply(strsplit(magclass::getNames(emisEur), "[.]"),
+                              function(z) z[2]))
+  availLands <- unique(sapply(strsplit(magclass::getNames(emisEur), "[.]"),
+                              function(z) z[1]))
+
+  out <- list()
+  for (i in seq_len(nrow(bRows))) {
+    v    <- bRows$variable[i]
+    tt   <- bRows$magpie_emisco2_type[i]
+    lspec <- bRows$magpie_emisco2_land[i]
+
+    if (!(tt %in% availTypes)) {
+      warning(sprintf("[loadClusterEmissions] type '%s' not in gdx; skipping '%s'",
+                      tt, v))
+      next
+    }
+
+    # Slice by type: gives d3 = land (one entry per land category).
+    sl <- emisEur[, , tt]
+    sl <- magclass::collapseDim(sl, dim = 3.2)  # drop the type axis name
+
+    # Pick lands. "*" means sum across all land categories.
+    if (lspec == "*") {
+      flux <- magclass::dimSums(sl, dim = "land")    # cluster x year
+    } else {
+      lands <- strsplit(lspec, ",", fixed = TRUE)[[1]]
+      lands <- intersect(lands, availLands)
+      if (length(lands) == 0) {
+        warning(sprintf("[loadClusterEmissions] no matching land for '%s' (%s); skipping",
+                        v, lspec))
+        next
+      }
+      flux <- magclass::dimSums(sl[, , lands, drop = FALSE], dim = "land")
+    }
+
+    # Store as a [cluster x year] matrix keyed by IAMC variable name.
+    mat <- matrix(as.numeric(flux),
+                  nrow = length(eurCells),
+                  ncol = length(yrs),
+                  dimnames = list(eurCells, as.character(yrs)))
+    out[[v]] <- mat
+  }
+
+  if (length(out) == 0) return(NULL)
+  out
+}
+
+
+# ============================================================================
+# helper: build cluster x country area weights (paradigm B internal split)
+# ============================================================================
+#
+# For each of the 11 land-area drivers (same definitions as
+# .buildCellLevelWeights), produces a 3D array [cluster, country, year]
+# giving the EU28 country's land area within each EUR cluster, per year.
+#
+# Used by paradigm B to split a cluster's flux across the countries it
+# overlaps:
+#       share[c,k,t] = w[c,k,t] / Σ_k' w[c,k',t]
+#       country_flux[k,t] = Σ_c cluster_flux[c,t] × share[c,k,t]
+#
+# Cluster c spans only the countries whose cells fall in it; for clusters
+# spanning multiple countries (the typical case), within-cluster splitting
+# uses area, consistent with MAgPIE's own within-cluster homogeneity
+# assumption (k-means optimum on LPJmL features).
+#
+# Returns NULL if clustermap_*.rds is missing.
+#
+.buildClusterCountryWeights <- function(outputdir, EU28) {
+  cmFiles <- list.files(outputdir, pattern = "^clustermap_.*\\.rds$",
+                        full.names = TRUE)
+  if (length(cmFiles) == 0) {
+    message("[buildClusterCountryWeights] no clustermap in ", outputdir,
+            "\n  -> paradigm-B leaves will fall back to paradigm-A area weights.")
+    return(NULL)
+  }
+  clustermap <- readRDS(cmFiles[1])
+
+  # Restrict to EU28 cells; for non-EU regions the disaggregator is 1:1
+  # (no cluster-country split needed).
+  cellMap <- clustermap[clustermap$country %in% EU28,
+                        c("cell", "country", "cluster"), drop = FALSE]
+  if (nrow(cellMap) == 0) {
+    warning("[buildClusterCountryWeights] no EU28 cells in clustermap")
+    return(NULL)
+  }
+  eurClusters <- sort(unique(cellMap$cluster))
+
+  cellFiles <- list(
+    land       = file.path(outputdir, "cell.land_0.5.mz"),
+    land_split = file.path(outputdir, "cell.land_split_0.5.mz"),
+    peatland   = file.path(outputdir, "cell.peatland_0.5.mz")
+  )
+  for (f in cellFiles) {
+    if (!file.exists(f)) {
+      warning("[buildClusterCountryWeights] missing cell file: ", f)
+      return(NULL)
+    }
+  }
+  cells <- list(
+    land       = magclass::read.magpie(cellFiles$land),
+    land_split = magclass::read.magpie(cellFiles$land_split),
+    peatland   = magclass::read.magpie(cellFiles$peatland)
+  )
+
+  # Same driver definitions as .buildCellLevelWeights — must stay in sync.
+  drivers <- list(
+    magpie_peatland_drained       = list(file = "peatland",
+                                         cats = c("crop", "past",
+                                                  "forestry", "peatExtract")),
+    magpie_forest_managed         = list(file = "land",
+                                         cats = c("secdforest", "forestry")),
+    magpie_secondary_forest       = list(file = "land", cats = "secdforest"),
+    magpie_primary_forest         = list(file = "land", cats = "primforest"),
+    magpie_other_land             = list(file = "land", cats = "other"),
+    magpie_cropland               = list(file = "land", cats = "crop"),
+    magpie_pasture                = list(file = "land", cats = "past"),
+    magpie_plantation             = list(file = "land_split",
+                                         cats = "PlantedForest_Timber"),
+    magpie_afforestation_npindc   = list(file = "land_split",
+                                         cats = "PlantedForest_NPiNDC"),
+    magpie_afforestation_co2price = list(file = "land_split",
+                                         cats = "PlantedForest_Afforestation"),
+    magpie_cropland_tree          = list(file = "land_split",
+                                         cats = "crop_treecover")
+  )
+
+  lapply(drivers, function(d) {
+    .aggCellsToClusterCountry(cells[[d$file]], d$cats, cellMap,
+                              EU28, eurClusters)
+  })
+}
+
+
+# Aggregate cell-level driver area to a 3D array [cluster, country, year].
+# Returns a zero array if no land categories match (driver not active in
+# this scenario), so downstream can detect "no driver" via Σ == 0 and
+# fall back to equal split.
+.aggCellsToClusterCountry <- function(cellMagpie, catPatterns, cellMap,
+                                       EU28, eurClusters) {
+  allCats <- magclass::getNames(cellMagpie)
+  matched <- unique(unlist(lapply(catPatterns, function(p) {
+    allCats[allCats == p | startsWith(allCats, paste0(p, "."))]
+  })))
+  yrs <- magclass::getYears(cellMagpie)
+
+  out <- array(0,
+               dim      = c(length(eurClusters), length(EU28), length(yrs)),
+               dimnames = list(eurClusters, EU28, yrs))
+
+  if (length(matched) == 0) return(out)   # driver inactive — zero, fallback later
+
+  if (length(matched) == 1) {
+    summed <- cellMagpie[, , matched]
+  } else {
+    summed <- magclass::dimSums(cellMagpie[, , matched], dim = 3)
+  }
+  summed <- magclass::collapseNames(summed)   # cells x years
+
+  # cellMap only carries EU28 cells (the rest don't need cluster-country
+  # disaggregation); restrict summed to those cells before aggregating so
+  # toolAggregate's domain matches the relation table.
+  euCells <- intersect(cellMap$cell, magclass::getCells(summed))
+  if (length(euCells) == 0) return(out)
+  summed  <- summed[euCells, , ]
+  cellMap <- cellMap[cellMap$cell %in% euCells, , drop = FALSE]
+
+  # Aggregate cells -> (cluster__country) synthetic key, then split back.
+  # Use "__" as separator because cluster ids already embed a dot
+  # (e.g. "EUR.32"), so paste(...,sep=".") would produce "EUR.32.PRT"
+  # and naive splitting would corrupt the cluster id.
+  cellMap$clucountry <- paste(cellMap$cluster, cellMap$country, sep = "__")
+  agg <- madrat::toolAggregate(summed, rel = cellMap,
+                               from = "cell", to = "clucountry")
+
+  # Unpack: each row name is "cluster__country".
+  aggArr <- as.array(agg)
+  rowNames <- rownames(aggArr)
+  splitNames <- strsplit(rowNames, "__", fixed = TRUE)
+  clucol <- vapply(splitNames, `[[`, character(1), 1)
+  ctycol <- vapply(splitNames, `[[`, character(1), 2)
+  if (length(dim(aggArr)) == 3) aggArr <- aggArr[, , 1, drop = TRUE]
+
+  for (r in seq_along(rowNames)) {
+    ci <- match(clucol[r], eurClusters)
+    ki <- match(ctycol[r], EU28)
+    if (is.na(ci) || is.na(ki)) next
+    out[ci, ki, ] <- aggArr[r, ]
+  }
+  out
+}
+
+
+# Constant-extrapolation linear interpolation on a [cluster x year_src] matrix
+# to a target annual year grid. Matches the constant-extrapolation behavior
+# used elsewhere (magclass::time_interpolate with extrapolation_type="constant").
+.interpolateClusterMatrix <- function(mat, targetYears) {
+  srcYears <- as.integer(sub("^y", "", colnames(mat)))
+  tgt      <- as.integer(targetYears)
+  out <- matrix(NA_real_, nrow = nrow(mat), ncol = length(tgt),
+                dimnames = list(rownames(mat), as.character(tgt)))
+  for (i in seq_len(nrow(mat))) {
+    out[i, ] <- approx(srcYears, mat[i, ], xout = tgt,
+                       method = "linear", rule = 2)$y
+  }
+  out
+}
+
+# Same as .interpolateClusterMatrix but for a 3D [cluster x country x year_src]
+# array. Used for cluster-country area weights.
+.interpolateClusterArray <- function(arr3, targetYears) {
+  srcYears <- as.integer(sub("^y", "", dimnames(arr3)[[3]]))
+  tgt      <- as.integer(targetYears)
+  out <- array(NA_real_,
+               dim      = c(dim(arr3)[1], dim(arr3)[2], length(tgt)),
+               dimnames = list(dimnames(arr3)[[1]], dimnames(arr3)[[2]],
+                               as.character(tgt)))
+  for (i in seq_len(dim(arr3)[1])) {
+    for (j in seq_len(dim(arr3)[2])) {
+      out[i, j, ] <- approx(srcYears, arr3[i, j, ], xout = tgt,
+                            method = "linear", rule = 2)$y
+    }
+  }
+  out
 }
 
 
@@ -842,40 +1188,58 @@ coupleMagpieToProm <- function(reportMifPath,
 # Strategy:
 #   * Non-EU resCy (11 regions, 1:1 with h12) : copy h12 value, all variables.
 #   * EU28 resCy (28 members, all in EUR)     : two-pass over the IAMC tree.
-#         Pass 1 — leaves: weight-based split (one of two paradigms below).
+#         Pass 1 — leaves: weight-based split (one of three paradigms below).
 #         Pass 2 — parents: country values = Σ direct children's country
 #                  values, processed in topological order (deepest first).
 #                  This makes country-level `|+|` sum-to-parent identities
 #                  hold automatically (matching the h12-level identities).
 #
-# Leaf paradigm 1 — `magpie_*` (cell-level non-negative areas, 135/136 leaves).
+# Leaf paradigm (A) — `magpie_*` cell-level non-negative areas (~118 leaves).
 # Proportional split:
-#     country[c,t] = MAgPIE_EUR(t) × w[c,t] / Σ_c w[c,t]
-# Sum-conserving exactly. Sign-safe by construction (areas ≥ 0, so country
-# inherits EUR sign — physically correct for leaf emissions). w[c,t] is
-# time-varying. Falls back to equal split if Σ_c w[c,t] = 0.
+#     country[k,t] = MAgPIE_EUR(t) × w[k,t] / Σ_k' w[k',t]
+# Sum-conserving. Sign-safe (areas ≥ 0, country inherits EUR sign). Time-
+# varying. Falls back to equal split if Σ_k w[k,t] = 0.
 #
-# Leaf paradigm 2 — `cw_*` (ClimateWatch signed historical, 1 leaf:
+# Leaf paradigm (B) — cluster-aware MAgPIE flux (16 LUC leaves).
+# Two-stage split using MAgPIE's own cluster-level fluxes:
+#     share[c,k,t]      = w[c,k,t] / Σ_k' w[c,k',t]   (k's share within cluster c)
+#     country[k,t]      = Σ_c f[c,t] × share[c,k,t]
+# Sum-conserving exactly: Σ_k country[k] = Σ_c f[c] = EUR (since
+# emisCO2(level="cell") cluster sums equal report.mif EUR row).
+# Captures climate heterogeneity that paradigm (A) flattens. Triggered
+# when the csv row has non-empty `magpie_emisco2_type` AND clusterEmi
+# carries that variable. Falls back to paradigm (A) for the row otherwise
+# (e.g. fulldata.gdx unavailable, or cluster-internal driver area is zero).
+#
+# Leaf paradigm (C) — `cw_*` ClimateWatch signed historical (1 leaf:
 # `Land|+|Indirect`). Method G (history-baseline + delta):
-#     delta(t)            = MAgPIE_EUR(t) − Σ_c w[c]
-#     country[c,t]        = w[c]  +  delta(t) × |w[c]| / Σ_c |w[c]|
-# Sum-conserving exactly. Country signs preserved when |delta| < Σ|w|; for
+#     delta(t)            = MAgPIE_EUR(t) − Σ_k w[k]
+#     country[k,t]        = w[k]  +  delta(t) × |w[k]| / Σ_k' |w[k']|
+# Sum-conserving. Country signs preserved when |delta| < Σ|w|; for
 # Indirect under realistic SSPs |delta|/Σ|w| ≈ 0.08 (well within safe band).
 #
 # Args:
-#   m           : magpie at h12 scale (region x year x variable)
-#   resCy       : 39 resCy region codes
-#   h12For      : same length as resCy; the h12 region each resCy maps to
-#   emiCsv      : data.frame with columns variable, weight_source, ...
-#                 (one row per curated variable; weight_source filled for
-#                 leaves, blank for parents)
-#   cellWeights : named list from .buildCellLevelWeights()
-#   cwWeights   : named list from .loadCwWeights()
+#   m              : magpie at h12 scale (region x year x variable)
+#   resCy          : 39 resCy region codes
+#   h12For         : same length as resCy; the h12 region each resCy maps to
+#   emiCsv         : data.frame with one row per curated variable
+#                    (columns variable, weight_source, magpie_emisco2_type,
+#                    magpie_emisco2_land, ...)
+#   cellWeights    : named list from .buildCellLevelWeights()  (paradigm A)
+#   cwWeights      : named list from .loadCwWeights()          (paradigm C)
+#   clusterEmi     : named list from .loadClusterEmissions() (paradigm B);
+#                    NULL when fulldata.gdx unavailable — paradigm-B rows
+#                    silently fall back to paradigm A
+#   clusterWeights : named list from .buildClusterCountryWeights()
+#                    (paradigm B internal split); NULL when clustermap
+#                    unavailable — paradigm-B rows fall back to paradigm A
 #
 # Returns: magpie at resCy x year x variable.
 #
 .disaggregateToResCy <- function(m, resCy, h12For, emiCsv,
-                                 cellWeights, cwWeights) {
+                                 cellWeights, cwWeights,
+                                 clusterEmi = NULL,
+                                 clusterWeights = NULL) {
   years <- magclass::getYears(m)
   vars  <- magclass::getNames(m)
   if (is.null(vars)) vars <- "value"
@@ -921,8 +1285,20 @@ coupleMagpieToProm <- function(reportMifPath,
                                extrapolation_type = "constant")
   })
 
-  # weight_source lookup keyed by variable name
-  wsLookup <- setNames(emiCsv$weight_source, emiCsv$variable)
+  # weight_source / cluster-flux lookups keyed by variable name
+  wsLookup       <- setNames(emiCsv$weight_source,        emiCsv$variable)
+  clusterTypeLk  <- setNames(emiCsv$magpie_emisco2_type,  emiCsv$variable)
+
+  # Pre-interpolate cluster-country weights too (same year grid as cellWeights).
+  # Each entry is a [cluster x country x year] array; constant extrapolation
+  # outside source years matches .buildCellLevelWeights behavior.
+  clusterWeightsInterp <- if (!is.null(clusterWeights)) {
+    lapply(clusterWeights, function(arr3) {
+      .interpolateClusterArray(arr3, targetYears)
+    })
+  } else {
+    NULL
+  }
 
   # ---- Pass 1: leaves — weight-based split ---------------------------------
   for (v in vars[isLeaf]) {
@@ -936,8 +1312,8 @@ coupleMagpieToProm <- function(reportMifPath,
 
     h12Eur <- as.numeric(mArr["EUR", , v])               # year-vector
 
+    # --- (C) ClimateWatch signed weights — Method G ---
     if (startsWith(ws, "cw_")) {
-      # CW signed weights — Method G
       if (!ws %in% names(cwWeights)) {
         stop(sprintf("[disaggregateToResCy] unknown CW weight_source '%s' for '%s'",
                      ws, v))
@@ -963,7 +1339,53 @@ coupleMagpieToProm <- function(reportMifPath,
       next
     }
 
-    # MAgPIE cell-level non-negative areas — proportional split
+    # --- (B) Cluster-aware MAgPIE flux ---
+    # Trigger: csv row has non-empty magpie_emisco2_type AND clusterEmi /
+    # clusterWeights are available AND this variable's flux is in clusterEmi.
+    # The csv's `weight_source` for these rows still names the area driver
+    # used for cluster-internal country shares.
+    useB <- nzchar(clusterTypeLk[[v]]) &&
+            !is.null(clusterEmi) && !is.null(clusterWeightsInterp) &&
+            v %in% names(clusterEmi) &&
+            ws %in% names(clusterWeightsInterp)
+    if (useB) {
+      # Cluster-level flux: matrix [cluster x year_native_to_emisCO2]
+      fluxMat <- clusterEmi[[v]]
+      # Interpolate cluster flux to the target year grid (annual).
+      fluxMatInterp <- .interpolateClusterMatrix(fluxMat, targetYears)
+      eurClusters <- rownames(fluxMatInterp)
+
+      # Cluster-country area weight: array [cluster x country x year]
+      wArr3 <- clusterWeightsInterp[[ws]]
+      # Subset to the EUR clusters and EU28 countries present here.
+      commonClu <- intersect(eurClusters, dimnames(wArr3)[[1]])
+      wArr3 <- wArr3[commonClu, euCy, , drop = FALSE]
+      fluxMatInterp <- fluxMatInterp[commonClu, , drop = FALSE]
+
+      for (t in seq_len(nYears)) {
+        # cluster-internal share[c,k]
+        wMat   <- wArr3[, , t, drop = TRUE]           # cluster x country
+        if (is.null(dim(wMat))) wMat <- matrix(wMat, nrow = length(commonClu),
+                                               dimnames = list(commonClu, euCy))
+        rowTot <- rowSums(wMat, na.rm = TRUE)
+        # If some clusters have zero driver area: degenerate to equal split
+        # within those clusters (fallback). Other clusters use real shares.
+        zeroRows <- !is.finite(rowTot) | rowTot < 1e-9
+        share <- wMat
+        for (cc in seq_along(rowTot)) {
+          if (zeroRows[cc]) {
+            share[cc, ] <- 1 / nEu
+          } else {
+            share[cc, ] <- wMat[cc, ] / rowTot[cc]
+          }
+        }
+        # country[k] = Σ_c flux[c] × share[c,k]
+        arr[euCy, t, v] <- as.numeric(fluxMatInterp[, t] %*% share)
+      }
+      next
+    }
+
+    # --- (A) MAgPIE cell-level area — proportional split ---
     if (!ws %in% names(weightsInterp)) {
       stop(sprintf("[disaggregateToResCy] unknown weight_source '%s' for '%s'. Valid: %s",
                    ws, v, paste(c(names(weightsInterp), names(cwWeights)),
