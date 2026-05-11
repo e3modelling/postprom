@@ -93,24 +93,15 @@ reportEmissions <- function(path, regions, years) {
   getItems(netCO2Supply, 3.1) <- paste0("Emissions|CO2|Energy|Supply|", name)
   # ========================= AFOLU & Land Use ===============================
   iEmissions_magpie <- file.path(dirname(path), "iEmissions_magpie.mif")
-  if (file.exists(iEmissions_magpie)) {
-    # Read AFOLU emissions from mif when it exists
-    dataMagpie <- read.report(iEmissions_magpie)
-    AFOLU_CDR <- dataMagpie[[1]][[1]]
-    # Rename variables: convert "Emissions|Gas|Land|..." to "Emissions|Gas|AFOLU|Land|..."
-    # for bottom-up aggregation
-    varNames <- getNames(AFOLU_CDR)
-    varNames <- ifelse(
-      grepl("\\|AFOLU\\|Land", varNames),
-      varNames,
-      str_replace(varNames, "^(Emissions\\|[^|]+)\\|Land(.*)$", "\\1|AFOLU|Land\\2")
-    )
-    getNames(AFOLU_CDR) <- varNames
-    varsNoUnits <- trimws(gsub("\\s*\\(.*\\)$", "", getItems(AFOLU_CDR, dim = 3)))
-    getItems(AFOLU_CDR, 3.1) <- varsNoUnits
-    varsCO2 <- c("Emissions|CO2|AFOLU|Land",
-      "Emissions|CO2|AFOLU|Agriculture", "Emissions|CO2|AFOLU|Land|Fires")
-    AFOLUCO2 <- AFOLU_CDR[, , varsCO2]
+  useMagpieAfolu <- file.exists(iEmissions_magpie)
+
+  if (useMagpieAfolu) {
+    magpieAfolu <- prepareMagpieAfolu(iEmissions_magpie)
+    AFOLU_CDR <- magpieAfolu$afolu
+    AFOLUCO2 <- magpieAfolu$co2
+    CDRCO2 <- magpieAfolu$cdr
+    AFOLUCh4N2o <- magpieAfolu$ch4N2o
+    extraAFOLU <- magpieAfolu$extra
   } else {
     # Use default sources
     AFOLU_CDR <- mbind(
@@ -118,6 +109,9 @@ reportEmissions <- function(path, regions, years) {
       getREMIND_MAgPIE_SoCDR(path, grossCO2Demand)[, years, ]
     )[regions, , ]
     AFOLUCO2 <- AFOLU_CDR[, , "Emissions|CO2|AFOLU"]
+    CDRCO2 <- AFOLU_CDR[, , "Carbon Removal|Land Use"]
+    AFOLUCh4N2o <- NULL
+    extraAFOLU <- NULL
   }
   # ========================= Industrial Processes ===========================
   IndustrialProcesses <- getIndustrialProcesses(
@@ -157,18 +151,6 @@ reportEmissions <- function(path, regions, years) {
   
   CDR[, , "Carbon Removal|Geological Storage|Biomass"] <- dimSums(CCS[, , getItems(CCS, 3)[grepl("\\|Biofuels$", getItems(CCS, 3))]], 3.1)
   
-  if (file.exists(iEmissions_magpie)) {
-    magpieCDRmapping <- toolGetMapping("open-prom-magpie-CDR-mapping.csv", type = "sectoral", where = "postprom")
-    CDRCO2 <- suppressMessages(toolAggregate(
-    AFOLU_CDR,
-    dim = 3,
-    rel = magpieCDRmapping,
-    partrel = TRUE
-    ))
-  }
-  else {
-     CDRCO2 <- AFOLU_CDR[, , "Carbon Removal|Land Use"]
-  }
   captured <- mbind(CDR, CCS, CDRCO2)
   captured <- helperAggregateLevel(captured, level = 1, recursive = TRUE)
   # =============================== Non-CO2===================================
@@ -203,15 +185,7 @@ reportEmissions <- function(path, regions, years) {
   emissionsNonCO2[, , n2oVars] <- emissionsNonCO2[, , n2oVars] * conversionFactorN2o
 
   # Replace emissionsNonCO2 with AFOLU_CDR CH4 and N2O variables if a coupled run is made
-  if (file.exists(iEmissions_magpie)) {
-    # Convert N2O units to "kt N2O/yr"
-    emissionsN2O <- getNames(AFOLU_CDR)[grepl("N2O", getNames(AFOLU_CDR))]
-    AFOLU_CDR[, , emissionsN2O] <- AFOLU_CDR[, , emissionsN2O] * 1000 # "kt N2O/yr"
-    # Extract CH4 and N2O variables from AFOLU_CDR
-    varsCH4N2O <- c("Emissions|CH4|AFOLU|Land", "Emissions|CH4|AFOLU|Land|Fires"
-                                    , "Emissions|N2O|AFOLU|Land", "Emissions|N2O|AFOLU|Land|Fires")
-    AFOLUCh4N2o <- AFOLU_CDR[, , varsCH4N2O]
-
+  if (useMagpieAfolu) {
     emissionsNonCO2NonAFOLU <- getNames(emissionsNonCO2)[!grepl("AFOLU", getNames(emissionsNonCO2))]
     emissionsNonCO2 <- emissionsNonCO2[, , emissionsNonCO2NonAFOLU]
     emissionsNonCO2 <- mbind(emissionsNonCO2, AFOLUCh4N2o)
@@ -302,8 +276,7 @@ reportEmissions <- function(path, regions, years) {
     TRANP, TRANG, OtherFuelTransformation, emissionsCO2woBunkers, emissionsKyotowoBunkers
   )
   # Add other emissions from magpie run if they are available
-  if (file.exists(iEmissions_magpie)) {
-    extraAFOLU <- AFOLU_CDR[, , !(getNames(AFOLU_CDR) %in% c(varsCO2, varsCH4N2O))]
+  if (!is.null(extraAFOLU)) {
     extraAFOLU <- add_dimension(
       extraAFOLU,
       dim = 3.2,
@@ -433,6 +406,58 @@ calculateGhg <- function(dataMagpie) {
   }
   return(totalCo2Eq)
 }
+
+prepareMagpieAfolu <- function(iEmissions_magpie) {
+  varsCO2 <- c(
+    "Emissions|CO2|AFOLU|Land",
+    "Emissions|CO2|AFOLU|Agriculture",
+    "Emissions|CO2|AFOLU|Land|Fires"
+  )
+  varsCH4N2O <- c(
+    "Emissions|CH4|AFOLU|Land",
+    "Emissions|CH4|AFOLU|Land|Fires",
+    "Emissions|N2O|AFOLU|Land",
+    "Emissions|N2O|AFOLU|Land|Fires"
+  )
+
+  dataMagpie <- read.report(iEmissions_magpie)
+  afolu <- dataMagpie[[1]][[1]]
+
+  # Convert "Emissions|Gas|Land|..." to "Emissions|Gas|AFOLU|Land|..."
+  # so bottom-up aggregation follows the same hierarchy as OPEN-PROM data.
+  varNames <- getNames(afolu)
+  varNames <- ifelse(
+    grepl("\\|AFOLU\\|Land", varNames),
+    varNames,
+    str_replace(varNames, "^(Emissions\\|[^|]+)\\|Land(.*)$", "\\1|AFOLU|Land\\2")
+  )
+  getNames(afolu) <- varNames
+  varsNoUnits <- trimws(gsub("\\s*\\(.*\\)$", "", getItems(afolu, dim = 3)))
+  getItems(afolu, 3.1) <- varsNoUnits
+
+  magpieCDRmapping <- toolGetMapping("open-prom-magpie-CDR-mapping.csv",
+    type = "sectoral",
+    where = "postprom"
+  )
+  cdr <- suppressMessages(toolAggregate(
+    afolu,
+    dim = 3,
+    rel = magpieCDRmapping,
+    partrel = TRUE
+  ))
+
+  emissionsN2O <- getNames(afolu)[grepl("N2O", getNames(afolu))]
+  afolu[, , emissionsN2O] <- afolu[, , emissionsN2O] * 1000
+
+  return(list(
+    afolu = afolu,
+    co2 = afolu[, , varsCO2],
+    cdr = cdr,
+    ch4N2o = afolu[, , varsCH4N2O],
+    extra = afolu[, , !(getNames(afolu) %in% c(varsCO2, varsCH4N2O))]
+  ))
+}
+
 extractAggregatedData <- function(scenario, x, years, ...) {
   map <- toolGetMapping(
     name = "NavigateEmissions.csv",
