@@ -305,7 +305,8 @@ vars <- c(
   "Final Energy|Industry.Mtoe",
   "Final Energy|Transportation.Mtoe",
   "Final Energy|Non-Energy Use.Mtoe",
-  "Final Energy|Residential and Commercial.Mtoe"
+  "Final Energy|Residential and Commercial.Mtoe",
+  "Final Energy|Bunkers.Mtoe"
 )
 
 elMix <- as.quitte(data[, , vars]) %>%
