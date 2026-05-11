@@ -67,7 +67,14 @@ for(i in seq_along(facet_order)) {
     stackgroup = "one",
     legendgroup = ~variable,
     showlegend = show_legend
-  ) %>%
+  )
+
+  # 🔧 FORCE all traces inside subplot to respect legend rule
+  if (!show_legend) {
+    p <- p %>% style(showlegend = FALSE)
+  }
+
+  p <- p %>%
 
     layout(
 
@@ -104,7 +111,7 @@ g <- subplot(
 )
 
 # -----------------------------
-# LEGEND (ONLY ONCE)
+# FINAL LAYOUT (ONLY ONE LEGEND)
 # -----------------------------
 g <- g %>%
   layout(
@@ -128,38 +135,43 @@ g
 # -----------------------------
 # DATA
 # -----------------------------
-PrC <- as.quitte(
-  data[, , "Price|Carbon.US$2015/tn CO2"]
-) %>%
+vars <- c(
+  "Price|Carbon.US$2015/tn CO2"
+)
+
+elMix <- as.quitte(data[, , vars]) %>%
   select(-c(unit, model, scenario))
 
-PrC$region <- factor(PrC$region, levels = facet_order)
+elMix$region <- factor(elMix$region, levels = facet_order)
 
 # -----------------------------
 # CREATE SUBPLOTS
 # -----------------------------
 plist <- list()
 
-for(r in facet_order) {
+for(i in seq_along(facet_order)) {
 
-  df <- PrC %>%
-    filter(region == r)
+  r <- facet_order[i]
+  df <- elMix %>% filter(region == r)
 
-  p <- plot_ly(
-    df,
-    x = ~period,
-    y = ~value,
-    type = "scatter",
-    mode = "lines",
-    line = list(width = 2),
-    showlegend = FALSE,
-    hovertemplate =
-      paste(
-        "<b>", r, "</b><br>",
-        "Period: %{x}<br>",
-        "Value: %{y:.2f}<extra></extra>"
-      )
-  ) %>%
+  show_legend <- (i == 1)
+
+p <- plot_ly(
+  df,
+  x = ~period,
+  y = ~value,
+  type = "scatter",
+  mode = "lines",
+  line = list(width = 2),
+  showlegend = FALSE
+)
+
+  # 🔧 FORCE all traces inside subplot to respect legend rule
+  if (!show_legend) {
+    p <- p %>% style(showlegend = FALSE)
+  }
+
+  p <- p %>%
 
     layout(
 
@@ -167,7 +179,7 @@ for(r in facet_order) {
         list(
           text = paste0("<b>", r, "</b>"),
           x = 0.5,
-          y = 1.05,
+          y = 0.95,
           xref = "paper",
           yref = "paper",
           showarrow = FALSE,
@@ -175,29 +187,17 @@ for(r in facet_order) {
         )
       ),
 
-      xaxis = list(
-        title = "",
-        zeroline = FALSE
-      ),
+      xaxis = list(title = "", zeroline = FALSE),
+      yaxis = list(title = "", zeroline = FALSE),
 
-      yaxis = list(
-        title = "",
-        zeroline = FALSE
-      ),
-
-      margin = list(
-        l = 35,
-        r = 10,
-        b = 25,
-        t = 35
-      )
+      margin = list(l = 35, r = 10, b = 25, t = 45)
     )
 
   plist[[r]] <- p
 }
 
 # -----------------------------
-# COMBINE SUBPLOTS
+# COMBINE
 # -----------------------------
 g <- subplot(
   plist,
@@ -208,21 +208,17 @@ g <- subplot(
 )
 
 # -----------------------------
-# FINAL LAYOUT (clean + consistent)
+# FINAL LAYOUT (ONLY ONE LEGEND)
 # -----------------------------
 g <- g %>%
   layout(
-
-    height = 800,
-
-    showlegend = FALSE,
-
-    margin = list(
-      l = 40,
-      r = 20,
-      t = 20,
-      b = 40
-    )
+    showlegend = TRUE,
+    legend = list(
+      orientation = "h",
+      x = 0,
+      y = -0.08
+    ),
+    height = 800
   )
 
 g
@@ -277,7 +273,14 @@ for(i in seq_along(facet_order)) {
     stackgroup = "one",
     legendgroup = ~variable,
     showlegend = show_legend
-  ) %>%
+  )
+
+  # 🔧 FORCE all traces inside subplot to respect legend rule
+  if (!show_legend) {
+    p <- p %>% style(showlegend = FALSE)
+  }
+
+  p <- p %>%
 
     layout(
 
@@ -314,7 +317,7 @@ g <- subplot(
 )
 
 # -----------------------------
-# LEGEND (ONLY ONCE)
+# FINAL LAYOUT (ONLY ONE LEGEND)
 # -----------------------------
 g <- g %>%
   layout(
@@ -377,7 +380,14 @@ for(i in seq_along(facet_order)) {
     stackgroup = "one",
     legendgroup = ~variable,
     showlegend = show_legend
-  ) %>%
+  )
+
+  # 🔧 FORCE all traces inside subplot to respect legend rule
+  if (!show_legend) {
+    p <- p %>% style(showlegend = FALSE)
+  }
+
+  p <- p %>%
 
     layout(
 
@@ -414,7 +424,7 @@ g <- subplot(
 )
 
 # -----------------------------
-# LEGEND (ONLY ONCE)
+# FINAL LAYOUT (ONLY ONE LEGEND)
 # -----------------------------
 g <- g %>%
   layout(
@@ -469,7 +479,14 @@ for(i in seq_along(facet_order)) {
     stackgroup = "one",
     legendgroup = ~variable,
     showlegend = show_legend
-  ) %>%
+  )
+
+  # 🔧 FORCE all traces inside subplot to respect legend rule
+  if (!show_legend) {
+    p <- p %>% style(showlegend = FALSE)
+  }
+
+  p <- p %>%
 
     layout(
 
@@ -506,7 +523,7 @@ g <- subplot(
 )
 
 # -----------------------------
-# LEGEND (ONLY ONCE)
+# FINAL LAYOUT (ONLY ONE LEGEND)
 # -----------------------------
 g <- g %>%
   layout(
@@ -566,7 +583,14 @@ for(i in seq_along(facet_order)) {
     stackgroup = "one",
     legendgroup = ~variable,
     showlegend = show_legend
-  ) %>%
+  )
+
+  # 🔧 FORCE all traces inside subplot to respect legend rule
+  if (!show_legend) {
+    p <- p %>% style(showlegend = FALSE)
+  }
+
+  p <- p %>%
 
     layout(
 
@@ -603,7 +627,7 @@ g <- subplot(
 )
 
 # -----------------------------
-# LEGEND (ONLY ONCE)
+# FINAL LAYOUT (ONLY ONE LEGEND)
 # -----------------------------
 g <- g %>%
   layout(
