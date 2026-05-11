@@ -238,7 +238,7 @@ vars <- c(
   "Capacity|Electricity|Coal|w/o CCS.GW",
   "Capacity|Electricity|Gas|w/ CCS.GW",
   "Capacity|Electricity|Gas|w/o CCS.GW",
-  "Capacity|Geothermal and other renewable sources.GW",
+  "Capacity|Electricity|Geothermal and other renewable sources.GW",
   "Capacity|Electricity|Hydrogen.GW",
   "Capacity|Electricity|Oil.GW",
   "Capacity|Electricity|Hydro.GW",
