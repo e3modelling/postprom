@@ -45,9 +45,6 @@ elMix <- as.quitte(data[, , vars]) %>%
 
 elMix$region <- factor(elMix$region, levels = facet_order)
 
-# -----------------------------
-# CREATE SUBPLOTS
-# -----------------------------
 plist <- list()
 
 for(i in seq_along(facet_order)) {
@@ -57,21 +54,25 @@ for(i in seq_along(facet_order)) {
 
   show_legend <- (i == 1)
 
-  p <- plot_ly(
-    df,
-    x = ~period,
-    y = ~value,
-    color = ~variable,
-    type = "scatter",
-    mode = "lines",
-    stackgroup = "one",
-    legendgroup = ~variable,
-    showlegend = show_legend
-  )
+  p <- plot_ly()
 
-  # 🔧 FORCE all traces inside subplot to respect legend rule
-  if (!show_legend) {
-    p <- p %>% style(showlegend = FALSE)
+  # IMPORTANT: one trace per variable (required for stacked area)
+  for(v in unique(df$variable)) {
+
+    df_v <- df %>% filter(variable == v)
+
+    p <- p %>% add_trace(
+      data = df_v,
+      x = ~period,
+      y = ~value,
+      type = "scatter",
+      mode = "none",              # fills only → clean area plot
+      stackgroup = "one",
+      name = v,                   # legend label
+      legendgroup = v,
+      showlegend = show_legend,
+      fillcolor = NULL
+    )
   }
 
   p <- p %>%
@@ -82,7 +83,7 @@ for(i in seq_along(facet_order)) {
         list(
           text = paste0("<b>", r, "</b>"),
           x = 0.5,
-          y = 0.95,
+          y = 1.05,
           xref = "paper",
           yref = "paper",
           showarrow = FALSE,
@@ -93,14 +94,14 @@ for(i in seq_along(facet_order)) {
       xaxis = list(title = "", zeroline = FALSE),
       yaxis = list(title = "", zeroline = FALSE),
 
-      margin = list(l = 35, r = 10, b = 25, t = 45)
+      margin = list(l = 35, r = 10, b = 25, t = 40)
     )
 
   plist[[r]] <- p
 }
 
 # -----------------------------
-# COMBINE
+# COMBINE SUBPLOTS
 # -----------------------------
 g <- subplot(
   plist,
@@ -111,7 +112,7 @@ g <- subplot(
 )
 
 # -----------------------------
-# FINAL LAYOUT (ONLY ONE LEGEND)
+# SINGLE LEGEND
 # -----------------------------
 g <- g %>%
   layout(
@@ -123,7 +124,6 @@ g <- g %>%
     ),
     height = 800
   )
-
 g
 ```
 
@@ -144,9 +144,6 @@ elMix <- as.quitte(data[, , vars]) %>%
 
 elMix$region <- factor(elMix$region, levels = facet_order)
 
-# -----------------------------
-# CREATE SUBPLOTS
-# -----------------------------
 plist <- list()
 
 for(i in seq_along(facet_order)) {
@@ -156,19 +153,25 @@ for(i in seq_along(facet_order)) {
 
   show_legend <- (i == 1)
 
-p <- plot_ly(
-  df,
-  x = ~period,
-  y = ~value,
-  type = "scatter",
-  mode = "lines",
-  line = list(width = 2),
-  showlegend = FALSE
-)
+  p <- plot_ly()
 
-  # 🔧 FORCE all traces inside subplot to respect legend rule
-  if (!show_legend) {
-    p <- p %>% style(showlegend = FALSE)
+  # IMPORTANT: one trace per variable (required for stacked area)
+  for(v in unique(df$variable)) {
+
+    df_v <- df %>% filter(variable == v)
+
+    p <- p %>% add_trace(
+      data = df_v,
+      x = ~period,
+      y = ~value,
+      type = "scatter",
+      mode = "none",              # fills only → clean area plot
+      stackgroup = "one",
+      name = v,                   # legend label
+      legendgroup = v,
+      showlegend = show_legend,
+      fillcolor = NULL
+    )
   }
 
   p <- p %>%
@@ -179,7 +182,7 @@ p <- plot_ly(
         list(
           text = paste0("<b>", r, "</b>"),
           x = 0.5,
-          y = 0.95,
+          y = 1.05,
           xref = "paper",
           yref = "paper",
           showarrow = FALSE,
@@ -190,14 +193,14 @@ p <- plot_ly(
       xaxis = list(title = "", zeroline = FALSE),
       yaxis = list(title = "", zeroline = FALSE),
 
-      margin = list(l = 35, r = 10, b = 25, t = 45)
+      margin = list(l = 35, r = 10, b = 25, t = 40)
     )
 
   plist[[r]] <- p
 }
 
 # -----------------------------
-# COMBINE
+# COMBINE SUBPLOTS
 # -----------------------------
 g <- subplot(
   plist,
@@ -208,7 +211,7 @@ g <- subplot(
 )
 
 # -----------------------------
-# FINAL LAYOUT (ONLY ONE LEGEND)
+# SINGLE LEGEND
 # -----------------------------
 g <- g %>%
   layout(
@@ -220,7 +223,6 @@ g <- g %>%
     ),
     height = 800
   )
-
 g
 ```
 
@@ -251,9 +253,6 @@ elMix <- as.quitte(data[, , vars]) %>%
 
 elMix$region <- factor(elMix$region, levels = facet_order)
 
-# -----------------------------
-# CREATE SUBPLOTS
-# -----------------------------
 plist <- list()
 
 for(i in seq_along(facet_order)) {
@@ -263,21 +262,25 @@ for(i in seq_along(facet_order)) {
 
   show_legend <- (i == 1)
 
-  p <- plot_ly(
-    df,
-    x = ~period,
-    y = ~value,
-    color = ~variable,
-    type = "scatter",
-    mode = "lines",
-    stackgroup = "one",
-    legendgroup = ~variable,
-    showlegend = show_legend
-  )
+  p <- plot_ly()
 
-  # 🔧 FORCE all traces inside subplot to respect legend rule
-  if (!show_legend) {
-    p <- p %>% style(showlegend = FALSE)
+  # IMPORTANT: one trace per variable (required for stacked area)
+  for(v in unique(df$variable)) {
+
+    df_v <- df %>% filter(variable == v)
+
+    p <- p %>% add_trace(
+      data = df_v,
+      x = ~period,
+      y = ~value,
+      type = "scatter",
+      mode = "none",              # fills only → clean area plot
+      stackgroup = "one",
+      name = v,                   # legend label
+      legendgroup = v,
+      showlegend = show_legend,
+      fillcolor = NULL
+    )
   }
 
   p <- p %>%
@@ -288,7 +291,7 @@ for(i in seq_along(facet_order)) {
         list(
           text = paste0("<b>", r, "</b>"),
           x = 0.5,
-          y = 0.95,
+          y = 1.05,
           xref = "paper",
           yref = "paper",
           showarrow = FALSE,
@@ -299,14 +302,14 @@ for(i in seq_along(facet_order)) {
       xaxis = list(title = "", zeroline = FALSE),
       yaxis = list(title = "", zeroline = FALSE),
 
-      margin = list(l = 35, r = 10, b = 25, t = 45)
+      margin = list(l = 35, r = 10, b = 25, t = 40)
     )
 
   plist[[r]] <- p
 }
 
 # -----------------------------
-# COMBINE
+# COMBINE SUBPLOTS
 # -----------------------------
 g <- subplot(
   plist,
@@ -317,7 +320,7 @@ g <- subplot(
 )
 
 # -----------------------------
-# FINAL LAYOUT (ONLY ONE LEGEND)
+# SINGLE LEGEND
 # -----------------------------
 g <- g %>%
   layout(
@@ -358,9 +361,6 @@ elMix <- as.quitte(data[, , vars]) %>%
 
 elMix$region <- factor(elMix$region, levels = facet_order)
 
-# -----------------------------
-# CREATE SUBPLOTS
-# -----------------------------
 plist <- list()
 
 for(i in seq_along(facet_order)) {
@@ -370,21 +370,25 @@ for(i in seq_along(facet_order)) {
 
   show_legend <- (i == 1)
 
-  p <- plot_ly(
-    df,
-    x = ~period,
-    y = ~value,
-    color = ~variable,
-    type = "scatter",
-    mode = "lines",
-    stackgroup = "one",
-    legendgroup = ~variable,
-    showlegend = show_legend
-  )
+  p <- plot_ly()
 
-  # 🔧 FORCE all traces inside subplot to respect legend rule
-  if (!show_legend) {
-    p <- p %>% style(showlegend = FALSE)
+  # IMPORTANT: one trace per variable (required for stacked area)
+  for(v in unique(df$variable)) {
+
+    df_v <- df %>% filter(variable == v)
+
+    p <- p %>% add_trace(
+      data = df_v,
+      x = ~period,
+      y = ~value,
+      type = "scatter",
+      mode = "none",              # fills only → clean area plot
+      stackgroup = "one",
+      name = v,                   # legend label
+      legendgroup = v,
+      showlegend = show_legend,
+      fillcolor = NULL
+    )
   }
 
   p <- p %>%
@@ -395,7 +399,7 @@ for(i in seq_along(facet_order)) {
         list(
           text = paste0("<b>", r, "</b>"),
           x = 0.5,
-          y = 0.95,
+          y = 1.05,
           xref = "paper",
           yref = "paper",
           showarrow = FALSE,
@@ -406,14 +410,14 @@ for(i in seq_along(facet_order)) {
       xaxis = list(title = "", zeroline = FALSE),
       yaxis = list(title = "", zeroline = FALSE),
 
-      margin = list(l = 35, r = 10, b = 25, t = 45)
+      margin = list(l = 35, r = 10, b = 25, t = 40)
     )
 
   plist[[r]] <- p
 }
 
 # -----------------------------
-# COMBINE
+# COMBINE SUBPLOTS
 # -----------------------------
 g <- subplot(
   plist,
@@ -424,7 +428,7 @@ g <- subplot(
 )
 
 # -----------------------------
-# FINAL LAYOUT (ONLY ONE LEGEND)
+# SINGLE LEGEND
 # -----------------------------
 g <- g %>%
   layout(
@@ -457,9 +461,6 @@ elMix <- as.quitte(data[, , vars]) %>%
 
 elMix$region <- factor(elMix$region, levels = facet_order)
 
-# -----------------------------
-# CREATE SUBPLOTS
-# -----------------------------
 plist <- list()
 
 for(i in seq_along(facet_order)) {
@@ -469,21 +470,25 @@ for(i in seq_along(facet_order)) {
 
   show_legend <- (i == 1)
 
-  p <- plot_ly(
-    df,
-    x = ~period,
-    y = ~value,
-    color = ~variable,
-    type = "scatter",
-    mode = "lines",
-    stackgroup = "one",
-    legendgroup = ~variable,
-    showlegend = show_legend
-  )
+  p <- plot_ly()
 
-  # 🔧 FORCE all traces inside subplot to respect legend rule
-  if (!show_legend) {
-    p <- p %>% style(showlegend = FALSE)
+  # IMPORTANT: one trace per variable (required for stacked area)
+  for(v in unique(df$variable)) {
+
+    df_v <- df %>% filter(variable == v)
+
+    p <- p %>% add_trace(
+      data = df_v,
+      x = ~period,
+      y = ~value,
+      type = "scatter",
+      mode = "none",              # fills only → clean area plot
+      stackgroup = "one",
+      name = v,                   # legend label
+      legendgroup = v,
+      showlegend = show_legend,
+      fillcolor = NULL
+    )
   }
 
   p <- p %>%
@@ -494,7 +499,7 @@ for(i in seq_along(facet_order)) {
         list(
           text = paste0("<b>", r, "</b>"),
           x = 0.5,
-          y = 0.95,
+          y = 1.05,
           xref = "paper",
           yref = "paper",
           showarrow = FALSE,
@@ -505,14 +510,14 @@ for(i in seq_along(facet_order)) {
       xaxis = list(title = "", zeroline = FALSE),
       yaxis = list(title = "", zeroline = FALSE),
 
-      margin = list(l = 35, r = 10, b = 25, t = 45)
+      margin = list(l = 35, r = 10, b = 25, t = 40)
     )
 
   plist[[r]] <- p
 }
 
 # -----------------------------
-# COMBINE
+# COMBINE SUBPLOTS
 # -----------------------------
 g <- subplot(
   plist,
@@ -523,7 +528,7 @@ g <- subplot(
 )
 
 # -----------------------------
-# FINAL LAYOUT (ONLY ONE LEGEND)
+# SINGLE LEGEND
 # -----------------------------
 g <- g %>%
   layout(
@@ -535,7 +540,6 @@ g <- g %>%
     ),
     height = 800
   )
-
 g
 ```
 ---
@@ -561,9 +565,6 @@ elMix <- as.quitte(data[, , vars]) %>%
 
 elMix$region <- factor(elMix$region, levels = facet_order)
 
-# -----------------------------
-# CREATE SUBPLOTS
-# -----------------------------
 plist <- list()
 
 for(i in seq_along(facet_order)) {
@@ -573,21 +574,25 @@ for(i in seq_along(facet_order)) {
 
   show_legend <- (i == 1)
 
-  p <- plot_ly(
-    df,
-    x = ~period,
-    y = ~value,
-    color = ~variable,
-    type = "scatter",
-    mode = "lines",
-    stackgroup = "one",
-    legendgroup = ~variable,
-    showlegend = show_legend
-  )
+  p <- plot_ly()
 
-  # 🔧 FORCE all traces inside subplot to respect legend rule
-  if (!show_legend) {
-    p <- p %>% style(showlegend = FALSE)
+  # IMPORTANT: one trace per variable (required for stacked area)
+  for(v in unique(df$variable)) {
+
+    df_v <- df %>% filter(variable == v)
+
+    p <- p %>% add_trace(
+      data = df_v,
+      x = ~period,
+      y = ~value,
+      type = "scatter",
+      mode = "none",              # fills only → clean area plot
+      stackgroup = "one",
+      name = v,                   # legend label
+      legendgroup = v,
+      showlegend = show_legend,
+      fillcolor = NULL
+    )
   }
 
   p <- p %>%
@@ -598,7 +603,7 @@ for(i in seq_along(facet_order)) {
         list(
           text = paste0("<b>", r, "</b>"),
           x = 0.5,
-          y = 0.95,
+          y = 1.05,
           xref = "paper",
           yref = "paper",
           showarrow = FALSE,
@@ -609,14 +614,14 @@ for(i in seq_along(facet_order)) {
       xaxis = list(title = "", zeroline = FALSE),
       yaxis = list(title = "", zeroline = FALSE),
 
-      margin = list(l = 35, r = 10, b = 25, t = 45)
+      margin = list(l = 35, r = 10, b = 25, t = 40)
     )
 
   plist[[r]] <- p
 }
 
 # -----------------------------
-# COMBINE
+# COMBINE SUBPLOTS
 # -----------------------------
 g <- subplot(
   plist,
@@ -627,7 +632,7 @@ g <- subplot(
 )
 
 # -----------------------------
-# FINAL LAYOUT (ONLY ONE LEGEND)
+# SINGLE LEGEND
 # -----------------------------
 g <- g %>%
   layout(
@@ -639,6 +644,5 @@ g <- g %>%
     ),
     height = 800
   )
-
 g
 ```
