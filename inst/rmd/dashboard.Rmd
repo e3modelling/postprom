@@ -23,7 +23,9 @@ regionspiam <- unique(piam$region)
 
 data <- params$magpie_data
 names(dimnames(data))[3] <- "variable.unit"
-data <- data[]
+#keep only regions in PIAM config
+data <- data[intersect(getRegions(data), strsplit(regionspiam[2], ",")[[1]]),,]
+ncol <- ceiling(length(strsplit(regionspiam[2], ",")[[1]]) / 4)
 ```
 
 # Emissions CO2 {data-icon="glyphicon glyphicon-stats"}
@@ -38,18 +40,6 @@ vars <- c(
 
 CO2emi <- as.quitte(data[, , vars]) %>%
   select(-c(unit, model, scenario))
-
-# p <- ggplot(CO2emi, aes(period, value, fill = variable)) +
-#   geom_area() +
-#   facet_wrap(~region, scales = "free_y", ncol = 6) +
-#   theme_minimal() +
-#     theme(
-#     panel.spacing.x = unit(0.05, "lines"),
-#     panel.spacing.y = unit(0.05, "lines")
-#   )
-# 
-# ggplotly(p) %>%
-#   layout(autosize = TRUE)
 
 p <- ggplot(CO2emi, aes(period, value, fill = variable)) +
   geom_area() +
@@ -80,7 +70,6 @@ g <- ggplotly(p) %>%
 # 🔧 Fix domains WITHOUT breaking grid + add spacing
 xaxes <- grep("^xaxis", names(g$x$layout), value = TRUE)
 
-ncol <- 6
 gap_inner <- 0.01   # spacing between panels
 gap_outer <- 0.003  # spacing at edges (left/right)
 
@@ -136,7 +125,6 @@ g <- ggplotly(p) %>%
 # 🔧 Fix domains WITHOUT breaking grid + add spacing
 xaxes <- grep("^xaxis", names(g$x$layout), value = TRUE)
 
-ncol <- 6
 gap_inner <- 0.01   # spacing between panels
 gap_outer <- 0.003  # spacing at edges (left/right)
 
@@ -221,7 +209,204 @@ g <- ggplotly(p) %>%
 # 🔧 Fix domains WITHOUT breaking grid + add spacing
 xaxes <- grep("^xaxis", names(g$x$layout), value = TRUE)
 
-ncol <- 6
+gap_inner <- 0.01   # spacing between panels
+gap_outer <- 0.003  # spacing at edges (left/right)
+
+for(i in seq_along(xaxes)) {
+  col <- (i - 1) %% ncol
+  
+  start <- col / ncol
+  end   <- (col + 1) / ncol
+  
+  left_gap  <- if(col == 0) gap_outer else gap_inner
+  right_gap <- if(col == ncol - 1) gap_outer else gap_inner
+  
+  g$x$layout[[xaxes[i]]]$domain <- c(start + left_gap, end - right_gap)
+}
+
+g
+```
+---
+
+# Capacity|Electricity {data-icon="glyphicon glyphicon-scale"}
+
+```{r Capacity Electricity plot}
+vars <- c(
+  "Capacity|Electricity|Biofuels|w/ CCS.GW",
+  "Capacity|Electricity|Biofuels|w/o CCS.GW",
+  "Capacity|Electricity|Coal|w/ CCS.GW",
+  "Capacity|Electricity|Coal|w/o CCS.GW",
+  "Capacity|Electricity|Gas|w/ CCS.GW",
+  "Capacity|Electricity|Gas|w/o CCS.GW",
+  "Capacity|Geothermal and other renewable sources.GW",
+  "Capacity|Electricity|Hydrogen.GW",
+  "Capacity|Electricity|Oil.GW",
+  "Capacity|Electricity|Hydro.GW",
+  "Capacity|Electricity|Wind.GW",
+  "Capacity|Electricity|Solar.GW",
+  "Capacity|Electricity|Nuclear.GW"
+)
+
+elMix <- as.quitte(data[, , vars]) %>%
+  select(-c(unit, model, scenario))
+
+p <- ggplot(elMix, aes(period, value, fill = variable)) +
+  geom_area() +
+  facet_wrap(~region, scales = "free_y", ncol = 6) +
+  theme_minimal() +
+  theme(
+    panel.spacing.x = unit(0.05, "lines"),
+    panel.spacing.y = unit(0.05, "lines"),
+    legend.position = "bottom",
+    legend.title = element_blank(),
+    legend.text = element_text(size = 8),
+    legend.key.size = unit(0.4, "cm")
+  ) +
+  guides(fill = guide_legend(ncol = 4))   # key for compact legend
+
+g <- ggplotly(p) %>%
+  layout(
+    legend = list(
+      orientation = "h",
+      x = 0,
+      y = -0.25,
+      font = list(size = 10),
+      itemwidth = 30
+    ),
+    margin = list(l = 20, r = 20, t = 20, b = 110)
+  )
+
+# 🔧 Fix domains WITHOUT breaking grid + add spacing
+xaxes <- grep("^xaxis", names(g$x$layout), value = TRUE)
+
+gap_inner <- 0.01   # spacing between panels
+gap_outer <- 0.003  # spacing at edges (left/right)
+
+for(i in seq_along(xaxes)) {
+  col <- (i - 1) %% ncol
+  
+  start <- col / ncol
+  end   <- (col + 1) / ncol
+  
+  left_gap  <- if(col == 0) gap_outer else gap_inner
+  right_gap <- if(col == ncol - 1) gap_outer else gap_inner
+  
+  g$x$layout[[xaxes[i]]]$domain <- c(start + left_gap, end - right_gap)
+}
+
+g
+```
+---
+
+# Final Energy {data-icon="glyphicon glyphicon-scale"}
+
+```{r Final Energy plot}
+vars <- c(
+  "Final Energy|Industry.Mtoe",
+  "Final Energy|Transportation.Mtoe",
+  "Final Energy|Non-Energy Use.Mtoe",
+  "Final Energy|Residential and Commercial.Mtoe"
+)
+
+elMix <- as.quitte(data[, , vars]) %>%
+  select(-c(unit, model, scenario))
+
+p <- ggplot(elMix, aes(period, value, fill = variable)) +
+  geom_area() +
+  facet_wrap(~region, scales = "free_y", ncol = 6) +
+  theme_minimal() +
+  theme(
+    panel.spacing.x = unit(0.05, "lines"),
+    panel.spacing.y = unit(0.05, "lines"),
+    legend.position = "bottom",
+    legend.title = element_blank(),
+    legend.text = element_text(size = 8),
+    legend.key.size = unit(0.4, "cm")
+  ) +
+  guides(fill = guide_legend(ncol = 4))   # key for compact legend
+
+g <- ggplotly(p) %>%
+  layout(
+    legend = list(
+      orientation = "h",
+      x = 0,
+      y = -0.25,
+      font = list(size = 10),
+      itemwidth = 30
+    ),
+    margin = list(l = 20, r = 20, t = 20, b = 110)
+  )
+
+# 🔧 Fix domains WITHOUT breaking grid + add spacing
+xaxes <- grep("^xaxis", names(g$x$layout), value = TRUE)
+
+gap_inner <- 0.01   # spacing between panels
+gap_outer <- 0.003  # spacing at edges (left/right)
+
+for(i in seq_along(xaxes)) {
+  col <- (i - 1) %% ncol
+  
+  start <- col / ncol
+  end   <- (col + 1) / ncol
+  
+  left_gap  <- if(col == 0) gap_outer else gap_inner
+  right_gap <- if(col == ncol - 1) gap_outer else gap_inner
+  
+  g$x$layout[[xaxes[i]]]$domain <- c(start + left_gap, end - right_gap)
+}
+
+g
+```
+---
+
+# Final Energy Fuel {data-icon="glyphicon glyphicon-scale"}
+
+```{r Final Energy Fuel plot}
+vars <- c(
+  "Final Energy|Solids.Mtoe",
+  "Final Energy|Fossil Liquids.Mtoe",
+  "Final Energy|Gas.Mtoe",
+  "Final Energy|Heat.Mtoe",
+  "Final Energy|Renewables.Mtoe",
+  "Final Energy|Electricity.Mtoe",
+  "Final Energy|Hydrogen.Mtoe",
+  "Final Energy|Other fuels.Mtoe",
+  "Final Energy|Biofuels.Mtoe",
+  "Final Energy|Nuclear.Mtoe"
+)
+
+elMix <- as.quitte(data[, , vars]) %>%
+  select(-c(unit, model, scenario))
+
+p <- ggplot(elMix, aes(period, value, fill = variable)) +
+  geom_area() +
+  facet_wrap(~region, scales = "free_y", ncol = 6) +
+  theme_minimal() +
+  theme(
+    panel.spacing.x = unit(0.05, "lines"),
+    panel.spacing.y = unit(0.05, "lines"),
+    legend.position = "bottom",
+    legend.title = element_blank(),
+    legend.text = element_text(size = 8),
+    legend.key.size = unit(0.4, "cm")
+  ) +
+  guides(fill = guide_legend(ncol = 4))   # key for compact legend
+
+g <- ggplotly(p) %>%
+  layout(
+    legend = list(
+      orientation = "h",
+      x = 0,
+      y = -0.25,
+      font = list(size = 10),
+      itemwidth = 30
+    ),
+    margin = list(l = 20, r = 20, t = 20, b = 110)
+  )
+
+# 🔧 Fix domains WITHOUT breaking grid + add spacing
+xaxes <- grep("^xaxis", names(g$x$layout), value = TRUE)
+
 gap_inner <- 0.01   # spacing between panels
 gap_outer <- 0.003  # spacing at edges (left/right)
 
