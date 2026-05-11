@@ -17,9 +17,13 @@ library(magclass)
 library(mip)
 library(quitte)
 
+configFile <- system.file(package = "postprom", file.path("extdata", "validationConfig_OPEN-PROM.csv"))
+piam <- read.csv(configFile, sep = ";", stringsAsFactors = FALSE)
+regionspiam <- unique(piam$region)
+
 data <- params$magpie_data
-#data <- data[c("USA","CHA"), 2025:2050, ]
 names(dimnames(data))[3] <- "variable.unit"
+data <- data[]
 ```
 
 # Emissions CO2 {data-icon="glyphicon glyphicon-stats"}
