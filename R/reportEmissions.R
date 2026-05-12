@@ -321,8 +321,7 @@ getUnit <- function(varName) {
     return("kt N2O/yr")
   } else if (grepl("HFC|PFC|CF4|C2F6|C6F14|SF6", varName)) {
     # HFC, PFC, CF4, C2F6, C6F14 are kt
-    # Extract the gas name (second element after splitting by |)
-    # Example: "Emissions|HFC|HFC152a" -> "kt HFC152a/yr"
+    # Example: "Emissions|HFC|HFC152a" -> "HFC152a"
     gasNameParts <- strsplit(varName, "\\|")[[1]]
     if (length(gasNameParts) > 1) {
       gasName <- tail(gasNameParts, 1)
@@ -338,6 +337,7 @@ getUnit <- function(varName) {
       gasName <- gasNameParts[2]
     } else {
       gasName <- sub(".*\\|", "", varName)
+    }
     return(paste0("Mt ", gasName, "/yr"))
   }
 }
