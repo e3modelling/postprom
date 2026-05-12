@@ -45,40 +45,54 @@ elMix <- as.quitte(data[, , vars]) %>%
 
 elMix$region <- factor(elMix$region, levels = facet_order)
 
+vars_unique <- unique(elMix$variable)
+
+# consistent colors
+cols <- colorRampPalette(RColorBrewer::brewer.pal(12, "Set3"))(length(vars_unique))
+names(cols) <- vars_unique
+
 plist <- list()
 
 for(i in seq_along(facet_order)) {
 
   r <- facet_order[i]
-  df <- elMix %>% filter(region == r)
 
-  show_legend <- (i == 1)
+  df <- elMix %>%
+    filter(region == r)
 
   p <- plot_ly()
 
-  # IMPORTANT: one trace per variable (required for stacked area)
-  for(v in unique(df$variable)) {
+  for(v in vars_unique) {
 
-    df_v <- df %>% filter(variable == v)
+    df_v <- df %>%
+      filter(variable == v)
 
-    p <- p %>% add_trace(
-      data = df_v,
-      x = ~period,
-      y = ~value,
-      type = "scatter",
-      mode = "none",              # fills only → clean area plot
-      stackgroup = "one",
-      name = v,                   # legend label
-      legendgroup = v,
-      showlegend = show_legend,
-      fillcolor = NULL
-    )
+    p <- p %>%
+      add_trace(
+        data = df_v,
+        x = ~period,
+        y = ~value,
+        type = "scatter",
+        mode = "none",
+        stackgroup = "one",
+        fillcolor = cols[v],
+        line = list(color = cols[v]),
+        name = v,
+        legendgroup = v,
+
+        # show legend ONLY once
+        showlegend = (i == 1),
+
+        hovertemplate = paste0(
+          "<b>", v, "</b><br>",
+          "Year: %{x}<br>",
+          "Value: %{y}<extra></extra>"
+        )
+      )
   }
 
   p <- p %>%
-
     layout(
-
       annotations = list(
         list(
           text = paste0("<b>", r, "</b>"),
@@ -90,19 +104,15 @@ for(i in seq_along(facet_order)) {
           font = list(size = 14)
         )
       ),
-
-      xaxis = list(title = "", zeroline = FALSE),
-      yaxis = list(title = "", zeroline = FALSE),
-
+      xaxis = list(title = ""),
+      yaxis = list(title = ""),
       margin = list(l = 35, r = 10, b = 25, t = 40)
     )
 
   plist[[r]] <- p
 }
 
-# -----------------------------
-# COMBINE SUBPLOTS
-# -----------------------------
+# combine panels
 g <- subplot(
   plist,
   nrows = ceiling(length(plist) / ncol),
@@ -111,19 +121,21 @@ g <- subplot(
   margin = 0.02
 )
 
-# -----------------------------
-# SINGLE LEGEND
-# -----------------------------
+# final layout
 g <- g %>%
   layout(
     showlegend = TRUE,
     legend = list(
       orientation = "h",
-      x = 0,
-      y = -0.08
+      x = 0.5,
+      xanchor = "center",
+      y = -0.1,
+      yanchor = "top",
+      font = list(size = 10)
     ),
     height = 800
   )
+
 g
 ```
 
@@ -144,40 +156,54 @@ elMix <- as.quitte(data[, , vars]) %>%
 
 elMix$region <- factor(elMix$region, levels = facet_order)
 
+vars_unique <- unique(elMix$variable)
+
+# consistent colors
+cols <- colorRampPalette(RColorBrewer::brewer.pal(12, "Set3"))(length(vars_unique))
+names(cols) <- vars_unique
+
 plist <- list()
 
 for(i in seq_along(facet_order)) {
 
   r <- facet_order[i]
-  df <- elMix %>% filter(region == r)
 
-  show_legend <- (i == 1)
+  df <- elMix %>%
+    filter(region == r)
 
   p <- plot_ly()
 
-  # IMPORTANT: one trace per variable (required for stacked area)
-  for(v in unique(df$variable)) {
+  for(v in vars_unique) {
 
-    df_v <- df %>% filter(variable == v)
+    df_v <- df %>%
+      filter(variable == v)
 
-    p <- p %>% add_trace(
-      data = df_v,
-      x = ~period,
-      y = ~value,
-      type = "scatter",
-      mode = "none",              # fills only → clean area plot
-      stackgroup = "one",
-      name = v,                   # legend label
-      legendgroup = v,
-      showlegend = show_legend,
-      fillcolor = NULL
-    )
+    p <- p %>%
+      add_trace(
+        data = df_v,
+        x = ~period,
+        y = ~value,
+        type = "scatter",
+        mode = "none",
+        stackgroup = "one",
+        fillcolor = cols[v],
+        line = list(color = cols[v]),
+        name = v,
+        legendgroup = v,
+
+        # show legend ONLY once
+        showlegend = (i == 1),
+
+        hovertemplate = paste0(
+          "<b>", v, "</b><br>",
+          "Year: %{x}<br>",
+          "Value: %{y}<extra></extra>"
+        )
+      )
   }
 
   p <- p %>%
-
     layout(
-
       annotations = list(
         list(
           text = paste0("<b>", r, "</b>"),
@@ -189,19 +215,15 @@ for(i in seq_along(facet_order)) {
           font = list(size = 14)
         )
       ),
-
-      xaxis = list(title = "", zeroline = FALSE),
-      yaxis = list(title = "", zeroline = FALSE),
-
+      xaxis = list(title = ""),
+      yaxis = list(title = ""),
       margin = list(l = 35, r = 10, b = 25, t = 40)
     )
 
   plist[[r]] <- p
 }
 
-# -----------------------------
-# COMBINE SUBPLOTS
-# -----------------------------
+# combine panels
 g <- subplot(
   plist,
   nrows = ceiling(length(plist) / ncol),
@@ -210,19 +232,21 @@ g <- subplot(
   margin = 0.02
 )
 
-# -----------------------------
-# SINGLE LEGEND
-# -----------------------------
+# final layout
 g <- g %>%
   layout(
     showlegend = TRUE,
     legend = list(
       orientation = "h",
-      x = 0,
-      y = -0.08
+      x = 0.5,
+      xanchor = "center",
+      y = -0.1,
+      yanchor = "top",
+      font = list(size = 10)
     ),
     height = 800
   )
+
 g
 ```
 
@@ -253,40 +277,54 @@ elMix <- as.quitte(data[, , vars]) %>%
 
 elMix$region <- factor(elMix$region, levels = facet_order)
 
+vars_unique <- unique(elMix$variable)
+
+# consistent colors
+cols <- colorRampPalette(RColorBrewer::brewer.pal(12, "Set3"))(length(vars_unique))
+names(cols) <- vars_unique
+
 plist <- list()
 
 for(i in seq_along(facet_order)) {
 
   r <- facet_order[i]
-  df <- elMix %>% filter(region == r)
 
-  show_legend <- (i == 1)
+  df <- elMix %>%
+    filter(region == r)
 
   p <- plot_ly()
 
-  # IMPORTANT: one trace per variable (required for stacked area)
-  for(v in unique(df$variable)) {
+  for(v in vars_unique) {
 
-    df_v <- df %>% filter(variable == v)
+    df_v <- df %>%
+      filter(variable == v)
 
-    p <- p %>% add_trace(
-      data = df_v,
-      x = ~period,
-      y = ~value,
-      type = "scatter",
-      mode = "none",              # fills only → clean area plot
-      stackgroup = "one",
-      name = v,                   # legend label
-      legendgroup = v,
-      showlegend = show_legend,
-      fillcolor = NULL
-    )
+    p <- p %>%
+      add_trace(
+        data = df_v,
+        x = ~period,
+        y = ~value,
+        type = "scatter",
+        mode = "none",
+        stackgroup = "one",
+        fillcolor = cols[v],
+        line = list(color = cols[v]),
+        name = v,
+        legendgroup = v,
+
+        # show legend ONLY once
+        showlegend = (i == 1),
+
+        hovertemplate = paste0(
+          "<b>", v, "</b><br>",
+          "Year: %{x}<br>",
+          "Value: %{y}<extra></extra>"
+        )
+      )
   }
 
   p <- p %>%
-
     layout(
-
       annotations = list(
         list(
           text = paste0("<b>", r, "</b>"),
@@ -298,19 +336,15 @@ for(i in seq_along(facet_order)) {
           font = list(size = 14)
         )
       ),
-
-      xaxis = list(title = "", zeroline = FALSE),
-      yaxis = list(title = "", zeroline = FALSE),
-
+      xaxis = list(title = ""),
+      yaxis = list(title = ""),
       margin = list(l = 35, r = 10, b = 25, t = 40)
     )
 
   plist[[r]] <- p
 }
 
-# -----------------------------
-# COMBINE SUBPLOTS
-# -----------------------------
+# combine panels
 g <- subplot(
   plist,
   nrows = ceiling(length(plist) / ncol),
@@ -319,16 +353,17 @@ g <- subplot(
   margin = 0.02
 )
 
-# -----------------------------
-# SINGLE LEGEND
-# -----------------------------
+# final layout
 g <- g %>%
   layout(
     showlegend = TRUE,
     legend = list(
       orientation = "h",
-      x = 0,
-      y = -0.08
+      x = 0.5,
+      xanchor = "center",
+      y = -0.1,
+      yanchor = "top",
+      font = list(size = 10)
     ),
     height = 800
   )
@@ -361,40 +396,54 @@ elMix <- as.quitte(data[, , vars]) %>%
 
 elMix$region <- factor(elMix$region, levels = facet_order)
 
+vars_unique <- unique(elMix$variable)
+
+# consistent colors
+cols <- colorRampPalette(RColorBrewer::brewer.pal(12, "Set3"))(length(vars_unique))
+names(cols) <- vars_unique
+
 plist <- list()
 
 for(i in seq_along(facet_order)) {
 
   r <- facet_order[i]
-  df <- elMix %>% filter(region == r)
 
-  show_legend <- (i == 1)
+  df <- elMix %>%
+    filter(region == r)
 
   p <- plot_ly()
 
-  # IMPORTANT: one trace per variable (required for stacked area)
-  for(v in unique(df$variable)) {
+  for(v in vars_unique) {
 
-    df_v <- df %>% filter(variable == v)
+    df_v <- df %>%
+      filter(variable == v)
 
-    p <- p %>% add_trace(
-      data = df_v,
-      x = ~period,
-      y = ~value,
-      type = "scatter",
-      mode = "none",              # fills only → clean area plot
-      stackgroup = "one",
-      name = v,                   # legend label
-      legendgroup = v,
-      showlegend = show_legend,
-      fillcolor = NULL
-    )
+    p <- p %>%
+      add_trace(
+        data = df_v,
+        x = ~period,
+        y = ~value,
+        type = "scatter",
+        mode = "none",
+        stackgroup = "one",
+        fillcolor = cols[v],
+        line = list(color = cols[v]),
+        name = v,
+        legendgroup = v,
+
+        # show legend ONLY once
+        showlegend = (i == 1),
+
+        hovertemplate = paste0(
+          "<b>", v, "</b><br>",
+          "Year: %{x}<br>",
+          "Value: %{y}<extra></extra>"
+        )
+      )
   }
 
   p <- p %>%
-
     layout(
-
       annotations = list(
         list(
           text = paste0("<b>", r, "</b>"),
@@ -406,19 +455,15 @@ for(i in seq_along(facet_order)) {
           font = list(size = 14)
         )
       ),
-
-      xaxis = list(title = "", zeroline = FALSE),
-      yaxis = list(title = "", zeroline = FALSE),
-
+      xaxis = list(title = ""),
+      yaxis = list(title = ""),
       margin = list(l = 35, r = 10, b = 25, t = 40)
     )
 
   plist[[r]] <- p
 }
 
-# -----------------------------
-# COMBINE SUBPLOTS
-# -----------------------------
+# combine panels
 g <- subplot(
   plist,
   nrows = ceiling(length(plist) / ncol),
@@ -427,16 +472,17 @@ g <- subplot(
   margin = 0.02
 )
 
-# -----------------------------
-# SINGLE LEGEND
-# -----------------------------
+# final layout
 g <- g %>%
   layout(
     showlegend = TRUE,
     legend = list(
       orientation = "h",
-      x = 0,
-      y = -0.08
+      x = 0.5,
+      xanchor = "center",
+      y = -0.1,
+      yanchor = "top",
+      font = list(size = 10)
     ),
     height = 800
   )
@@ -461,40 +507,54 @@ elMix <- as.quitte(data[, , vars]) %>%
 
 elMix$region <- factor(elMix$region, levels = facet_order)
 
+vars_unique <- unique(elMix$variable)
+
+# consistent colors
+cols <- colorRampPalette(RColorBrewer::brewer.pal(12, "Set3"))(length(vars_unique))
+names(cols) <- vars_unique
+
 plist <- list()
 
 for(i in seq_along(facet_order)) {
 
   r <- facet_order[i]
-  df <- elMix %>% filter(region == r)
 
-  show_legend <- (i == 1)
+  df <- elMix %>%
+    filter(region == r)
 
   p <- plot_ly()
 
-  # IMPORTANT: one trace per variable (required for stacked area)
-  for(v in unique(df$variable)) {
+  for(v in vars_unique) {
 
-    df_v <- df %>% filter(variable == v)
+    df_v <- df %>%
+      filter(variable == v)
 
-    p <- p %>% add_trace(
-      data = df_v,
-      x = ~period,
-      y = ~value,
-      type = "scatter",
-      mode = "none",              # fills only → clean area plot
-      stackgroup = "one",
-      name = v,                   # legend label
-      legendgroup = v,
-      showlegend = show_legend,
-      fillcolor = NULL
-    )
+    p <- p %>%
+      add_trace(
+        data = df_v,
+        x = ~period,
+        y = ~value,
+        type = "scatter",
+        mode = "none",
+        stackgroup = "one",
+        fillcolor = cols[v],
+        line = list(color = cols[v]),
+        name = v,
+        legendgroup = v,
+
+        # show legend ONLY once
+        showlegend = (i == 1),
+
+        hovertemplate = paste0(
+          "<b>", v, "</b><br>",
+          "Year: %{x}<br>",
+          "Value: %{y}<extra></extra>"
+        )
+      )
   }
 
   p <- p %>%
-
     layout(
-
       annotations = list(
         list(
           text = paste0("<b>", r, "</b>"),
@@ -506,19 +566,15 @@ for(i in seq_along(facet_order)) {
           font = list(size = 14)
         )
       ),
-
-      xaxis = list(title = "", zeroline = FALSE),
-      yaxis = list(title = "", zeroline = FALSE),
-
+      xaxis = list(title = ""),
+      yaxis = list(title = ""),
       margin = list(l = 35, r = 10, b = 25, t = 40)
     )
 
   plist[[r]] <- p
 }
 
-# -----------------------------
-# COMBINE SUBPLOTS
-# -----------------------------
+# combine panels
 g <- subplot(
   plist,
   nrows = ceiling(length(plist) / ncol),
@@ -527,19 +583,21 @@ g <- subplot(
   margin = 0.02
 )
 
-# -----------------------------
-# SINGLE LEGEND
-# -----------------------------
+# final layout
 g <- g %>%
   layout(
     showlegend = TRUE,
     legend = list(
       orientation = "h",
-      x = 0,
-      y = -0.08
+      x = 0.5,
+      xanchor = "center",
+      y = -0.1,
+      yanchor = "top",
+      font = list(size = 10)
     ),
     height = 800
   )
+
 g
 ```
 ---
@@ -565,40 +623,54 @@ elMix <- as.quitte(data[, , vars]) %>%
 
 elMix$region <- factor(elMix$region, levels = facet_order)
 
+vars_unique <- unique(elMix$variable)
+
+# consistent colors
+cols <- colorRampPalette(RColorBrewer::brewer.pal(12, "Set3"))(length(vars_unique))
+names(cols) <- vars_unique
+
 plist <- list()
 
 for(i in seq_along(facet_order)) {
 
   r <- facet_order[i]
-  df <- elMix %>% filter(region == r)
 
-  show_legend <- (i == 1)
+  df <- elMix %>%
+    filter(region == r)
 
   p <- plot_ly()
 
-  # IMPORTANT: one trace per variable (required for stacked area)
-  for(v in unique(df$variable)) {
+  for(v in vars_unique) {
 
-    df_v <- df %>% filter(variable == v)
+    df_v <- df %>%
+      filter(variable == v)
 
-    p <- p %>% add_trace(
-      data = df_v,
-      x = ~period,
-      y = ~value,
-      type = "scatter",
-      mode = "none",              # fills only → clean area plot
-      stackgroup = "one",
-      name = v,                   # legend label
-      legendgroup = v,
-      showlegend = show_legend,
-      fillcolor = NULL
-    )
+    p <- p %>%
+      add_trace(
+        data = df_v,
+        x = ~period,
+        y = ~value,
+        type = "scatter",
+        mode = "none",
+        stackgroup = "one",
+        fillcolor = cols[v],
+        line = list(color = cols[v]),
+        name = v,
+        legendgroup = v,
+
+        # show legend ONLY once
+        showlegend = (i == 1),
+
+        hovertemplate = paste0(
+          "<b>", v, "</b><br>",
+          "Year: %{x}<br>",
+          "Value: %{y}<extra></extra>"
+        )
+      )
   }
 
   p <- p %>%
-
     layout(
-
       annotations = list(
         list(
           text = paste0("<b>", r, "</b>"),
@@ -610,19 +682,15 @@ for(i in seq_along(facet_order)) {
           font = list(size = 14)
         )
       ),
-
-      xaxis = list(title = "", zeroline = FALSE),
-      yaxis = list(title = "", zeroline = FALSE),
-
+      xaxis = list(title = ""),
+      yaxis = list(title = ""),
       margin = list(l = 35, r = 10, b = 25, t = 40)
     )
 
   plist[[r]] <- p
 }
 
-# -----------------------------
-# COMBINE SUBPLOTS
-# -----------------------------
+# combine panels
 g <- subplot(
   plist,
   nrows = ceiling(length(plist) / ncol),
@@ -631,18 +699,20 @@ g <- subplot(
   margin = 0.02
 )
 
-# -----------------------------
-# SINGLE LEGEND
-# -----------------------------
+# final layout
 g <- g %>%
   layout(
     showlegend = TRUE,
     legend = list(
       orientation = "h",
-      x = 0,
-      y = -0.08
+      x = 0.5,
+      xanchor = "center",
+      y = -0.1,
+      yanchor = "top",
+      font = list(size = 10)
     ),
     height = 800
   )
+
 g
 ```
