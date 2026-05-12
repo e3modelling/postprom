@@ -193,6 +193,7 @@ reportEmissions <- function(path, regions, years) {
   emissionsCO2eq <- calculateGhg(emissionsNonCO2)
   names(dimnames(emissionsNonCO2))[3] <- "SBS"
   emissionsNonCO2 <- helperAggregateLevel(emissionsNonCO2, level = 2, recursive = TRUE)
+  emissionsNonCO2 <- emissionsNonCO2[, , c("Emissions|HFC", "Emissions|PFC"), invert = TRUE]
   # -------------------------- Kyoto Gases ------------------------------------
   kyotoGases <- dimSums(emissionsCO2eq, dim = 3)[, , ] + EmissionsCo2[, , "Emissions|CO2"]
   getItems(kyotoGases, 3.1) <- "Emissions|Kyoto Gases"
@@ -241,6 +242,21 @@ reportEmissions <- function(path, regions, years) {
                                        "Emissions|CO2|Energy|Supply|Gases")]
   OtherFuelTransformation <- dimSums(OtherFuelTransformation, dim = 3, na.rm = TRUE)
   getItems(OtherFuelTransformation, 3) <- "Emissions|CO2|Energy|Supply|Other Fuel Transformation"
+  # ------------ Emissions|HFC (all HFCs aggregated in HFC134a-equiv with GWP (1430/1000 = 1.43)) -------
+  allHfcVars <- grep("Emissions\\|HFC", getNames(emissionsCO2eq), value = TRUE)
+  HFCAgg <- emissionsCO2eq[, , allHfcVars] / 1.43
+  HFCAgg <- dimSums(HFCAgg, 3)
+  getItems(HFCAgg, 3.1) <- "Emissions|HFC"
+  # ------------ Emissions|PFC (all PFCs aggregated in CF4-equiv with GWP (7390/1000 = 7.39)) -------
+  allPfcVars <- grep("Emissions\\|PFC", getNames(emissionsCO2eq), value = TRUE)
+  PFCAgg <- emissionsCO2eq[, , allPfcVars] / 7.39
+  PFCAgg <- dimSums(PFCAgg, 3)
+  getItems(PFCAgg, 3.1) <- "Emissions|PFC"
+  # ------------ Emissions|F-gases (HFCs, PFCs, SF6 in CO2-equiv) -------
+  allFgasVars <- grep("Emissions\\|(HFC|PFC|SF6)", getNames(emissionsCO2eq), value = TRUE)
+  FgasAgg <- emissionsCO2eq[, , allFgasVars]
+  FgasAgg <- dimSums(FgasAgg, 3)
+  getItems(FgasAgg, 3.1) <- "Emissions|F-gases"
   # -------------------------- Emissions|CO2 (w/o bunkers), Emissions|Kyoto Gases (w/o bunkers) -------
   emissionsCO2woBunkers <- EmissionsCo2[, , "Emissions|CO2"] - EmissionsCo2[, , "Emissions|CO2|Energy|Demand|Bunkers"]
   getItems(emissionsCO2woBunkers, dim = 3) <- "Emissions|CO2-(w/o bunkers)"
@@ -267,13 +283,17 @@ reportEmissions <- function(path, regions, years) {
   TRANP <- add_dimension(TRANP, dim = 3.2, add = "unit", nm = unitsCO2)
   TRANG <- add_dimension(TRANG, dim = 3.2, add = "unit", nm = unitsCO2)
   OtherFuelTransformation <- add_dimension(OtherFuelTransformation, dim = 3.2, add = "unit", nm = unitsCO2)
+  HFCAgg <- add_dimension(HFCAgg, dim = 3.2, add = "unit", nm = "kt HFC134a-equiv/yr")
+  PFCAgg <- add_dimension(PFCAgg, dim = 3.2, add = "unit", nm = "kt CF4-equiv/yr")
+  FgasAgg <- add_dimension(FgasAgg, dim = 3.2, add = "unit", nm = "Mt CO2-equiv/yr")
   emissionsCO2woBunkers <- add_dimension(emissionsCO2woBunkers, dim = 3.2, add = "unit", nm = unitsCO2)
   emissionsKyotowoBunkers <- add_dimension(emissionsKyotowoBunkers, dim = 3.2, add = "unit", nm =  "Mt CO2-equiv/yr")
 
   magpie_object <- mbind(
     emissionsNonCO2, EmissionsCo2, kyotoGases,
     Cumulated, sumIPEnergy, resCom, captured, captureGeoStorage,
-    TRANP, TRANG, OtherFuelTransformation, emissionsCO2woBunkers, emissionsKyotowoBunkers
+    TRANP, TRANG, OtherFuelTransformation, HFCAgg, PFCAgg, FgasAgg,
+    emissionsCO2woBunkers, emissionsKyotowoBunkers
   )
   # Add other emissions from magpie run if they are available
   if (!is.null(extraAFOLU)) {
@@ -301,15 +321,13 @@ getUnit <- function(varName) {
     return("kt N2O/yr")
   } else if (grepl("HFC|PFC|CF4|C2F6|C6F14|SF6", varName)) {
     # HFC, PFC, CF4, C2F6, C6F14 are kt
-    # Extract the gas name (second element after splitting by |)
-    # Example: "Emissions|HFC|HFC152a" -> "HFC"
+    # Example: "Emissions|HFC|HFC152a" -> "HFC152a"
     gasNameParts <- strsplit(varName, "\\|")[[1]]
     if (length(gasNameParts) > 1) {
-      gasName <- gasNameParts[2]
+      gasName <- tail(gasNameParts, 1)
     } else {
       gasName <- sub(".*\\|", "", varName)
     }
-    # Return the kt unit
     return(paste0("kt ", gasName, "/yr"))
   } else {
     # For any other gases, default to Mt and extract the gas name (second element)
@@ -320,7 +338,6 @@ getUnit <- function(varName) {
     } else {
       gasName <- sub(".*\\|", "", varName)
     }
-    # Return the Mt unit
     return(paste0("Mt ", gasName, "/yr"))
   }
 }
