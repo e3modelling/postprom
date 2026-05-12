@@ -217,6 +217,10 @@ convertUnitsToExpected <- function(magpieObj, unitTable, usd2015to2010,
     if (fromU0 == "billion USD_2015/yr" && toU0 == "billion USD_2010/yr")
       return(usd2015to2010)
 
+    # EnergyIntensity: Mtoe/billion USD_2015 -> Mtoe/billion USD_2010
+    if (fromU0 == "Mtoe/billion USD_2015" && toU0 == "EJ/billion USD_2010")
+      return(EJ_PER_MTOE / usd2015to2010)
+
     # ---- unsupported pair ----
     return(NA_real_)
   }
