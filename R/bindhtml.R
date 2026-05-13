@@ -31,7 +31,7 @@ bindhtml <- function(.path) {
   
   if (length(latest_file) == 0) {
     file1 <- paste0(.path,"/dashboard.html")
-    output_file <- "dashboard.html"
+    output_file <- paste0(.path,"/dashboard.html")
     
     # Read entire HTML files
     content1 <- paste(readLines(file1, warn = FALSE), collapse = "\n")
@@ -111,15 +111,12 @@ bindhtml <- function(.path) {
     # Write file
     writeLines(html_content, output_file)
     
-    # Show resulting size
-    cat("Created:", output_file, "\n")
-    
   } else {
     
     
     file1 <- paste0(.path,"/dashboard.html")
     file2 <- latest_file
-    output_file <- "dashboard.html"
+    output_file <- paste0(.path,"/dashboard.html")
     
     # Read entire HTML files
     content1 <- paste(readLines(file1, warn = FALSE), collapse = "\n")
@@ -208,8 +205,6 @@ bindhtml <- function(.path) {
     
     # Write file
     writeLines(html_content, output_file)
-    
-    cat("Created:", output_file, "\n")
     
   }
   
