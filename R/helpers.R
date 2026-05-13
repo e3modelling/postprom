@@ -158,6 +158,8 @@ convertUnitsToExpected <- function(magpieObj, unitTable, usd2015to2010,
   normUnit <- function(u) {
     u <- trim(u)
     u <- gsub("KWh", "kWh", u, fixed = TRUE) # harmonize capitalization
+    u <- gsub("^k\\$([0-9]{4})", "KUSD_\\1", u) # k$2015/toe -> KUSD_2015/toe
+    u <- gsub(" k\\$([0-9]{4})", " KUSD_\\1", u) # e.g. billion k$2015
     u <- gsub("US\\$","USD_", u)             # normalize currency prefix
     u <- gsub("USD__", "USD_", u)            # double underscore guard
     u <- gsub("tn CO2", "t CO2", u, fixed = TRUE) # treat tn and t as same
@@ -234,7 +236,7 @@ convertUnitsToExpected <- function(magpieObj, unitTable, usd2015to2010,
   unitTable$magpieUnit  <- trim(unitTable$magpieUnit)
   unitTable$expectedUnit<- trim(unitTable$expectedUnit)
 
-  toFix <- subset(unitTable, !isTRUE(unitMatches))
+  toFix <- subset(unitTable, is.na(unitMatches) | !unitMatches)
   toFix <- toFix[toFix$variable %in% curClean, , drop = FALSE]
 
   if (nrow(toFix) == 0L) {
