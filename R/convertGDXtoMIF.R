@@ -137,7 +137,7 @@ convertGDXtoMIF_single <- function(.path, path_mif, append, regions = NULL,
     if (dashboard == TRUE & htmlReport == TRUE) rmarkdown::render(
       system.file("rmd", "dashboard.Rmd", package = "postprom"),
       output_file = normalizePath(file.path(dirname(path_gdx), "dashboard.html"), mustWork = FALSE),
-      params = list(magpie_data = reports)
+      params = list(scenarioname = basename(.path), magpie_data = reports)
     )
     if (dashboard == TRUE & htmlReport == TRUE) bindhtml(.path)
 

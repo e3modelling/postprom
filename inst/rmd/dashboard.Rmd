@@ -1,11 +1,12 @@
 ---
 title: "Simple Dashboard"
-author: "Fotis Sioutas"
+author: "`r params$scenarioname`"
 output: 
   flexdashboard::flex_dashboard:
     vertical_layout: fill
 
 params:
+  scenarioname: NULL
   magpie_data: NULL
 ---
 
