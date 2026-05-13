@@ -48,7 +48,10 @@ elMix$region <- factor(elMix$region, levels = facet_order)
 vars_unique <- unique(elMix$variable)
 
 # consistent colors
-cols <- colorRampPalette(RColorBrewer::brewer.pal(12, "Set3"))(length(vars_unique))
+cols <- colorRampPalette(
+  RColorBrewer::brewer.pal(12, "Set3")
+)(length(vars_unique))
+
 names(cols) <- vars_unique
 
 plist <- list()
@@ -67,6 +70,13 @@ for(i in seq_along(facet_order)) {
     df_v <- df %>%
       filter(variable == v)
 
+    # separate positive and negative stackgroups
+    stack_grp <- ifelse(
+      mean(df_v$value, na.rm = TRUE) < 0,
+      "negative",
+      "positive"
+    )
+
     p <- p %>%
       add_trace(
         data = df_v,
@@ -74,13 +84,16 @@ for(i in seq_along(facet_order)) {
         y = ~value,
         type = "scatter",
         mode = "none",
-        stackgroup = "one",
+
+        # IMPORTANT: separate stackgroups
+        stackgroup = stack_grp,
+
         fillcolor = cols[v],
         line = list(color = cols[v]),
         name = v,
         legendgroup = v,
 
-        # show legend ONLY once
+        # show legend only once
         showlegend = (i == 1),
 
         hovertemplate = paste0(
@@ -104,9 +117,25 @@ for(i in seq_along(facet_order)) {
           font = list(size = 14)
         )
       ),
-      xaxis = list(title = ""),
-      yaxis = list(title = ""),
-      margin = list(l = 35, r = 10, b = 25, t = 40)
+
+      xaxis = list(
+        title = ""
+      ),
+
+      yaxis = list(
+        title = "",
+        autorange = TRUE,
+        zeroline = TRUE,
+        zerolinewidth = 2,
+        zerolinecolor = "black"
+      ),
+
+      margin = list(
+        l = 35,
+        r = 10,
+        b = 25,
+        t = 40
+      )
     )
 
   plist[[r]] <- p
@@ -117,6 +146,7 @@ g <- subplot(
   plist,
   nrows = ceiling(length(plist) / ncol),
   shareX = TRUE,
+  shareY = FALSE,   # free y-axis per subplot
   titleX = FALSE,
   margin = 0.02
 )
@@ -125,6 +155,7 @@ g <- subplot(
 g <- g %>%
   layout(
     showlegend = TRUE,
+
     legend = list(
       orientation = "h",
       x = 0.5,
@@ -133,6 +164,7 @@ g <- g %>%
       yanchor = "top",
       font = list(size = 10)
     ),
+
     height = 800
   )
 
@@ -159,7 +191,10 @@ elMix$region <- factor(elMix$region, levels = facet_order)
 vars_unique <- unique(elMix$variable)
 
 # consistent colors
-cols <- colorRampPalette(RColorBrewer::brewer.pal(12, "Set3"))(length(vars_unique))
+cols <- colorRampPalette(
+  RColorBrewer::brewer.pal(12, "Set3")
+)(length(vars_unique))
+
 names(cols) <- vars_unique
 
 plist <- list()
@@ -178,6 +213,13 @@ for(i in seq_along(facet_order)) {
     df_v <- df %>%
       filter(variable == v)
 
+    # separate positive and negative stackgroups
+    stack_grp <- ifelse(
+      mean(df_v$value, na.rm = TRUE) < 0,
+      "negative",
+      "positive"
+    )
+
     p <- p %>%
       add_trace(
         data = df_v,
@@ -185,13 +227,16 @@ for(i in seq_along(facet_order)) {
         y = ~value,
         type = "scatter",
         mode = "none",
-        stackgroup = "one",
+
+        # IMPORTANT: separate stackgroups
+        stackgroup = stack_grp,
+
         fillcolor = cols[v],
         line = list(color = cols[v]),
         name = v,
         legendgroup = v,
 
-        # show legend ONLY once
+        # show legend only once
         showlegend = (i == 1),
 
         hovertemplate = paste0(
@@ -215,9 +260,25 @@ for(i in seq_along(facet_order)) {
           font = list(size = 14)
         )
       ),
-      xaxis = list(title = ""),
-      yaxis = list(title = ""),
-      margin = list(l = 35, r = 10, b = 25, t = 40)
+
+      xaxis = list(
+        title = ""
+      ),
+
+      yaxis = list(
+        title = "",
+        autorange = TRUE,
+        zeroline = TRUE,
+        zerolinewidth = 2,
+        zerolinecolor = "black"
+      ),
+
+      margin = list(
+        l = 35,
+        r = 10,
+        b = 25,
+        t = 40
+      )
     )
 
   plist[[r]] <- p
@@ -228,6 +289,7 @@ g <- subplot(
   plist,
   nrows = ceiling(length(plist) / ncol),
   shareX = TRUE,
+  shareY = FALSE,   # free y-axis per subplot
   titleX = FALSE,
   margin = 0.02
 )
@@ -236,6 +298,7 @@ g <- subplot(
 g <- g %>%
   layout(
     showlegend = TRUE,
+
     legend = list(
       orientation = "h",
       x = 0.5,
@@ -244,6 +307,7 @@ g <- g %>%
       yanchor = "top",
       font = list(size = 10)
     ),
+
     height = 800
   )
 
@@ -280,7 +344,10 @@ elMix$region <- factor(elMix$region, levels = facet_order)
 vars_unique <- unique(elMix$variable)
 
 # consistent colors
-cols <- colorRampPalette(RColorBrewer::brewer.pal(12, "Set3"))(length(vars_unique))
+cols <- colorRampPalette(
+  RColorBrewer::brewer.pal(12, "Set3")
+)(length(vars_unique))
+
 names(cols) <- vars_unique
 
 plist <- list()
@@ -299,6 +366,13 @@ for(i in seq_along(facet_order)) {
     df_v <- df %>%
       filter(variable == v)
 
+    # separate positive and negative stackgroups
+    stack_grp <- ifelse(
+      mean(df_v$value, na.rm = TRUE) < 0,
+      "negative",
+      "positive"
+    )
+
     p <- p %>%
       add_trace(
         data = df_v,
@@ -306,13 +380,16 @@ for(i in seq_along(facet_order)) {
         y = ~value,
         type = "scatter",
         mode = "none",
-        stackgroup = "one",
+
+        # IMPORTANT: separate stackgroups
+        stackgroup = stack_grp,
+
         fillcolor = cols[v],
         line = list(color = cols[v]),
         name = v,
         legendgroup = v,
 
-        # show legend ONLY once
+        # show legend only once
         showlegend = (i == 1),
 
         hovertemplate = paste0(
@@ -336,9 +413,25 @@ for(i in seq_along(facet_order)) {
           font = list(size = 14)
         )
       ),
-      xaxis = list(title = ""),
-      yaxis = list(title = ""),
-      margin = list(l = 35, r = 10, b = 25, t = 40)
+
+      xaxis = list(
+        title = ""
+      ),
+
+      yaxis = list(
+        title = "",
+        autorange = TRUE,
+        zeroline = TRUE,
+        zerolinewidth = 2,
+        zerolinecolor = "black"
+      ),
+
+      margin = list(
+        l = 35,
+        r = 10,
+        b = 25,
+        t = 40
+      )
     )
 
   plist[[r]] <- p
@@ -349,6 +442,7 @@ g <- subplot(
   plist,
   nrows = ceiling(length(plist) / ncol),
   shareX = TRUE,
+  shareY = FALSE,   # free y-axis per subplot
   titleX = FALSE,
   margin = 0.02
 )
@@ -357,6 +451,7 @@ g <- subplot(
 g <- g %>%
   layout(
     showlegend = TRUE,
+
     legend = list(
       orientation = "h",
       x = 0.5,
@@ -365,6 +460,7 @@ g <- g %>%
       yanchor = "top",
       font = list(size = 10)
     ),
+
     height = 800
   )
 
@@ -399,7 +495,10 @@ elMix$region <- factor(elMix$region, levels = facet_order)
 vars_unique <- unique(elMix$variable)
 
 # consistent colors
-cols <- colorRampPalette(RColorBrewer::brewer.pal(12, "Set3"))(length(vars_unique))
+cols <- colorRampPalette(
+  RColorBrewer::brewer.pal(12, "Set3")
+)(length(vars_unique))
+
 names(cols) <- vars_unique
 
 plist <- list()
@@ -418,6 +517,13 @@ for(i in seq_along(facet_order)) {
     df_v <- df %>%
       filter(variable == v)
 
+    # separate positive and negative stackgroups
+    stack_grp <- ifelse(
+      mean(df_v$value, na.rm = TRUE) < 0,
+      "negative",
+      "positive"
+    )
+
     p <- p %>%
       add_trace(
         data = df_v,
@@ -425,13 +531,16 @@ for(i in seq_along(facet_order)) {
         y = ~value,
         type = "scatter",
         mode = "none",
-        stackgroup = "one",
+
+        # IMPORTANT: separate stackgroups
+        stackgroup = stack_grp,
+
         fillcolor = cols[v],
         line = list(color = cols[v]),
         name = v,
         legendgroup = v,
 
-        # show legend ONLY once
+        # show legend only once
         showlegend = (i == 1),
 
         hovertemplate = paste0(
@@ -455,9 +564,25 @@ for(i in seq_along(facet_order)) {
           font = list(size = 14)
         )
       ),
-      xaxis = list(title = ""),
-      yaxis = list(title = ""),
-      margin = list(l = 35, r = 10, b = 25, t = 40)
+
+      xaxis = list(
+        title = ""
+      ),
+
+      yaxis = list(
+        title = "",
+        autorange = TRUE,
+        zeroline = TRUE,
+        zerolinewidth = 2,
+        zerolinecolor = "black"
+      ),
+
+      margin = list(
+        l = 35,
+        r = 10,
+        b = 25,
+        t = 40
+      )
     )
 
   plist[[r]] <- p
@@ -468,6 +593,7 @@ g <- subplot(
   plist,
   nrows = ceiling(length(plist) / ncol),
   shareX = TRUE,
+  shareY = FALSE,   # free y-axis per subplot
   titleX = FALSE,
   margin = 0.02
 )
@@ -476,6 +602,7 @@ g <- subplot(
 g <- g %>%
   layout(
     showlegend = TRUE,
+
     legend = list(
       orientation = "h",
       x = 0.5,
@@ -484,6 +611,7 @@ g <- g %>%
       yanchor = "top",
       font = list(size = 10)
     ),
+
     height = 800
   )
 
@@ -510,7 +638,10 @@ elMix$region <- factor(elMix$region, levels = facet_order)
 vars_unique <- unique(elMix$variable)
 
 # consistent colors
-cols <- colorRampPalette(RColorBrewer::brewer.pal(12, "Set3"))(length(vars_unique))
+cols <- colorRampPalette(
+  RColorBrewer::brewer.pal(12, "Set3")
+)(length(vars_unique))
+
 names(cols) <- vars_unique
 
 plist <- list()
@@ -529,6 +660,13 @@ for(i in seq_along(facet_order)) {
     df_v <- df %>%
       filter(variable == v)
 
+    # separate positive and negative stackgroups
+    stack_grp <- ifelse(
+      mean(df_v$value, na.rm = TRUE) < 0,
+      "negative",
+      "positive"
+    )
+
     p <- p %>%
       add_trace(
         data = df_v,
@@ -536,13 +674,16 @@ for(i in seq_along(facet_order)) {
         y = ~value,
         type = "scatter",
         mode = "none",
-        stackgroup = "one",
+
+        # IMPORTANT: separate stackgroups
+        stackgroup = stack_grp,
+
         fillcolor = cols[v],
         line = list(color = cols[v]),
         name = v,
         legendgroup = v,
 
-        # show legend ONLY once
+        # show legend only once
         showlegend = (i == 1),
 
         hovertemplate = paste0(
@@ -566,9 +707,25 @@ for(i in seq_along(facet_order)) {
           font = list(size = 14)
         )
       ),
-      xaxis = list(title = ""),
-      yaxis = list(title = ""),
-      margin = list(l = 35, r = 10, b = 25, t = 40)
+
+      xaxis = list(
+        title = ""
+      ),
+
+      yaxis = list(
+        title = "",
+        autorange = TRUE,
+        zeroline = TRUE,
+        zerolinewidth = 2,
+        zerolinecolor = "black"
+      ),
+
+      margin = list(
+        l = 35,
+        r = 10,
+        b = 25,
+        t = 40
+      )
     )
 
   plist[[r]] <- p
@@ -579,6 +736,7 @@ g <- subplot(
   plist,
   nrows = ceiling(length(plist) / ncol),
   shareX = TRUE,
+  shareY = FALSE,   # free y-axis per subplot
   titleX = FALSE,
   margin = 0.02
 )
@@ -587,6 +745,7 @@ g <- subplot(
 g <- g %>%
   layout(
     showlegend = TRUE,
+
     legend = list(
       orientation = "h",
       x = 0.5,
@@ -595,6 +754,7 @@ g <- g %>%
       yanchor = "top",
       font = list(size = 10)
     ),
+
     height = 800
   )
 
@@ -626,7 +786,10 @@ elMix$region <- factor(elMix$region, levels = facet_order)
 vars_unique <- unique(elMix$variable)
 
 # consistent colors
-cols <- colorRampPalette(RColorBrewer::brewer.pal(12, "Set3"))(length(vars_unique))
+cols <- colorRampPalette(
+  RColorBrewer::brewer.pal(12, "Set3")
+)(length(vars_unique))
+
 names(cols) <- vars_unique
 
 plist <- list()
@@ -645,6 +808,13 @@ for(i in seq_along(facet_order)) {
     df_v <- df %>%
       filter(variable == v)
 
+    # separate positive and negative stackgroups
+    stack_grp <- ifelse(
+      mean(df_v$value, na.rm = TRUE) < 0,
+      "negative",
+      "positive"
+    )
+
     p <- p %>%
       add_trace(
         data = df_v,
@@ -652,13 +822,16 @@ for(i in seq_along(facet_order)) {
         y = ~value,
         type = "scatter",
         mode = "none",
-        stackgroup = "one",
+
+        # IMPORTANT: separate stackgroups
+        stackgroup = stack_grp,
+
         fillcolor = cols[v],
         line = list(color = cols[v]),
         name = v,
         legendgroup = v,
 
-        # show legend ONLY once
+        # show legend only once
         showlegend = (i == 1),
 
         hovertemplate = paste0(
@@ -682,9 +855,25 @@ for(i in seq_along(facet_order)) {
           font = list(size = 14)
         )
       ),
-      xaxis = list(title = ""),
-      yaxis = list(title = ""),
-      margin = list(l = 35, r = 10, b = 25, t = 40)
+
+      xaxis = list(
+        title = ""
+      ),
+
+      yaxis = list(
+        title = "",
+        autorange = TRUE,
+        zeroline = TRUE,
+        zerolinewidth = 2,
+        zerolinecolor = "black"
+      ),
+
+      margin = list(
+        l = 35,
+        r = 10,
+        b = 25,
+        t = 40
+      )
     )
 
   plist[[r]] <- p
@@ -695,6 +884,7 @@ g <- subplot(
   plist,
   nrows = ceiling(length(plist) / ncol),
   shareX = TRUE,
+  shareY = FALSE,   # free y-axis per subplot
   titleX = FALSE,
   margin = 0.02
 )
@@ -703,6 +893,7 @@ g <- subplot(
 g <- g %>%
   layout(
     showlegend = TRUE,
+
     legend = list(
       orientation = "h",
       x = 0.5,
@@ -711,6 +902,7 @@ g <- g %>%
       yanchor = "top",
       font = list(size = 10)
     ),
+
     height = 800
   )
 
