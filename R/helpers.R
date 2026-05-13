@@ -297,3 +297,4 @@ convertUnitsToExpected <- function(magpieObj, unitTable, usd2015to2010,
 
   return(list(object = magpieObj, log = auditDf, skipped = unique(skipped)))
 }
+

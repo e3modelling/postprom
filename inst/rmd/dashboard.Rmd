@@ -1,0 +1,911 @@
+---
+title: "Simple Dashboard"
+author: "`r params$scenarioname`"
+output: 
+  flexdashboard::flex_dashboard:
+    vertical_layout: fill
+
+params:
+  scenarioname: NULL
+  magpie_data: NULL
+---
+
+```{r setup, include=FALSE}
+library(flexdashboard)
+library(ggplot2)
+library(plotly)
+library(magclass)
+library(mip)
+library(quitte)
+
+configFile <- system.file(package = "postprom", file.path("extdata", "validationConfig_OPEN-PROM.csv"))
+piam <- read.csv(configFile, sep = ";", stringsAsFactors = FALSE)
+regionspiam <- unique(piam$region)
+
+data <- params$magpie_data
+names(dimnames(data))[3] <- "variable.unit"
+#keep only regions in PIAM config
+data <- data[intersect(getRegions(data), strsplit(regionspiam[2], ",")[[1]]),,]
+facet_order <- intersect(getRegions(data), strsplit(regionspiam[2], ",")[[1]])
+ncol <- ceiling(length(facet_order) / 3)
+
+```
+
+# Emissions CO2 {data-icon="glyphicon glyphicon-stats"}
+
+```{r Emissions CO2 plot}
+vars <- c(
+  "Emissions|CO2|Energy|Demand.Mt CO2/yr",
+  "Emissions|CO2|Energy|Supply.Mt CO2/yr",
+  "Emissions|CO2|Industrial Processes.Mt CO2/yr",
+  "Emissions|CO2|AFOLU.Mt CO2/yr"
+)
+
+elMix <- as.quitte(data[, , vars]) %>%
+  select(-c(unit, model, scenario))
+
+elMix$region <- factor(elMix$region, levels = facet_order)
+
+vars_unique <- unique(elMix$variable)
+
+# consistent colors
+cols <- colorRampPalette(
+  RColorBrewer::brewer.pal(12, "Set3")
+)(length(vars_unique))
+
+names(cols) <- vars_unique
+
+plist <- list()
+
+for(i in seq_along(facet_order)) {
+
+  r <- facet_order[i]
+
+  df <- elMix %>%
+    filter(region == r)
+
+  p <- plot_ly()
+
+  for(v in vars_unique) {
+
+    df_v <- df %>%
+      filter(variable == v)
+
+    # separate positive and negative stackgroups
+    stack_grp <- ifelse(
+      mean(df_v$value, na.rm = TRUE) < 0,
+      "negative",
+      "positive"
+    )
+
+    p <- p %>%
+      add_trace(
+        data = df_v,
+        x = ~period,
+        y = ~value,
+        type = "scatter",
+        mode = "none",
+
+        # IMPORTANT: separate stackgroups
+        stackgroup = stack_grp,
+
+        fillcolor = cols[v],
+        line = list(color = cols[v]),
+        name = v,
+        legendgroup = v,
+
+        # show legend only once
+        showlegend = (i == 1),
+
+        hovertemplate = paste0(
+          "<b>", v, "</b><br>",
+          "Year: %{x}<br>",
+          "Value: %{y}<extra></extra>"
+        )
+      )
+  }
+
+  p <- p %>%
+    layout(
+      annotations = list(
+        list(
+          text = paste0("<b>", r, "</b>"),
+          x = 0.5,
+          y = 1.05,
+          xref = "paper",
+          yref = "paper",
+          showarrow = FALSE,
+          font = list(size = 14)
+        )
+      ),
+
+      xaxis = list(
+        title = ""
+      ),
+
+      yaxis = list(
+        title = "",
+        autorange = TRUE,
+        zeroline = TRUE,
+        zerolinewidth = 2,
+        zerolinecolor = "black"
+      ),
+
+      margin = list(
+        l = 35,
+        r = 10,
+        b = 25,
+        t = 40
+      )
+    )
+
+  plist[[r]] <- p
+}
+
+# combine panels
+g <- subplot(
+  plist,
+  nrows = ceiling(length(plist) / ncol),
+  shareX = TRUE,
+  shareY = FALSE,   # free y-axis per subplot
+  titleX = FALSE,
+  margin = 0.02
+)
+
+# final layout
+g <- g %>%
+  layout(
+    showlegend = TRUE,
+
+    legend = list(
+      orientation = "h",
+      x = 0.5,
+      xanchor = "center",
+      y = -0.1,
+      yanchor = "top",
+      font = list(size = 10)
+    ),
+
+    height = 800
+  )
+
+g
+```
+
+---
+
+# Carbon Prices {data-icon="glyphicon glyphicon-eur"}
+
+```{r Carbon Prices plot}
+# -----------------------------
+# DATA
+# -----------------------------
+vars <- c(
+  "Price|Carbon.US$2015/tn CO2"
+)
+
+elMix <- as.quitte(data[, , vars]) %>%
+  select(-c(unit, model, scenario))
+
+elMix$region <- factor(elMix$region, levels = facet_order)
+
+vars_unique <- unique(elMix$variable)
+
+# consistent colors
+cols <- colorRampPalette(
+  RColorBrewer::brewer.pal(12, "Set3")
+)(length(vars_unique))
+
+names(cols) <- vars_unique
+
+plist <- list()
+
+for(i in seq_along(facet_order)) {
+
+  r <- facet_order[i]
+
+  df <- elMix %>%
+    filter(region == r)
+
+  p <- plot_ly()
+
+  for(v in vars_unique) {
+
+    df_v <- df %>%
+      filter(variable == v)
+
+    # separate positive and negative stackgroups
+    stack_grp <- ifelse(
+      mean(df_v$value, na.rm = TRUE) < 0,
+      "negative",
+      "positive"
+    )
+
+    p <- p %>%
+      add_trace(
+        data = df_v,
+        x = ~period,
+        y = ~value,
+        type = "scatter",
+        mode = "none",
+
+        # IMPORTANT: separate stackgroups
+        stackgroup = stack_grp,
+
+        fillcolor = cols[v],
+        line = list(color = cols[v]),
+        name = v,
+        legendgroup = v,
+
+        # show legend only once
+        showlegend = (i == 1),
+
+        hovertemplate = paste0(
+          "<b>", v, "</b><br>",
+          "Year: %{x}<br>",
+          "Value: %{y}<extra></extra>"
+        )
+      )
+  }
+
+  p <- p %>%
+    layout(
+      annotations = list(
+        list(
+          text = paste0("<b>", r, "</b>"),
+          x = 0.5,
+          y = 1.05,
+          xref = "paper",
+          yref = "paper",
+          showarrow = FALSE,
+          font = list(size = 14)
+        )
+      ),
+
+      xaxis = list(
+        title = ""
+      ),
+
+      yaxis = list(
+        title = "",
+        autorange = TRUE,
+        zeroline = TRUE,
+        zerolinewidth = 2,
+        zerolinecolor = "black"
+      ),
+
+      margin = list(
+        l = 35,
+        r = 10,
+        b = 25,
+        t = 40
+      )
+    )
+
+  plist[[r]] <- p
+}
+
+# combine panels
+g <- subplot(
+  plist,
+  nrows = ceiling(length(plist) / ncol),
+  shareX = TRUE,
+  shareY = FALSE,   # free y-axis per subplot
+  titleX = FALSE,
+  margin = 0.02
+)
+
+# final layout
+g <- g %>%
+  layout(
+    showlegend = TRUE,
+
+    legend = list(
+      orientation = "h",
+      x = 0.5,
+      xanchor = "center",
+      y = -0.1,
+      yanchor = "top",
+      font = list(size = 10)
+    ),
+
+    height = 800
+  )
+
+g
+```
+
+---
+
+# Secondary Energy Electricity {data-icon="glyphicon glyphicon-scale"}
+
+```{r Secondary Energy Electricity plot}
+vars <- c(
+  "Secondary Energy|Electricity|Biofuels|w/ CCS.TWh",
+  "Secondary Energy|Electricity|Biofuels|w/o CCS.TWh",
+  "Secondary Energy|Electricity|Coal|w/ CCS.TWh",
+  "Secondary Energy|Electricity|Coal|w/o CCS.TWh",
+  "Secondary Energy|Electricity|Gas|w/ CCS.TWh",
+  "Secondary Energy|Electricity|Gas|w/o CCS.TWh",
+  "Secondary Energy|Electricity|Geothermal and other renewable sources.TWh",
+  "Secondary Energy|Electricity|Heat.TWh",
+  "Secondary Energy|Electricity|Hydrogen.TWh",
+  "Secondary Energy|Electricity|Oil.TWh",
+  "Secondary Energy|Electricity|Hydro.TWh",
+  "Secondary Energy|Electricity|Wind.TWh",
+  "Secondary Energy|Electricity|Solar.TWh",
+  "Secondary Energy|Electricity|Nuclear.TWh"
+)
+
+elMix <- as.quitte(data[, , vars]) %>%
+  select(-c(unit, model, scenario))
+
+elMix$region <- factor(elMix$region, levels = facet_order)
+
+vars_unique <- unique(elMix$variable)
+
+# consistent colors
+cols <- colorRampPalette(
+  RColorBrewer::brewer.pal(12, "Set3")
+)(length(vars_unique))
+
+names(cols) <- vars_unique
+
+plist <- list()
+
+for(i in seq_along(facet_order)) {
+
+  r <- facet_order[i]
+
+  df <- elMix %>%
+    filter(region == r)
+
+  p <- plot_ly()
+
+  for(v in vars_unique) {
+
+    df_v <- df %>%
+      filter(variable == v)
+
+    # separate positive and negative stackgroups
+    stack_grp <- ifelse(
+      mean(df_v$value, na.rm = TRUE) < 0,
+      "negative",
+      "positive"
+    )
+
+    p <- p %>%
+      add_trace(
+        data = df_v,
+        x = ~period,
+        y = ~value,
+        type = "scatter",
+        mode = "none",
+
+        # IMPORTANT: separate stackgroups
+        stackgroup = stack_grp,
+
+        fillcolor = cols[v],
+        line = list(color = cols[v]),
+        name = v,
+        legendgroup = v,
+
+        # show legend only once
+        showlegend = (i == 1),
+
+        hovertemplate = paste0(
+          "<b>", v, "</b><br>",
+          "Year: %{x}<br>",
+          "Value: %{y}<extra></extra>"
+        )
+      )
+  }
+
+  p <- p %>%
+    layout(
+      annotations = list(
+        list(
+          text = paste0("<b>", r, "</b>"),
+          x = 0.5,
+          y = 1.05,
+          xref = "paper",
+          yref = "paper",
+          showarrow = FALSE,
+          font = list(size = 14)
+        )
+      ),
+
+      xaxis = list(
+        title = ""
+      ),
+
+      yaxis = list(
+        title = "",
+        autorange = TRUE,
+        zeroline = TRUE,
+        zerolinewidth = 2,
+        zerolinecolor = "black"
+      ),
+
+      margin = list(
+        l = 35,
+        r = 10,
+        b = 25,
+        t = 40
+      )
+    )
+
+  plist[[r]] <- p
+}
+
+# combine panels
+g <- subplot(
+  plist,
+  nrows = ceiling(length(plist) / ncol),
+  shareX = TRUE,
+  shareY = FALSE,   # free y-axis per subplot
+  titleX = FALSE,
+  margin = 0.02
+)
+
+# final layout
+g <- g %>%
+  layout(
+    showlegend = TRUE,
+
+    legend = list(
+      orientation = "h",
+      x = 0.5,
+      xanchor = "center",
+      y = -0.1,
+      yanchor = "top",
+      font = list(size = 10)
+    ),
+
+    height = 800
+  )
+
+g
+```
+---
+
+# Capacity|Electricity {data-icon="glyphicon glyphicon-scale"}
+
+```{r Capacity Electricity plot}
+vars <- c(
+  "Capacity|Electricity|Biofuels|w/ CCS.GW",
+  "Capacity|Electricity|Biofuels|w/o CCS.GW",
+  "Capacity|Electricity|Coal|w/ CCS.GW",
+  "Capacity|Electricity|Coal|w/o CCS.GW",
+  "Capacity|Electricity|Gas|w/ CCS.GW",
+  "Capacity|Electricity|Gas|w/o CCS.GW",
+  "Capacity|Electricity|Geothermal and other renewable sources.GW",
+  "Capacity|Electricity|Hydrogen.GW",
+  "Capacity|Electricity|Oil.GW",
+  "Capacity|Electricity|Hydro.GW",
+  "Capacity|Electricity|Wind.GW",
+  "Capacity|Electricity|Solar.GW",
+  "Capacity|Electricity|Nuclear.GW"
+)
+
+elMix <- as.quitte(data[, , vars]) %>%
+  select(-c(unit, model, scenario))
+
+elMix$region <- factor(elMix$region, levels = facet_order)
+
+vars_unique <- unique(elMix$variable)
+
+# consistent colors
+cols <- colorRampPalette(
+  RColorBrewer::brewer.pal(12, "Set3")
+)(length(vars_unique))
+
+names(cols) <- vars_unique
+
+plist <- list()
+
+for(i in seq_along(facet_order)) {
+
+  r <- facet_order[i]
+
+  df <- elMix %>%
+    filter(region == r)
+
+  p <- plot_ly()
+
+  for(v in vars_unique) {
+
+    df_v <- df %>%
+      filter(variable == v)
+
+    # separate positive and negative stackgroups
+    stack_grp <- ifelse(
+      mean(df_v$value, na.rm = TRUE) < 0,
+      "negative",
+      "positive"
+    )
+
+    p <- p %>%
+      add_trace(
+        data = df_v,
+        x = ~period,
+        y = ~value,
+        type = "scatter",
+        mode = "none",
+
+        # IMPORTANT: separate stackgroups
+        stackgroup = stack_grp,
+
+        fillcolor = cols[v],
+        line = list(color = cols[v]),
+        name = v,
+        legendgroup = v,
+
+        # show legend only once
+        showlegend = (i == 1),
+
+        hovertemplate = paste0(
+          "<b>", v, "</b><br>",
+          "Year: %{x}<br>",
+          "Value: %{y}<extra></extra>"
+        )
+      )
+  }
+
+  p <- p %>%
+    layout(
+      annotations = list(
+        list(
+          text = paste0("<b>", r, "</b>"),
+          x = 0.5,
+          y = 1.05,
+          xref = "paper",
+          yref = "paper",
+          showarrow = FALSE,
+          font = list(size = 14)
+        )
+      ),
+
+      xaxis = list(
+        title = ""
+      ),
+
+      yaxis = list(
+        title = "",
+        autorange = TRUE,
+        zeroline = TRUE,
+        zerolinewidth = 2,
+        zerolinecolor = "black"
+      ),
+
+      margin = list(
+        l = 35,
+        r = 10,
+        b = 25,
+        t = 40
+      )
+    )
+
+  plist[[r]] <- p
+}
+
+# combine panels
+g <- subplot(
+  plist,
+  nrows = ceiling(length(plist) / ncol),
+  shareX = TRUE,
+  shareY = FALSE,   # free y-axis per subplot
+  titleX = FALSE,
+  margin = 0.02
+)
+
+# final layout
+g <- g %>%
+  layout(
+    showlegend = TRUE,
+
+    legend = list(
+      orientation = "h",
+      x = 0.5,
+      xanchor = "center",
+      y = -0.1,
+      yanchor = "top",
+      font = list(size = 10)
+    ),
+
+    height = 800
+  )
+
+g
+```
+---
+
+# Final Energy {data-icon="glyphicon glyphicon-scale"}
+
+```{r Final Energy plot}
+vars <- c(
+  "Final Energy|Industry.Mtoe",
+  "Final Energy|Transportation.Mtoe",
+  "Final Energy|Non-Energy Use.Mtoe",
+  "Final Energy|Residential and Commercial.Mtoe",
+  "Final Energy|Bunkers.Mtoe"
+)
+
+elMix <- as.quitte(data[, , vars]) %>%
+  select(-c(unit, model, scenario))
+
+elMix$region <- factor(elMix$region, levels = facet_order)
+
+vars_unique <- unique(elMix$variable)
+
+# consistent colors
+cols <- colorRampPalette(
+  RColorBrewer::brewer.pal(12, "Set3")
+)(length(vars_unique))
+
+names(cols) <- vars_unique
+
+plist <- list()
+
+for(i in seq_along(facet_order)) {
+
+  r <- facet_order[i]
+
+  df <- elMix %>%
+    filter(region == r)
+
+  p <- plot_ly()
+
+  for(v in vars_unique) {
+
+    df_v <- df %>%
+      filter(variable == v)
+
+    # separate positive and negative stackgroups
+    stack_grp <- ifelse(
+      mean(df_v$value, na.rm = TRUE) < 0,
+      "negative",
+      "positive"
+    )
+
+    p <- p %>%
+      add_trace(
+        data = df_v,
+        x = ~period,
+        y = ~value,
+        type = "scatter",
+        mode = "none",
+
+        # IMPORTANT: separate stackgroups
+        stackgroup = stack_grp,
+
+        fillcolor = cols[v],
+        line = list(color = cols[v]),
+        name = v,
+        legendgroup = v,
+
+        # show legend only once
+        showlegend = (i == 1),
+
+        hovertemplate = paste0(
+          "<b>", v, "</b><br>",
+          "Year: %{x}<br>",
+          "Value: %{y}<extra></extra>"
+        )
+      )
+  }
+
+  p <- p %>%
+    layout(
+      annotations = list(
+        list(
+          text = paste0("<b>", r, "</b>"),
+          x = 0.5,
+          y = 1.05,
+          xref = "paper",
+          yref = "paper",
+          showarrow = FALSE,
+          font = list(size = 14)
+        )
+      ),
+
+      xaxis = list(
+        title = ""
+      ),
+
+      yaxis = list(
+        title = "",
+        autorange = TRUE,
+        zeroline = TRUE,
+        zerolinewidth = 2,
+        zerolinecolor = "black"
+      ),
+
+      margin = list(
+        l = 35,
+        r = 10,
+        b = 25,
+        t = 40
+      )
+    )
+
+  plist[[r]] <- p
+}
+
+# combine panels
+g <- subplot(
+  plist,
+  nrows = ceiling(length(plist) / ncol),
+  shareX = TRUE,
+  shareY = FALSE,   # free y-axis per subplot
+  titleX = FALSE,
+  margin = 0.02
+)
+
+# final layout
+g <- g %>%
+  layout(
+    showlegend = TRUE,
+
+    legend = list(
+      orientation = "h",
+      x = 0.5,
+      xanchor = "center",
+      y = -0.1,
+      yanchor = "top",
+      font = list(size = 10)
+    ),
+
+    height = 800
+  )
+
+g
+```
+---
+
+# Final Energy Fuel {data-icon="glyphicon glyphicon-scale"}
+
+```{r Final Energy Fuel plot}
+vars <- c(
+  "Final Energy|Solids.Mtoe",
+  "Final Energy|Fossil Liquids.Mtoe",
+  "Final Energy|Gas.Mtoe",
+  "Final Energy|Heat.Mtoe",
+  "Final Energy|Renewables.Mtoe",
+  "Final Energy|Electricity.Mtoe",
+  "Final Energy|Hydrogen.Mtoe",
+  "Final Energy|Other fuels.Mtoe",
+  "Final Energy|Biofuels.Mtoe",
+  "Final Energy|Nuclear.Mtoe"
+)
+
+elMix <- as.quitte(data[, , vars]) %>%
+  select(-c(unit, model, scenario))
+
+elMix$region <- factor(elMix$region, levels = facet_order)
+
+vars_unique <- unique(elMix$variable)
+
+# consistent colors
+cols <- colorRampPalette(
+  RColorBrewer::brewer.pal(12, "Set3")
+)(length(vars_unique))
+
+names(cols) <- vars_unique
+
+plist <- list()
+
+for(i in seq_along(facet_order)) {
+
+  r <- facet_order[i]
+
+  df <- elMix %>%
+    filter(region == r)
+
+  p <- plot_ly()
+
+  for(v in vars_unique) {
+
+    df_v <- df %>%
+      filter(variable == v)
+
+    # separate positive and negative stackgroups
+    stack_grp <- ifelse(
+      mean(df_v$value, na.rm = TRUE) < 0,
+      "negative",
+      "positive"
+    )
+
+    p <- p %>%
+      add_trace(
+        data = df_v,
+        x = ~period,
+        y = ~value,
+        type = "scatter",
+        mode = "none",
+
+        # IMPORTANT: separate stackgroups
+        stackgroup = stack_grp,
+
+        fillcolor = cols[v],
+        line = list(color = cols[v]),
+        name = v,
+        legendgroup = v,
+
+        # show legend only once
+        showlegend = (i == 1),
+
+        hovertemplate = paste0(
+          "<b>", v, "</b><br>",
+          "Year: %{x}<br>",
+          "Value: %{y}<extra></extra>"
+        )
+      )
+  }
+
+  p <- p %>%
+    layout(
+      annotations = list(
+        list(
+          text = paste0("<b>", r, "</b>"),
+          x = 0.5,
+          y = 1.05,
+          xref = "paper",
+          yref = "paper",
+          showarrow = FALSE,
+          font = list(size = 14)
+        )
+      ),
+
+      xaxis = list(
+        title = ""
+      ),
+
+      yaxis = list(
+        title = "",
+        autorange = TRUE,
+        zeroline = TRUE,
+        zerolinewidth = 2,
+        zerolinecolor = "black"
+      ),
+
+      margin = list(
+        l = 35,
+        r = 10,
+        b = 25,
+        t = 40
+      )
+    )
+
+  plist[[r]] <- p
+}
+
+# combine panels
+g <- subplot(
+  plist,
+  nrows = ceiling(length(plist) / ncol),
+  shareX = TRUE,
+  shareY = FALSE,   # free y-axis per subplot
+  titleX = FALSE,
+  margin = 0.02
+)
+
+# final layout
+g <- g %>%
+  layout(
+    showlegend = TRUE,
+
+    legend = list(
+      orientation = "h",
+      x = 0.5,
+      xanchor = "center",
+      y = -0.1,
+      yanchor = "top",
+      font = list(size = 10)
+    ),
+
+    height = 800
+  )
+
+g
+```
