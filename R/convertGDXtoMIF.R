@@ -136,7 +136,7 @@ convertGDXtoMIF_single <- function(.path, path_mif, append, regions = NULL,
     
     if (dashboard == TRUE & htmlReport == TRUE) rmarkdown::render(
       system.file("rmd", "dashboard.Rmd", package = "postprom"),
-      output_file = normalizePath(file.path(dirname(path_gdx), "dashboard.html"), mustWork = FALSE),
+      output_file = paste0(.path, "/dashboard.html"),
       params = list(scenarioname = basename(.path), magpie_data = reports)
     )
     if (dashboard == TRUE & htmlReport == TRUE) bindhtml(.path)
@@ -207,8 +207,14 @@ aggregateMIF <- function(report) {
   # --- Calculate EU-27 Aggregation ---
   regionMapping <- toolGetMapping(name = "EU28.csv", type = "regional", where = "mrprom")
   regionsEu27 <- regionMapping$ISO3.Code[regionMapping$ISO3.Code != "GBR"]
-  eu27Region <- aggregateRegion(regionName = "EU", regionCodes = regionsEu27)
-
+  regionsEu27 <- regionsEu27[regionsEu27 %in% worldCodes] # Ensure only regions present in the data are included
+  
+  if (length(regionsEu27) != 0) {
+    eu27Region <- aggregateRegion(regionName = "EU", regionCodes = regionsEu27)
+  } else {
+    eu27Region <- NULL
+  }
+  
   reportOut <- mbind(reportData, worldRegion, eu27Region)
   
   return(reportOut)
