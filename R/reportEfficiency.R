@@ -77,9 +77,13 @@ reportEfficiency <- function(reports, path, regions, years, blabla_regions) {
     # --- Calculate EU-27 Aggregation ---
     regionMapping <- toolGetMapping(name = "EU28.csv", type = "regional", where = "mrprom")
     regionsEu27 <- regionMapping$ISO3.Code[regionMapping$ISO3.Code != "GBR"]
-    add_region_EU <- dimSums(UsefulEnergyIndustry[regionsEu27,,], 1, na.rm = TRUE)
-    getItems(add_region_EU, 1) <- "EU"
-    UsefulEnergyIndustry <- mbind(UsefulEnergyIndustry, add_region_EU)
+    regionsEu27 <- regionsEu27[regionsEu27 %in% blabla_regions] # Ensure only regions present in the data are included
+    
+    if (length(regionsEu27) != 0) {
+      add_region_EU <- dimSums(UsefulEnergyIndustry[regionsEu27,,], 1, na.rm = TRUE)
+      getItems(add_region_EU, 1) <- "EU"
+      UsefulEnergyIndustry <- mbind(UsefulEnergyIndustry, add_region_EU)
+    }
   }
   
   CO2IntensityofIndustry <- CO2DemandIndustry / UsefulEnergyIndustry
