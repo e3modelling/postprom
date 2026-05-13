@@ -38,13 +38,23 @@ vars <- c(
   "Emissions|CO2|Energy|Demand.Mt CO2/yr",
   "Emissions|CO2|Energy|Supply.Mt CO2/yr",
   "Emissions|CO2|Industrial Processes.Mt CO2/yr",
-  "Emissions|CO2|AFOLU.Mt CO2/yr"
+  "Emissions|CO2|AFOLU.Mt CO2/yr",
+  "Emissions|CO2|Energy|Demand|Enhanced Weathering.Mt CO2/yr",
+  "Emissions|CO2|Energy|Demand|Direct Air Capture.Mt CO2/yr"
 )
+
+unit <- sub(".*\\.", "", vars[1])
+totalvar <- "Emissions|CO2"
 
 elMix <- as.quitte(data[, , vars]) %>%
   select(-c(unit, model, scenario))
 
 elMix$region <- factor(elMix$region, levels = facet_order)
+
+total <- as.quitte(data[, , totalvar]) %>%
+  select(-c(unit, model, scenario))
+
+total$region <- factor(total$region, levels = facet_order)
 
 vars_unique <- unique(elMix$variable)
 
@@ -64,6 +74,9 @@ for(i in seq_along(facet_order)) {
   df <- elMix %>%
     filter(region == r)
 
+  df_total <- total %>%
+    filter(region == r)
+
   p <- plot_ly()
 
   for(v in vars_unique) {
@@ -71,42 +84,102 @@ for(i in seq_along(facet_order)) {
     df_v <- df %>%
       filter(variable == v)
 
-    # separate positive and negative stackgroups
-    stack_grp <- ifelse(
-      mean(df_v$value, na.rm = TRUE) < 0,
-      "negative",
-      "positive"
+    # positive values only
+    df_pos <- df_v %>%
+      mutate(value = ifelse(value > 0, value, NA))
+
+    # negative values only
+    df_neg <- df_v %>%
+      mutate(value = ifelse(value < 0, value, NA))
+
+    hover_txt <- paste0(
+      "<b>", v, "</b><br>",
+      "Year: ", df_v$period, "<br>",
+      "Value: ", round(df_v$value, 2)
     )
 
+    # positive stack
     p <- p %>%
       add_trace(
-        data = df_v,
+        data = df_pos,
         x = ~period,
         y = ~value,
+
         type = "scatter",
         mode = "none",
 
-        # IMPORTANT: separate stackgroups
-        stackgroup = stack_grp,
+        stackgroup = "positive",
 
         fillcolor = cols[v],
         line = list(color = cols[v]),
+
         name = v,
         legendgroup = v,
 
-        # show legend only once
-        showlegend = (i == 1),
+        text = hover_txt,
+        hoverinfo = "text",
 
-        hovertemplate = paste0(
-          "<b>", v, "</b><br>",
-          "Year: %{x}<br>",
-          "Value: %{y}<extra></extra>"
-        )
+        showlegend = (i == 1)
+      )
+
+    # negative stack
+    p <- p %>%
+      add_trace(
+        data = df_neg,
+        x = ~period,
+        y = ~value,
+
+        type = "scatter",
+        mode = "none",
+
+        stackgroup = "negative",
+
+        fillcolor = cols[v],
+        line = list(color = cols[v]),
+
+        name = v,
+        legendgroup = v,
+
+        text = hover_txt,
+        hoverinfo = "text",
+
+        showlegend = FALSE
       )
   }
 
+  # total emissions line
+  p <- p %>%
+    add_trace(
+      data = df_total,
+      x = ~period,
+      y = ~value,
+
+      type = "scatter",
+      mode = "lines",
+
+      line = list(
+        color = "black",
+        width = 3
+      ),
+
+      name = "Total",
+      legendgroup = "Total",
+
+      showlegend = (i == 1),
+
+      text = ~paste0(
+        "<b>Total</b><br>",
+        "Year: ", period, "<br>",
+        "Value: ", round(value, 2)
+      ),
+
+      hoverinfo = "text"
+    )
+
   p <- p %>%
     layout(
+      hovermode = "x unified",
+
       annotations = list(
         list(
           text = paste0("<b>", r, "</b>"),
@@ -116,6 +189,17 @@ for(i in seq_along(facet_order)) {
           yref = "paper",
           showarrow = FALSE,
           font = list(size = 14)
+        ),
+          # unit label (top-left)
+        list(
+          text = unit,
+          x = 0,
+          y = 1.05,
+          xref = "paper",
+          yref = "paper",
+          xanchor = "left",
+          showarrow = FALSE,
+          font = list(size = 10)
         )
       ),
 
@@ -147,15 +231,36 @@ g <- subplot(
   plist,
   nrows = ceiling(length(plist) / ncol),
   shareX = TRUE,
-  shareY = FALSE,   # free y-axis per subplot
+  shareY = FALSE,
   titleX = FALSE,
   margin = 0.02
 )
+
+# force x tick labels on all subplots
+for(i in seq_along(plist)) {
+
+  axis_name <- if(i == 1) "xaxis" else paste0("xaxis", i)
+
+  g <- g %>%
+    layout(
+      setNames(
+        list(
+          list(
+            showticklabels = TRUE,
+            matches = NULL
+          )
+        ),
+        axis_name
+      )
+    )
+}
 
 # final layout
 g <- g %>%
   layout(
     showlegend = TRUE,
+
+    hovermode = "x unified",
 
     legend = list(
       orientation = "h",
@@ -184,10 +289,18 @@ vars <- c(
   "Price|Carbon.US$2015/tn CO2"
 )
 
+unit <- sub(".*\\.", "", vars[1])
+totalvar <- "Price|Carbon"
+
 elMix <- as.quitte(data[, , vars]) %>%
   select(-c(unit, model, scenario))
 
 elMix$region <- factor(elMix$region, levels = facet_order)
+
+total <- as.quitte(data[, , totalvar]) %>%
+  select(-c(unit, model, scenario))
+
+total$region <- factor(total$region, levels = facet_order)
 
 vars_unique <- unique(elMix$variable)
 
@@ -207,6 +320,9 @@ for(i in seq_along(facet_order)) {
   df <- elMix %>%
     filter(region == r)
 
+  df_total <- total %>%
+    filter(region == r)
+
   p <- plot_ly()
 
   for(v in vars_unique) {
@@ -214,42 +330,102 @@ for(i in seq_along(facet_order)) {
     df_v <- df %>%
       filter(variable == v)
 
-    # separate positive and negative stackgroups
-    stack_grp <- ifelse(
-      mean(df_v$value, na.rm = TRUE) < 0,
-      "negative",
-      "positive"
+    # positive values only
+    df_pos <- df_v %>%
+      mutate(value = ifelse(value > 0, value, NA))
+
+    # negative values only
+    df_neg <- df_v %>%
+      mutate(value = ifelse(value < 0, value, NA))
+
+    hover_txt <- paste0(
+      "<b>", v, "</b><br>",
+      "Year: ", df_v$period, "<br>",
+      "Value: ", round(df_v$value, 2)
     )
 
+    # positive stack
     p <- p %>%
       add_trace(
-        data = df_v,
+        data = df_pos,
         x = ~period,
         y = ~value,
+
         type = "scatter",
         mode = "none",
 
-        # IMPORTANT: separate stackgroups
-        stackgroup = stack_grp,
+        stackgroup = "positive",
 
         fillcolor = cols[v],
         line = list(color = cols[v]),
+
         name = v,
         legendgroup = v,
 
-        # show legend only once
-        showlegend = (i == 1),
+        text = hover_txt,
+        hoverinfo = "text",
 
-        hovertemplate = paste0(
-          "<b>", v, "</b><br>",
-          "Year: %{x}<br>",
-          "Value: %{y}<extra></extra>"
-        )
+        showlegend = (i == 1)
+      )
+
+    # negative stack
+    p <- p %>%
+      add_trace(
+        data = df_neg,
+        x = ~period,
+        y = ~value,
+
+        type = "scatter",
+        mode = "none",
+
+        stackgroup = "negative",
+
+        fillcolor = cols[v],
+        line = list(color = cols[v]),
+
+        name = v,
+        legendgroup = v,
+
+        text = hover_txt,
+        hoverinfo = "text",
+
+        showlegend = FALSE
       )
   }
 
+  # total emissions line
+  p <- p %>%
+    add_trace(
+      data = df_total,
+      x = ~period,
+      y = ~value,
+
+      type = "scatter",
+      mode = "lines",
+
+      line = list(
+        color = "black",
+        width = 3
+      ),
+
+      name = "Total",
+      legendgroup = "Total",
+
+      showlegend = (i == 1),
+
+      text = ~paste0(
+        "<b>Total</b><br>",
+        "Year: ", period, "<br>",
+        "Value: ", round(value, 2)
+      ),
+
+      hoverinfo = "text"
+    )
+
   p <- p %>%
     layout(
+      hovermode = "x unified",
+
       annotations = list(
         list(
           text = paste0("<b>", r, "</b>"),
@@ -259,6 +435,17 @@ for(i in seq_along(facet_order)) {
           yref = "paper",
           showarrow = FALSE,
           font = list(size = 14)
+        ),
+          # unit label (top-left)
+        list(
+          text = unit,
+          x = 0,
+          y = 1.05,
+          xref = "paper",
+          yref = "paper",
+          xanchor = "left",
+          showarrow = FALSE,
+          font = list(size = 10)
         )
       ),
 
@@ -290,15 +477,36 @@ g <- subplot(
   plist,
   nrows = ceiling(length(plist) / ncol),
   shareX = TRUE,
-  shareY = FALSE,   # free y-axis per subplot
+  shareY = FALSE,
   titleX = FALSE,
   margin = 0.02
 )
+
+# force x tick labels on all subplots
+for(i in seq_along(plist)) {
+
+  axis_name <- if(i == 1) "xaxis" else paste0("xaxis", i)
+
+  g <- g %>%
+    layout(
+      setNames(
+        list(
+          list(
+            showticklabels = TRUE,
+            matches = NULL
+          )
+        ),
+        axis_name
+      )
+    )
+}
 
 # final layout
 g <- g %>%
   layout(
     showlegend = TRUE,
+
+    hovermode = "x unified",
 
     legend = list(
       orientation = "h",
@@ -337,10 +545,18 @@ vars <- c(
   "Secondary Energy|Electricity|Nuclear.TWh"
 )
 
+unit <- sub(".*\\.", "", vars[1])
+totalvar <- "Secondary Energy|Electricity"
+
 elMix <- as.quitte(data[, , vars]) %>%
   select(-c(unit, model, scenario))
 
 elMix$region <- factor(elMix$region, levels = facet_order)
+
+total <- as.quitte(data[, , totalvar]) %>%
+  select(-c(unit, model, scenario))
+
+total$region <- factor(total$region, levels = facet_order)
 
 vars_unique <- unique(elMix$variable)
 
@@ -360,6 +576,9 @@ for(i in seq_along(facet_order)) {
   df <- elMix %>%
     filter(region == r)
 
+  df_total <- total %>%
+    filter(region == r)
+
   p <- plot_ly()
 
   for(v in vars_unique) {
@@ -367,42 +586,102 @@ for(i in seq_along(facet_order)) {
     df_v <- df %>%
       filter(variable == v)
 
-    # separate positive and negative stackgroups
-    stack_grp <- ifelse(
-      mean(df_v$value, na.rm = TRUE) < 0,
-      "negative",
-      "positive"
+    # positive values only
+    df_pos <- df_v %>%
+      mutate(value = ifelse(value > 0, value, NA))
+
+    # negative values only
+    df_neg <- df_v %>%
+      mutate(value = ifelse(value < 0, value, NA))
+
+    hover_txt <- paste0(
+      "<b>", v, "</b><br>",
+      "Year: ", df_v$period, "<br>",
+      "Value: ", round(df_v$value, 2)
     )
 
+    # positive stack
     p <- p %>%
       add_trace(
-        data = df_v,
+        data = df_pos,
         x = ~period,
         y = ~value,
+
         type = "scatter",
         mode = "none",
 
-        # IMPORTANT: separate stackgroups
-        stackgroup = stack_grp,
+        stackgroup = "positive",
 
         fillcolor = cols[v],
         line = list(color = cols[v]),
+
         name = v,
         legendgroup = v,
 
-        # show legend only once
-        showlegend = (i == 1),
+        text = hover_txt,
+        hoverinfo = "text",
 
-        hovertemplate = paste0(
-          "<b>", v, "</b><br>",
-          "Year: %{x}<br>",
-          "Value: %{y}<extra></extra>"
-        )
+        showlegend = (i == 1)
+      )
+
+    # negative stack
+    p <- p %>%
+      add_trace(
+        data = df_neg,
+        x = ~period,
+        y = ~value,
+
+        type = "scatter",
+        mode = "none",
+
+        stackgroup = "negative",
+
+        fillcolor = cols[v],
+        line = list(color = cols[v]),
+
+        name = v,
+        legendgroup = v,
+
+        text = hover_txt,
+        hoverinfo = "text",
+
+        showlegend = FALSE
       )
   }
 
+  # total emissions line
+  p <- p %>%
+    add_trace(
+      data = df_total,
+      x = ~period,
+      y = ~value,
+
+      type = "scatter",
+      mode = "lines",
+
+      line = list(
+        color = "black",
+        width = 3
+      ),
+
+      name = "Total",
+      legendgroup = "Total",
+
+      showlegend = (i == 1),
+
+      text = ~paste0(
+        "<b>Total</b><br>",
+        "Year: ", period, "<br>",
+        "Value: ", round(value, 2)
+      ),
+
+      hoverinfo = "text"
+    )
+
   p <- p %>%
     layout(
+      hovermode = "x unified",
+
       annotations = list(
         list(
           text = paste0("<b>", r, "</b>"),
@@ -412,6 +691,17 @@ for(i in seq_along(facet_order)) {
           yref = "paper",
           showarrow = FALSE,
           font = list(size = 14)
+        ),
+          # unit label (top-left)
+        list(
+          text = unit,
+          x = 0,
+          y = 1.05,
+          xref = "paper",
+          yref = "paper",
+          xanchor = "left",
+          showarrow = FALSE,
+          font = list(size = 10)
         )
       ),
 
@@ -443,15 +733,36 @@ g <- subplot(
   plist,
   nrows = ceiling(length(plist) / ncol),
   shareX = TRUE,
-  shareY = FALSE,   # free y-axis per subplot
+  shareY = FALSE,
   titleX = FALSE,
   margin = 0.02
 )
+
+# force x tick labels on all subplots
+for(i in seq_along(plist)) {
+
+  axis_name <- if(i == 1) "xaxis" else paste0("xaxis", i)
+
+  g <- g %>%
+    layout(
+      setNames(
+        list(
+          list(
+            showticklabels = TRUE,
+            matches = NULL
+          )
+        ),
+        axis_name
+      )
+    )
+}
 
 # final layout
 g <- g %>%
   layout(
     showlegend = TRUE,
+
+    hovermode = "x unified",
 
     legend = list(
       orientation = "h",
@@ -488,10 +799,18 @@ vars <- c(
   "Capacity|Electricity|Nuclear.GW"
 )
 
+unit <- sub(".*\\.", "", vars[1])
+totalvar <- "Capacity|Electricity"
+
 elMix <- as.quitte(data[, , vars]) %>%
   select(-c(unit, model, scenario))
 
 elMix$region <- factor(elMix$region, levels = facet_order)
+
+total <- as.quitte(data[, , totalvar]) %>%
+  select(-c(unit, model, scenario))
+
+total$region <- factor(total$region, levels = facet_order)
 
 vars_unique <- unique(elMix$variable)
 
@@ -511,6 +830,9 @@ for(i in seq_along(facet_order)) {
   df <- elMix %>%
     filter(region == r)
 
+  df_total <- total %>%
+    filter(region == r)
+
   p <- plot_ly()
 
   for(v in vars_unique) {
@@ -518,42 +840,102 @@ for(i in seq_along(facet_order)) {
     df_v <- df %>%
       filter(variable == v)
 
-    # separate positive and negative stackgroups
-    stack_grp <- ifelse(
-      mean(df_v$value, na.rm = TRUE) < 0,
-      "negative",
-      "positive"
+    # positive values only
+    df_pos <- df_v %>%
+      mutate(value = ifelse(value > 0, value, NA))
+
+    # negative values only
+    df_neg <- df_v %>%
+      mutate(value = ifelse(value < 0, value, NA))
+
+    hover_txt <- paste0(
+      "<b>", v, "</b><br>",
+      "Year: ", df_v$period, "<br>",
+      "Value: ", round(df_v$value, 2)
     )
 
+    # positive stack
     p <- p %>%
       add_trace(
-        data = df_v,
+        data = df_pos,
         x = ~period,
         y = ~value,
+
         type = "scatter",
         mode = "none",
 
-        # IMPORTANT: separate stackgroups
-        stackgroup = stack_grp,
+        stackgroup = "positive",
 
         fillcolor = cols[v],
         line = list(color = cols[v]),
+
         name = v,
         legendgroup = v,
 
-        # show legend only once
-        showlegend = (i == 1),
+        text = hover_txt,
+        hoverinfo = "text",
 
-        hovertemplate = paste0(
-          "<b>", v, "</b><br>",
-          "Year: %{x}<br>",
-          "Value: %{y}<extra></extra>"
-        )
+        showlegend = (i == 1)
+      )
+
+    # negative stack
+    p <- p %>%
+      add_trace(
+        data = df_neg,
+        x = ~period,
+        y = ~value,
+
+        type = "scatter",
+        mode = "none",
+
+        stackgroup = "negative",
+
+        fillcolor = cols[v],
+        line = list(color = cols[v]),
+
+        name = v,
+        legendgroup = v,
+
+        text = hover_txt,
+        hoverinfo = "text",
+
+        showlegend = FALSE
       )
   }
 
+  # total emissions line
+  p <- p %>%
+    add_trace(
+      data = df_total,
+      x = ~period,
+      y = ~value,
+
+      type = "scatter",
+      mode = "lines",
+
+      line = list(
+        color = "black",
+        width = 3
+      ),
+
+      name = "Total",
+      legendgroup = "Total",
+
+      showlegend = (i == 1),
+
+      text = ~paste0(
+        "<b>Total</b><br>",
+        "Year: ", period, "<br>",
+        "Value: ", round(value, 2)
+      ),
+
+      hoverinfo = "text"
+    )
+
   p <- p %>%
     layout(
+      hovermode = "x unified",
+
       annotations = list(
         list(
           text = paste0("<b>", r, "</b>"),
@@ -563,6 +945,17 @@ for(i in seq_along(facet_order)) {
           yref = "paper",
           showarrow = FALSE,
           font = list(size = 14)
+        ),
+          # unit label (top-left)
+        list(
+          text = unit,
+          x = 0,
+          y = 1.05,
+          xref = "paper",
+          yref = "paper",
+          xanchor = "left",
+          showarrow = FALSE,
+          font = list(size = 10)
         )
       ),
 
@@ -594,15 +987,36 @@ g <- subplot(
   plist,
   nrows = ceiling(length(plist) / ncol),
   shareX = TRUE,
-  shareY = FALSE,   # free y-axis per subplot
+  shareY = FALSE,
   titleX = FALSE,
   margin = 0.02
 )
+
+# force x tick labels on all subplots
+for(i in seq_along(plist)) {
+
+  axis_name <- if(i == 1) "xaxis" else paste0("xaxis", i)
+
+  g <- g %>%
+    layout(
+      setNames(
+        list(
+          list(
+            showticklabels = TRUE,
+            matches = NULL
+          )
+        ),
+        axis_name
+      )
+    )
+}
 
 # final layout
 g <- g %>%
   layout(
     showlegend = TRUE,
+
+    hovermode = "x unified",
 
     legend = list(
       orientation = "h",
@@ -631,10 +1045,18 @@ vars <- c(
   "Final Energy|Bunkers.Mtoe"
 )
 
+unit <- sub(".*\\.", "", vars[1])
+totalvar <- "Final Energy"
+
 elMix <- as.quitte(data[, , vars]) %>%
   select(-c(unit, model, scenario))
 
 elMix$region <- factor(elMix$region, levels = facet_order)
+
+total <- as.quitte(data[, , totalvar]) %>%
+  select(-c(unit, model, scenario))
+
+total$region <- factor(total$region, levels = facet_order)
 
 vars_unique <- unique(elMix$variable)
 
@@ -654,6 +1076,9 @@ for(i in seq_along(facet_order)) {
   df <- elMix %>%
     filter(region == r)
 
+  df_total <- total %>%
+    filter(region == r)
+
   p <- plot_ly()
 
   for(v in vars_unique) {
@@ -661,42 +1086,102 @@ for(i in seq_along(facet_order)) {
     df_v <- df %>%
       filter(variable == v)
 
-    # separate positive and negative stackgroups
-    stack_grp <- ifelse(
-      mean(df_v$value, na.rm = TRUE) < 0,
-      "negative",
-      "positive"
+    # positive values only
+    df_pos <- df_v %>%
+      mutate(value = ifelse(value > 0, value, NA))
+
+    # negative values only
+    df_neg <- df_v %>%
+      mutate(value = ifelse(value < 0, value, NA))
+
+    hover_txt <- paste0(
+      "<b>", v, "</b><br>",
+      "Year: ", df_v$period, "<br>",
+      "Value: ", round(df_v$value, 2)
     )
 
+    # positive stack
     p <- p %>%
       add_trace(
-        data = df_v,
+        data = df_pos,
         x = ~period,
         y = ~value,
+
         type = "scatter",
         mode = "none",
 
-        # IMPORTANT: separate stackgroups
-        stackgroup = stack_grp,
+        stackgroup = "positive",
 
         fillcolor = cols[v],
         line = list(color = cols[v]),
+
         name = v,
         legendgroup = v,
 
-        # show legend only once
-        showlegend = (i == 1),
+        text = hover_txt,
+        hoverinfo = "text",
 
-        hovertemplate = paste0(
-          "<b>", v, "</b><br>",
-          "Year: %{x}<br>",
-          "Value: %{y}<extra></extra>"
-        )
+        showlegend = (i == 1)
+      )
+
+    # negative stack
+    p <- p %>%
+      add_trace(
+        data = df_neg,
+        x = ~period,
+        y = ~value,
+
+        type = "scatter",
+        mode = "none",
+
+        stackgroup = "negative",
+
+        fillcolor = cols[v],
+        line = list(color = cols[v]),
+
+        name = v,
+        legendgroup = v,
+
+        text = hover_txt,
+        hoverinfo = "text",
+
+        showlegend = FALSE
       )
   }
 
+  # total emissions line
+  p <- p %>%
+    add_trace(
+      data = df_total,
+      x = ~period,
+      y = ~value,
+
+      type = "scatter",
+      mode = "lines",
+
+      line = list(
+        color = "black",
+        width = 3
+      ),
+
+      name = "Total",
+      legendgroup = "Total",
+
+      showlegend = (i == 1),
+
+      text = ~paste0(
+        "<b>Total</b><br>",
+        "Year: ", period, "<br>",
+        "Value: ", round(value, 2)
+      ),
+
+      hoverinfo = "text"
+    )
+
   p <- p %>%
     layout(
+      hovermode = "x unified",
+
       annotations = list(
         list(
           text = paste0("<b>", r, "</b>"),
@@ -706,6 +1191,17 @@ for(i in seq_along(facet_order)) {
           yref = "paper",
           showarrow = FALSE,
           font = list(size = 14)
+        ),
+          # unit label (top-left)
+        list(
+          text = unit,
+          x = 0,
+          y = 1.05,
+          xref = "paper",
+          yref = "paper",
+          xanchor = "left",
+          showarrow = FALSE,
+          font = list(size = 10)
         )
       ),
 
@@ -737,15 +1233,36 @@ g <- subplot(
   plist,
   nrows = ceiling(length(plist) / ncol),
   shareX = TRUE,
-  shareY = FALSE,   # free y-axis per subplot
+  shareY = FALSE,
   titleX = FALSE,
   margin = 0.02
 )
+
+# force x tick labels on all subplots
+for(i in seq_along(plist)) {
+
+  axis_name <- if(i == 1) "xaxis" else paste0("xaxis", i)
+
+  g <- g %>%
+    layout(
+      setNames(
+        list(
+          list(
+            showticklabels = TRUE,
+            matches = NULL
+          )
+        ),
+        axis_name
+      )
+    )
+}
 
 # final layout
 g <- g %>%
   layout(
     showlegend = TRUE,
+
+    hovermode = "x unified",
 
     legend = list(
       orientation = "h",
@@ -779,10 +1296,18 @@ vars <- c(
   "Final Energy|Nuclear.Mtoe"
 )
 
+unit <- sub(".*\\.", "", vars[1])
+totalvar <- "Final Energy"
+
 elMix <- as.quitte(data[, , vars]) %>%
   select(-c(unit, model, scenario))
 
 elMix$region <- factor(elMix$region, levels = facet_order)
+
+total <- as.quitte(data[, , totalvar]) %>%
+  select(-c(unit, model, scenario))
+
+total$region <- factor(total$region, levels = facet_order)
 
 vars_unique <- unique(elMix$variable)
 
@@ -802,6 +1327,9 @@ for(i in seq_along(facet_order)) {
   df <- elMix %>%
     filter(region == r)
 
+  df_total <- total %>%
+    filter(region == r)
+
   p <- plot_ly()
 
   for(v in vars_unique) {
@@ -809,42 +1337,102 @@ for(i in seq_along(facet_order)) {
     df_v <- df %>%
       filter(variable == v)
 
-    # separate positive and negative stackgroups
-    stack_grp <- ifelse(
-      mean(df_v$value, na.rm = TRUE) < 0,
-      "negative",
-      "positive"
+    # positive values only
+    df_pos <- df_v %>%
+      mutate(value = ifelse(value > 0, value, NA))
+
+    # negative values only
+    df_neg <- df_v %>%
+      mutate(value = ifelse(value < 0, value, NA))
+
+    hover_txt <- paste0(
+      "<b>", v, "</b><br>",
+      "Year: ", df_v$period, "<br>",
+      "Value: ", round(df_v$value, 2)
     )
 
+    # positive stack
     p <- p %>%
       add_trace(
-        data = df_v,
+        data = df_pos,
         x = ~period,
         y = ~value,
+
         type = "scatter",
         mode = "none",
 
-        # IMPORTANT: separate stackgroups
-        stackgroup = stack_grp,
+        stackgroup = "positive",
 
         fillcolor = cols[v],
         line = list(color = cols[v]),
+
         name = v,
         legendgroup = v,
 
-        # show legend only once
-        showlegend = (i == 1),
+        text = hover_txt,
+        hoverinfo = "text",
 
-        hovertemplate = paste0(
-          "<b>", v, "</b><br>",
-          "Year: %{x}<br>",
-          "Value: %{y}<extra></extra>"
-        )
+        showlegend = (i == 1)
+      )
+
+    # negative stack
+    p <- p %>%
+      add_trace(
+        data = df_neg,
+        x = ~period,
+        y = ~value,
+
+        type = "scatter",
+        mode = "none",
+
+        stackgroup = "negative",
+
+        fillcolor = cols[v],
+        line = list(color = cols[v]),
+
+        name = v,
+        legendgroup = v,
+
+        text = hover_txt,
+        hoverinfo = "text",
+
+        showlegend = FALSE
       )
   }
 
+  # total emissions line
+  p <- p %>%
+    add_trace(
+      data = df_total,
+      x = ~period,
+      y = ~value,
+
+      type = "scatter",
+      mode = "lines",
+
+      line = list(
+        color = "black",
+        width = 3
+      ),
+
+      name = "Total",
+      legendgroup = "Total",
+
+      showlegend = (i == 1),
+
+      text = ~paste0(
+        "<b>Total</b><br>",
+        "Year: ", period, "<br>",
+        "Value: ", round(value, 2)
+      ),
+
+      hoverinfo = "text"
+    )
+
   p <- p %>%
     layout(
+      hovermode = "x unified",
+
       annotations = list(
         list(
           text = paste0("<b>", r, "</b>"),
@@ -854,6 +1442,17 @@ for(i in seq_along(facet_order)) {
           yref = "paper",
           showarrow = FALSE,
           font = list(size = 14)
+        ),
+          # unit label (top-left)
+        list(
+          text = unit,
+          x = 0,
+          y = 1.05,
+          xref = "paper",
+          yref = "paper",
+          xanchor = "left",
+          showarrow = FALSE,
+          font = list(size = 10)
         )
       ),
 
@@ -885,15 +1484,36 @@ g <- subplot(
   plist,
   nrows = ceiling(length(plist) / ncol),
   shareX = TRUE,
-  shareY = FALSE,   # free y-axis per subplot
+  shareY = FALSE,
   titleX = FALSE,
   margin = 0.02
 )
+
+# force x tick labels on all subplots
+for(i in seq_along(plist)) {
+
+  axis_name <- if(i == 1) "xaxis" else paste0("xaxis", i)
+
+  g <- g %>%
+    layout(
+      setNames(
+        list(
+          list(
+            showticklabels = TRUE,
+            matches = NULL
+          )
+        ),
+        axis_name
+      )
+    )
+}
 
 # final layout
 g <- g %>%
   layout(
     showlegend = TRUE,
+
+    hovermode = "x unified",
 
     legend = list(
       orientation = "h",

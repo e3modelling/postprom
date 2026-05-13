@@ -67,6 +67,7 @@ Emissions|CO2|Cumulated,Cumulated,#661a00,area
 Emissions|CO2|Budget1p5C,Budget1p5C,black,dLine
 Emissions|CO2|Budget2C,Budget2C,red,dLine
 Emissions|CO2,Total,black,solidLine
+Emissions|CO2|Energy|Demand|Enhanced Weathering,Enhanced Weathering,grey,area
 Emissions|CO2|VAL,EDGAR,red,dLine
 Emissions|CO2|Validation,IEA|Projections,green,solidLine
 Emissions|CO2|Energy|Demand|Direct Air Capture,DAC,#87e6a4,area
