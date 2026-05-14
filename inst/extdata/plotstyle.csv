@@ -45,6 +45,7 @@ Final Energy|Non-Energy Use,Non-Energy Use,yellow,bar
 Final Energy|Bunkers,Bunkers,#970824ff,bar
 Final Energy|Industry,Industry,orange,bar
 Final Energy|Transportation,Transportation,black,bar
+Final Energy|Carbon Management,Carbon Management,grey,bar
 Final Energy|Residential and Commercial,Res and Com,red,bar
 Final Energy|VAL,IEA,red,dLine
 Final Energy|Industry|VAL,Industry|IEA,#FFE0B2,dLine

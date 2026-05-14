@@ -1042,7 +1042,8 @@ vars <- c(
   "Final Energy|Transportation.Mtoe",
   "Final Energy|Non-Energy Use.Mtoe",
   "Final Energy|Residential and Commercial.Mtoe",
-  "Final Energy|Bunkers.Mtoe"
+  "Final Energy|Bunkers.Mtoe",
+  "Final Energy|Carbon Management.Mtoe"
 )
 
 unit <- sub(".*\\.", "", vars[1])
