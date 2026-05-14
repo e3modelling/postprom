@@ -46,6 +46,18 @@ vars <- c(
   "Emissions|CO2|Energy|Demand|Direct Air Capture.Mt CO2/yr"
 )
 
+in_plot <- c(
+  "Industry",
+  "Residential and Commercial",
+  "Transportation",
+  "Bunkers",
+  "Supply",
+  "Industrial Processes",
+  "AFOLU",
+  "Enhanced Weathering",
+  "Direct Air Capture"
+)
+
 unit <- sub(".*\\.", "", vars[1])
 totalvar <- "Emissions|CO2"
 
@@ -61,12 +73,16 @@ total$region <- factor(total$region, levels = facet_order)
 
 vars_unique <- unique(elMix$variable)
 
+# map original variable names -> short labels
+var_labels <- setNames(in_plot, vars_unique)
+
 # consistent colors
 cols <- colorRampPalette(
   RColorBrewer::brewer.pal(12, "Set3")
 )(length(vars_unique))
 
-names(cols) <- vars_unique
+# use short labels for color names
+names(cols) <- in_plot
 
 plist <- list()
 
@@ -84,6 +100,8 @@ for(i in seq_along(facet_order)) {
 
   for(v in vars_unique) {
 
+    display_name <- var_labels[v]
+
     df_v <- df %>%
       filter(variable == v)
 
@@ -96,7 +114,7 @@ for(i in seq_along(facet_order)) {
       mutate(value = ifelse(value < 0, value, NA))
 
     hover_txt <- paste0(
-      "<b>", v, "</b><br>",
+      "<b>", display_name, "</b><br>",
       "Year: ", df_v$period, "<br>",
       "Value: ", round(df_v$value, 2)
     )
@@ -113,11 +131,11 @@ for(i in seq_along(facet_order)) {
 
         stackgroup = "positive",
 
-        fillcolor = cols[v],
-        line = list(color = cols[v]),
+        fillcolor = cols[display_name],
+        line = list(color = cols[display_name]),
 
-        name = v,
-        legendgroup = v,
+        name = display_name,
+        legendgroup = display_name,
 
         text = hover_txt,
         hoverinfo = "text",
@@ -137,11 +155,11 @@ for(i in seq_along(facet_order)) {
 
         stackgroup = "negative",
 
-        fillcolor = cols[v],
-        line = list(color = cols[v]),
+        fillcolor = cols[display_name],
+        line = list(color = cols[display_name]),
 
-        name = v,
-        legendgroup = v,
+        name = display_name,
+        legendgroup = display_name,
 
         text = hover_txt,
         hoverinfo = "text",
@@ -193,7 +211,8 @@ for(i in seq_along(facet_order)) {
           showarrow = FALSE,
           font = list(size = 14)
         ),
-          # unit label (top-left)
+
+        # unit label (top-left)
         list(
           text = unit,
           x = 0,
@@ -292,6 +311,21 @@ vars <- c(
   "Price|Carbon.US$2015/tn CO2"
 )
 
+in_plot <- c(
+  "Industry",
+  "Residential and Commercial",
+  "Transportation",
+  "Bunkers",
+  "Supply",
+  "Industrial Processes",
+  "AFOLU",
+  "Enhanced Weathering",
+  "Direct Air Capture"
+)
+
+in_plot <- c(
+  "Price|Carbon")
+
 unit <- sub(".*\\.", "", vars[1])
 totalvar <- "Price|Carbon"
 
@@ -307,12 +341,16 @@ total$region <- factor(total$region, levels = facet_order)
 
 vars_unique <- unique(elMix$variable)
 
+# map original variable names -> short labels
+var_labels <- setNames(in_plot, vars_unique)
+
 # consistent colors
 cols <- colorRampPalette(
   RColorBrewer::brewer.pal(12, "Set3")
 )(length(vars_unique))
 
-names(cols) <- vars_unique
+# use short labels for color names
+names(cols) <- in_plot
 
 plist <- list()
 
@@ -330,6 +368,8 @@ for(i in seq_along(facet_order)) {
 
   for(v in vars_unique) {
 
+    display_name <- var_labels[v]
+
     df_v <- df %>%
       filter(variable == v)
 
@@ -342,7 +382,7 @@ for(i in seq_along(facet_order)) {
       mutate(value = ifelse(value < 0, value, NA))
 
     hover_txt <- paste0(
-      "<b>", v, "</b><br>",
+      "<b>", display_name, "</b><br>",
       "Year: ", df_v$period, "<br>",
       "Value: ", round(df_v$value, 2)
     )
@@ -359,11 +399,11 @@ for(i in seq_along(facet_order)) {
 
         stackgroup = "positive",
 
-        fillcolor = cols[v],
-        line = list(color = cols[v]),
+        fillcolor = cols[display_name],
+        line = list(color = cols[display_name]),
 
-        name = v,
-        legendgroup = v,
+        name = display_name,
+        legendgroup = display_name,
 
         text = hover_txt,
         hoverinfo = "text",
@@ -383,11 +423,11 @@ for(i in seq_along(facet_order)) {
 
         stackgroup = "negative",
 
-        fillcolor = cols[v],
-        line = list(color = cols[v]),
+        fillcolor = cols[display_name],
+        line = list(color = cols[display_name]),
 
-        name = v,
-        legendgroup = v,
+        name = display_name,
+        legendgroup = display_name,
 
         text = hover_txt,
         hoverinfo = "text",
@@ -439,7 +479,8 @@ for(i in seq_along(facet_order)) {
           showarrow = FALSE,
           font = list(size = 14)
         ),
-          # unit label (top-left)
+
+        # unit label (top-left)
         list(
           text = unit,
           x = 0,
@@ -548,6 +589,23 @@ vars <- c(
   "Secondary Energy|Electricity|Nuclear.TWh"
 )
 
+in_plot <- c(
+  "Biofuels|w/ CCS",
+  "Biofuels|w/o CCS",
+  "Coal|w/ CCS",
+  "Coal|w/o CCS",
+  "Gas|w/ CCS",
+  "Gas|w/o CCS",
+  "Geothermal and other renewable sources",
+  "Heat",
+  "Hydrogen",
+  "Oil",
+  "Hydro",
+  "Wind",
+  "Solar",
+  "Nuclear"
+)
+
 unit <- sub(".*\\.", "", vars[1])
 totalvar <- "Secondary Energy|Electricity"
 
@@ -563,12 +621,16 @@ total$region <- factor(total$region, levels = facet_order)
 
 vars_unique <- unique(elMix$variable)
 
+# map original variable names -> short labels
+var_labels <- setNames(in_plot, vars_unique)
+
 # consistent colors
 cols <- colorRampPalette(
   RColorBrewer::brewer.pal(12, "Set3")
 )(length(vars_unique))
 
-names(cols) <- vars_unique
+# use short labels for color names
+names(cols) <- in_plot
 
 plist <- list()
 
@@ -586,6 +648,8 @@ for(i in seq_along(facet_order)) {
 
   for(v in vars_unique) {
 
+    display_name <- var_labels[v]
+
     df_v <- df %>%
       filter(variable == v)
 
@@ -598,7 +662,7 @@ for(i in seq_along(facet_order)) {
       mutate(value = ifelse(value < 0, value, NA))
 
     hover_txt <- paste0(
-      "<b>", v, "</b><br>",
+      "<b>", display_name, "</b><br>",
       "Year: ", df_v$period, "<br>",
       "Value: ", round(df_v$value, 2)
     )
@@ -615,11 +679,11 @@ for(i in seq_along(facet_order)) {
 
         stackgroup = "positive",
 
-        fillcolor = cols[v],
-        line = list(color = cols[v]),
+        fillcolor = cols[display_name],
+        line = list(color = cols[display_name]),
 
-        name = v,
-        legendgroup = v,
+        name = display_name,
+        legendgroup = display_name,
 
         text = hover_txt,
         hoverinfo = "text",
@@ -639,11 +703,11 @@ for(i in seq_along(facet_order)) {
 
         stackgroup = "negative",
 
-        fillcolor = cols[v],
-        line = list(color = cols[v]),
+        fillcolor = cols[display_name],
+        line = list(color = cols[display_name]),
 
-        name = v,
-        legendgroup = v,
+        name = display_name,
+        legendgroup = display_name,
 
         text = hover_txt,
         hoverinfo = "text",
@@ -695,7 +759,8 @@ for(i in seq_along(facet_order)) {
           showarrow = FALSE,
           font = list(size = 14)
         ),
-          # unit label (top-left)
+
+        # unit label (top-left)
         list(
           text = unit,
           x = 0,
@@ -802,6 +867,22 @@ vars <- c(
   "Capacity|Electricity|Nuclear.GW"
 )
 
+in_plot <- c(
+  "Biofuels|w/ CCS",
+  "Biofuels|w/o CCS",
+  "Coal|w/ CCS",
+  "Coal|w/o CCS",
+  "Gas|w/ CCS",
+  "Gas|w/o CCS",
+  "Geothermal and other renewable sources",
+  "Hydrogen",
+  "Oil",
+  "Hydro",
+  "Wind",
+  "Solar",
+  "Nuclear"
+)
+
 unit <- sub(".*\\.", "", vars[1])
 totalvar <- "Capacity|Electricity"
 
@@ -817,12 +898,16 @@ total$region <- factor(total$region, levels = facet_order)
 
 vars_unique <- unique(elMix$variable)
 
+# map original variable names -> short labels
+var_labels <- setNames(in_plot, vars_unique)
+
 # consistent colors
 cols <- colorRampPalette(
   RColorBrewer::brewer.pal(12, "Set3")
 )(length(vars_unique))
 
-names(cols) <- vars_unique
+# use short labels for color names
+names(cols) <- in_plot
 
 plist <- list()
 
@@ -840,6 +925,8 @@ for(i in seq_along(facet_order)) {
 
   for(v in vars_unique) {
 
+    display_name <- var_labels[v]
+
     df_v <- df %>%
       filter(variable == v)
 
@@ -852,7 +939,7 @@ for(i in seq_along(facet_order)) {
       mutate(value = ifelse(value < 0, value, NA))
 
     hover_txt <- paste0(
-      "<b>", v, "</b><br>",
+      "<b>", display_name, "</b><br>",
       "Year: ", df_v$period, "<br>",
       "Value: ", round(df_v$value, 2)
     )
@@ -869,11 +956,11 @@ for(i in seq_along(facet_order)) {
 
         stackgroup = "positive",
 
-        fillcolor = cols[v],
-        line = list(color = cols[v]),
+        fillcolor = cols[display_name],
+        line = list(color = cols[display_name]),
 
-        name = v,
-        legendgroup = v,
+        name = display_name,
+        legendgroup = display_name,
 
         text = hover_txt,
         hoverinfo = "text",
@@ -893,11 +980,11 @@ for(i in seq_along(facet_order)) {
 
         stackgroup = "negative",
 
-        fillcolor = cols[v],
-        line = list(color = cols[v]),
+        fillcolor = cols[display_name],
+        line = list(color = cols[display_name]),
 
-        name = v,
-        legendgroup = v,
+        name = display_name,
+        legendgroup = display_name,
 
         text = hover_txt,
         hoverinfo = "text",
@@ -949,7 +1036,8 @@ for(i in seq_along(facet_order)) {
           showarrow = FALSE,
           font = list(size = 14)
         ),
-          # unit label (top-left)
+
+        # unit label (top-left)
         list(
           text = unit,
           x = 0,
@@ -1049,6 +1137,15 @@ vars <- c(
   "Final Energy|Carbon Management.Mtoe"
 )
 
+in_plot <- c(
+  "Industry",
+  "Transportation",
+  "Non-Energy Use",
+  "Residential and Commercial",
+  "Bunkers",
+  "Carbon Management"
+)
+
 unit <- sub(".*\\.", "", vars[1])
 totalvar <- "Final Energy"
 
@@ -1064,12 +1161,16 @@ total$region <- factor(total$region, levels = facet_order)
 
 vars_unique <- unique(elMix$variable)
 
+# map original variable names -> short labels
+var_labels <- setNames(in_plot, vars_unique)
+
 # consistent colors
 cols <- colorRampPalette(
   RColorBrewer::brewer.pal(12, "Set3")
 )(length(vars_unique))
 
-names(cols) <- vars_unique
+# use short labels for color names
+names(cols) <- in_plot
 
 plist <- list()
 
@@ -1087,6 +1188,8 @@ for(i in seq_along(facet_order)) {
 
   for(v in vars_unique) {
 
+    display_name <- var_labels[v]
+
     df_v <- df %>%
       filter(variable == v)
 
@@ -1099,7 +1202,7 @@ for(i in seq_along(facet_order)) {
       mutate(value = ifelse(value < 0, value, NA))
 
     hover_txt <- paste0(
-      "<b>", v, "</b><br>",
+      "<b>", display_name, "</b><br>",
       "Year: ", df_v$period, "<br>",
       "Value: ", round(df_v$value, 2)
     )
@@ -1116,11 +1219,11 @@ for(i in seq_along(facet_order)) {
 
         stackgroup = "positive",
 
-        fillcolor = cols[v],
-        line = list(color = cols[v]),
+        fillcolor = cols[display_name],
+        line = list(color = cols[display_name]),
 
-        name = v,
-        legendgroup = v,
+        name = display_name,
+        legendgroup = display_name,
 
         text = hover_txt,
         hoverinfo = "text",
@@ -1140,11 +1243,11 @@ for(i in seq_along(facet_order)) {
 
         stackgroup = "negative",
 
-        fillcolor = cols[v],
-        line = list(color = cols[v]),
+        fillcolor = cols[display_name],
+        line = list(color = cols[display_name]),
 
-        name = v,
-        legendgroup = v,
+        name = display_name,
+        legendgroup = display_name,
 
         text = hover_txt,
         hoverinfo = "text",
@@ -1196,7 +1299,8 @@ for(i in seq_along(facet_order)) {
           showarrow = FALSE,
           font = list(size = 14)
         ),
-          # unit label (top-left)
+
+        # unit label (top-left)
         list(
           text = unit,
           x = 0,
@@ -1300,6 +1404,19 @@ vars <- c(
   "Final Energy|Nuclear.Mtoe"
 )
 
+in_plot <- c(
+  "Solids",
+  "Fossil Liquids",
+  "Gas",
+  "Heat",
+  "Renewables",
+  "Electricity",
+  "Hydrogen",
+  "Other fuels",
+  "Biofuels",
+  "Nuclear"
+)
+
 unit <- sub(".*\\.", "", vars[1])
 totalvar <- "Final Energy"
 
@@ -1315,12 +1432,16 @@ total$region <- factor(total$region, levels = facet_order)
 
 vars_unique <- unique(elMix$variable)
 
+# map original variable names -> short labels
+var_labels <- setNames(in_plot, vars_unique)
+
 # consistent colors
 cols <- colorRampPalette(
   RColorBrewer::brewer.pal(12, "Set3")
 )(length(vars_unique))
 
-names(cols) <- vars_unique
+# use short labels for color names
+names(cols) <- in_plot
 
 plist <- list()
 
@@ -1338,6 +1459,8 @@ for(i in seq_along(facet_order)) {
 
   for(v in vars_unique) {
 
+    display_name <- var_labels[v]
+
     df_v <- df %>%
       filter(variable == v)
 
@@ -1350,7 +1473,7 @@ for(i in seq_along(facet_order)) {
       mutate(value = ifelse(value < 0, value, NA))
 
     hover_txt <- paste0(
-      "<b>", v, "</b><br>",
+      "<b>", display_name, "</b><br>",
       "Year: ", df_v$period, "<br>",
       "Value: ", round(df_v$value, 2)
     )
@@ -1367,11 +1490,11 @@ for(i in seq_along(facet_order)) {
 
         stackgroup = "positive",
 
-        fillcolor = cols[v],
-        line = list(color = cols[v]),
+        fillcolor = cols[display_name],
+        line = list(color = cols[display_name]),
 
-        name = v,
-        legendgroup = v,
+        name = display_name,
+        legendgroup = display_name,
 
         text = hover_txt,
         hoverinfo = "text",
@@ -1391,11 +1514,11 @@ for(i in seq_along(facet_order)) {
 
         stackgroup = "negative",
 
-        fillcolor = cols[v],
-        line = list(color = cols[v]),
+        fillcolor = cols[display_name],
+        line = list(color = cols[display_name]),
 
-        name = v,
-        legendgroup = v,
+        name = display_name,
+        legendgroup = display_name,
 
         text = hover_txt,
         hoverinfo = "text",
@@ -1447,7 +1570,8 @@ for(i in seq_along(facet_order)) {
           showarrow = FALSE,
           font = list(size = 14)
         ),
-          # unit label (top-left)
+
+        # unit label (top-left)
         list(
           text = unit,
           x = 0,
