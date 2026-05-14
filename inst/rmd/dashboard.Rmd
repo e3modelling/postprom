@@ -35,7 +35,10 @@ ncol <- ceiling(length(facet_order) / 3)
 
 ```{r Emissions CO2 plot}
 vars <- c(
-  "Emissions|CO2|Energy|Demand.Mt CO2/yr",
+  "Emissions|CO2|Energy|Demand|Industry.Mt CO2/yr",
+  "Emissions|CO2|Energy|Demand|Residential and Commercial.Mt CO2/yr",
+  "Emissions|CO2|Energy|Demand|Transportation.Mt CO2/yr",
+  "Emissions|CO2|Energy|Demand|Bunkers.Mt CO2/yr",
   "Emissions|CO2|Energy|Supply.Mt CO2/yr",
   "Emissions|CO2|Industrial Processes.Mt CO2/yr",
   "Emissions|CO2|AFOLU.Mt CO2/yr",
