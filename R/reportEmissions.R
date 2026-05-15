@@ -462,6 +462,11 @@ prepareMagpieAfolu <- function(iEmissions_magpie) {
     rel = magpieCDRmapping,
     partrel = TRUE
   ))
+  # MAgPIE reports land-based CO2 sinks as negative emissions; this script
+  # relabels them as `Carbon Removal|*` which by IAMC convention is reported
+  # as a positive gross flux. Match the abs() convention used in
+  # getGLOBIOMEU() and getREMIND_MAgPIE_SoCDR().
+  cdr <- abs(cdr)
 
   emissionsN2O <- getNames(afolu)[grepl("N2O", getNames(afolu))]
   afolu[, , emissionsN2O] <- afolu[, , emissionsN2O] * 1000
