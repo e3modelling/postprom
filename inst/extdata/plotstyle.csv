@@ -45,6 +45,7 @@ Final Energy|Non-Energy Use,Non-Energy Use,yellow,bar
 Final Energy|Bunkers,Bunkers,#970824ff,bar
 Final Energy|Industry,Industry,orange,bar
 Final Energy|Transportation,Transportation,black,bar
+Final Energy|Carbon Management,Carbon Management,grey,bar
 Final Energy|Residential and Commercial,Res and Com,red,bar
 Final Energy|VAL,IEA,red,dLine
 Final Energy|Industry|VAL,Industry|IEA,#FFE0B2,dLine
@@ -67,6 +68,7 @@ Emissions|CO2|Cumulated,Cumulated,#661a00,area
 Emissions|CO2|Budget1p5C,Budget1p5C,black,dLine
 Emissions|CO2|Budget2C,Budget2C,red,dLine
 Emissions|CO2,Total,black,solidLine
+Emissions|CO2|Energy|Demand|Enhanced Weathering,Enhanced Weathering,grey,area
 Emissions|CO2|VAL,EDGAR,red,dLine
 Emissions|CO2|Validation,IEA|Projections,green,solidLine
 Emissions|CO2|Energy|Demand|Direct Air Capture,DAC,#87e6a4,area
