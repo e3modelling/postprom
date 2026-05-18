@@ -76,7 +76,8 @@ convertGDXtoMIF <- function(.path, mif_name, regions = NULL, years = NULL,
 convertGDXtoMIF_single <- function(.path, path_mif, append, regions = NULL,
                                    years = NULL, scenario_name = NULL,
                                    aggregate = TRUE, emissions = TRUE, save = TRUE,
-                                   htmlReport = TRUE, projectReport = TRUE) {
+                                   htmlReport = TRUE, projectReport = TRUE,
+                                   dashboard = TRUE) {
   print(paste0("Region aggregation: ", aggregate))
   print(paste0("Processing path: ", .path))
   path_gdx <- file.path(.path, "blabla.gdx")
@@ -115,8 +116,9 @@ convertGDXtoMIF_single <- function(.path, path_mif, append, regions = NULL,
     magpieObject = reports, aggregate, budgetBaseYear = 2019,
     budget1p5 = 400, budget2c = 1150, probLabel = "67%"
   ))
-  # reports <- mbind(reports, reportGrowthRates(reports))
-
+  reports <- mbind(reports, reportGrowthRates(reports))
+  reports <- mbind(reports, reportEfficiency(reports, path_gdx, getRegions(reports), years, regions))
+  
   if (emissions == TRUE) generateEmissionsFile(.path, reports, years, scenario_name)
 
   if (save == TRUE) {
@@ -128,10 +130,17 @@ convertGDXtoMIF_single <- function(.path, path_mif, append, regions = NULL,
       append = append
     )
     print(paste0("Saving mif file in ", path_mif))
-
+    
     if (htmlReport == TRUE) htmlReportValidation(.path, path_mif)
-
     if (projectReport == TRUE) projectReport(.path, path_mif)
+    
+    if (dashboard == TRUE & htmlReport == TRUE) rmarkdown::render(
+      system.file("rmd", "dashboard.Rmd", package = "postprom"),
+      output_file = paste0(.path, "/dashboard.html"),
+      params = list(scenarioname = basename(.path), magpie_data = reports)
+    )
+    if (dashboard == TRUE & htmlReport == TRUE) bindhtml(.path)
+
   }
 
   return(reports)
@@ -197,8 +206,14 @@ aggregateMIF <- function(report) {
   # --- Calculate EU-27 Aggregation ---
   regionMapping <- toolGetMapping(name = "EU28.csv", type = "regional", where = "mrprom")
   regionsEu27 <- regionMapping$ISO3.Code[regionMapping$ISO3.Code != "GBR"]
-  eu27Region <- aggregateRegion(regionName = "EU", regionCodes = regionsEu27)
-
+  regionsEu27 <- regionsEu27[regionsEu27 %in% worldCodes] # Ensure only regions present in the data are included
+  
+  if (length(regionsEu27) != 0) {
+    eu27Region <- aggregateRegion(regionName = "EU", regionCodes = regionsEu27)
+  } else {
+    eu27Region <- NULL
+  }
+  
   reportOut <- mbind(reportData, worldRegion, eu27Region)
 
   return(reportOut)

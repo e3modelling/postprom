@@ -92,10 +92,27 @@ reportEmissions <- function(path, regions, years) {
   getItems(grossCO2Supply, 3.1) <- paste0("Gross Emissions|CO2|Energy|Supply|", name)
   getItems(netCO2Supply, 3.1) <- paste0("Emissions|CO2|Energy|Supply|", name)
   # ========================= AFOLU & Land Use ===============================
-  AFOLU_CDR <- mbind(
-    getGLOBIOMEU(path, grossCO2Demand)[, years, ],
-    getREMIND_MAgPIE_SoCDR(path, grossCO2Demand)[, years, ]
-  )[regions, , ]
+  iEmissions_magpie <- file.path(dirname(path), "iEmissions_magpie.mif")
+  useMagpieAfolu <- file.exists(iEmissions_magpie)
+
+  if (useMagpieAfolu) {
+    magpieAfolu <- prepareMagpieAfolu(iEmissions_magpie)
+    AFOLU_CDR <- magpieAfolu$afolu
+    AFOLUCO2 <- magpieAfolu$co2
+    CDRCO2 <- magpieAfolu$cdr
+    AFOLUCh4N2o <- magpieAfolu$ch4N2o
+    extraAFOLU <- magpieAfolu$extra
+  } else {
+    # Use default sources
+    AFOLU_CDR <- mbind(
+      getGLOBIOMEU(path, grossCO2Demand)[, years, ],
+      getREMIND_MAgPIE_SoCDR(path, grossCO2Demand)[, years, ]
+    )[regions, , ]
+    AFOLUCO2 <- AFOLU_CDR[, , "Emissions|CO2|AFOLU"]
+    CDRCO2 <- AFOLU_CDR[, , "Carbon Removal|Land Use"]
+    AFOLUCh4N2o <- NULL
+    extraAFOLU <- NULL
+  }
   # ========================= Industrial Processes ===========================
   IndustrialProcesses <- getIndustrialProcesses(
     path, grossCO2Demand
@@ -103,7 +120,7 @@ reportEmissions <- function(path, regions, years) {
   # -----------------------------------------------------------------------
   EmissionsCo2 <- mbind(
     grossCO2Demand, netCO2Demand, grossCO2Supply,
-    netCO2Supply, AFOLU_CDR[, , "Emissions|CO2|AFOLU"], IndustrialProcesses
+    netCO2Supply, AFOLUCO2, IndustrialProcesses
   )
   EmissionsCo2 <- helperAggregateLevel(EmissionsCo2, level = 2, recursive = TRUE)
   # ------------------------ Carbon Capture & Removal --------------------------
@@ -134,7 +151,7 @@ reportEmissions <- function(path, regions, years) {
   
   CDR[, , "Carbon Removal|Geological Storage|Biomass"] <- dimSums(CCS[, , getItems(CCS, 3)[grepl("\\|Biofuels$", getItems(CCS, 3))]], 3.1)
   
-  captured <- mbind(CDR, CCS, AFOLU_CDR[, , "Carbon Removal|Land Use"])
+  captured <- mbind(CDR, CCS, CDRCO2)
   captured <- helperAggregateLevel(captured, level = 1, recursive = TRUE)
   # =============================== Non-CO2===================================
   emissionsNonCO2 <- readGDX(path, "V07EmiActBySrcRegTim", field = "l")[regions, years, ]
@@ -166,9 +183,17 @@ reportEmissions <- function(path, regions, years) {
 
   emissionsNonCO2[, , ch4Vars] <- emissionsNonCO2[, , ch4Vars] * conversionFactorCh4
   emissionsNonCO2[, , n2oVars] <- emissionsNonCO2[, , n2oVars] * conversionFactorN2o
-  names(dimnames(emissionsNonCO2))[3] <- "SBS"
+
+  # Replace emissionsNonCO2 with AFOLU_CDR CH4 and N2O variables if a coupled run is made
+  if (useMagpieAfolu) {
+    emissionsNonCO2NonAFOLU <- getNames(emissionsNonCO2)[!grepl("AFOLU", getNames(emissionsNonCO2))]
+    emissionsNonCO2 <- emissionsNonCO2[, , emissionsNonCO2NonAFOLU]
+    emissionsNonCO2 <- mbind(emissionsNonCO2, AFOLUCh4N2o)
+  }
   emissionsCO2eq <- calculateGhg(emissionsNonCO2)
+  names(dimnames(emissionsNonCO2))[3] <- "SBS"
   emissionsNonCO2 <- helperAggregateLevel(emissionsNonCO2, level = 2, recursive = TRUE)
+  emissionsNonCO2 <- emissionsNonCO2[, , c("Emissions|HFC", "Emissions|PFC"), invert = TRUE]
   # -------------------------- Kyoto Gases ------------------------------------
   kyotoGases <- dimSums(emissionsCO2eq, dim = 3)[, , ] + EmissionsCo2[, , "Emissions|CO2"]
   getItems(kyotoGases, 3.1) <- "Emissions|Kyoto Gases"
@@ -217,6 +242,21 @@ reportEmissions <- function(path, regions, years) {
                                        "Emissions|CO2|Energy|Supply|Gases")]
   OtherFuelTransformation <- dimSums(OtherFuelTransformation, dim = 3, na.rm = TRUE)
   getItems(OtherFuelTransformation, 3) <- "Emissions|CO2|Energy|Supply|Other Fuel Transformation"
+  # ------------ Emissions|HFC (all HFCs aggregated in HFC134a-equiv with GWP (1430/1000 = 1.43)) -------
+  allHfcVars <- grep("Emissions\\|HFC", getNames(emissionsCO2eq), value = TRUE)
+  HFCAgg <- emissionsCO2eq[, , allHfcVars] / 1.43
+  HFCAgg <- dimSums(HFCAgg, 3)
+  getItems(HFCAgg, 3.1) <- "Emissions|HFC"
+  # ------------ Emissions|PFC (all PFCs aggregated in CF4-equiv with GWP (7390/1000 = 7.39)) -------
+  allPfcVars <- grep("Emissions\\|PFC", getNames(emissionsCO2eq), value = TRUE)
+  PFCAgg <- emissionsCO2eq[, , allPfcVars] / 7.39
+  PFCAgg <- dimSums(PFCAgg, 3)
+  getItems(PFCAgg, 3.1) <- "Emissions|PFC"
+  # ------------ Emissions|F-gases (HFCs, PFCs, SF6 in CO2-equiv) -------
+  allFgasVars <- grep("Emissions\\|(HFC|PFC|SF6)", getNames(emissionsCO2eq), value = TRUE)
+  FgasAgg <- emissionsCO2eq[, , allFgasVars]
+  FgasAgg <- dimSums(FgasAgg, 3)
+  getItems(FgasAgg, 3.1) <- "Emissions|F-gases"
   # -------------------------- Emissions|CO2 (w/o bunkers), Emissions|Kyoto Gases (w/o bunkers) -------
   emissionsCO2woBunkers <- EmissionsCo2[, , "Emissions|CO2"] - EmissionsCo2[, , "Emissions|CO2|Energy|Demand|Bunkers"]
   getItems(emissionsCO2woBunkers, dim = 3) <- "Emissions|CO2-(w/o bunkers)"
@@ -243,14 +283,29 @@ reportEmissions <- function(path, regions, years) {
   TRANP <- add_dimension(TRANP, dim = 3.2, add = "unit", nm = unitsCO2)
   TRANG <- add_dimension(TRANG, dim = 3.2, add = "unit", nm = unitsCO2)
   OtherFuelTransformation <- add_dimension(OtherFuelTransformation, dim = 3.2, add = "unit", nm = unitsCO2)
+  HFCAgg <- add_dimension(HFCAgg, dim = 3.2, add = "unit", nm = "kt HFC134a-equiv/yr")
+  PFCAgg <- add_dimension(PFCAgg, dim = 3.2, add = "unit", nm = "kt CF4-equiv/yr")
+  FgasAgg <- add_dimension(FgasAgg, dim = 3.2, add = "unit", nm = "Mt CO2-equiv/yr")
   emissionsCO2woBunkers <- add_dimension(emissionsCO2woBunkers, dim = 3.2, add = "unit", nm = unitsCO2)
   emissionsKyotowoBunkers <- add_dimension(emissionsKyotowoBunkers, dim = 3.2, add = "unit", nm =  "Mt CO2-equiv/yr")
 
   magpie_object <- mbind(
     emissionsNonCO2, EmissionsCo2, kyotoGases,
     Cumulated, sumIPEnergy, resCom, captured, captureGeoStorage,
-    TRANP, TRANG, OtherFuelTransformation, emissionsCO2woBunkers, emissionsKyotowoBunkers
+    TRANP, TRANG, OtherFuelTransformation, HFCAgg, PFCAgg, FgasAgg,
+    emissionsCO2woBunkers, emissionsKyotowoBunkers
   )
+  # Add other emissions from magpie run if they are available
+  if (!is.null(extraAFOLU)) {
+    extraAFOLU <- add_dimension(
+      extraAFOLU,
+      dim = 3.2,
+      add = "unit",
+      nm = unname(sapply(getNames(extraAFOLU), getUnit)),
+      expand = FALSE
+    )
+    magpie_object <- mbind(magpie_object, extraAFOLU)
+  }
 
   return(magpie_object)
 }
@@ -264,12 +319,26 @@ getUnit <- function(varName) {
   } else if (grepl("N2O", varName)) {
     # N2O is kt
     return("kt N2O/yr")
-  } else {
-    # Extract the "leaf" (everything after the last '|')
+  } else if (grepl("HFC|PFC|CF4|C2F6|C6F14|SF6", varName)) {
+    # HFC, PFC, CF4, C2F6, C6F14 are kt
     # Example: "Emissions|HFC|HFC152a" -> "HFC152a"
-    gasName <- sub(".*\\|", "", varName)
-    # Return the kt unit
+    gasNameParts <- strsplit(varName, "\\|")[[1]]
+    if (length(gasNameParts) > 1) {
+      gasName <- tail(gasNameParts, 1)
+    } else {
+      gasName <- sub(".*\\|", "", varName)
+    }
     return(paste0("kt ", gasName, "/yr"))
+  } else {
+    # For any other gases, default to Mt and extract the gas name (second element)
+    # Example: "Emissions|VOC|AFOLU|Land|..." -> "VOC"
+    gasNameParts <- strsplit(varName, "\\|")[[1]]
+    if (length(gasNameParts) > 1) {
+      gasName <- gasNameParts[2]
+    } else {
+      gasName <- sub(".*\\|", "", varName)
+    }
+    return(paste0("Mt ", gasName, "/yr"))
   }
 }
 # Sum CO2 and Non-CO2 for a specific category - to be used in the future
@@ -354,6 +423,63 @@ calculateGhg <- function(dataMagpie) {
   }
   return(totalCo2Eq)
 }
+
+prepareMagpieAfolu <- function(iEmissions_magpie) {
+  varsCO2 <- c(
+    "Emissions|CO2|AFOLU|Land",
+    "Emissions|CO2|AFOLU|Agriculture",
+    "Emissions|CO2|AFOLU|Land|Fires"
+  )
+  varsCH4N2O <- c(
+    "Emissions|CH4|AFOLU|Land",
+    "Emissions|CH4|AFOLU|Land|Fires",
+    "Emissions|N2O|AFOLU|Land",
+    "Emissions|N2O|AFOLU|Land|Fires"
+  )
+
+  dataMagpie <- read.report(iEmissions_magpie)
+  afolu <- dataMagpie[[1]][[1]]
+
+  # Convert "Emissions|Gas|Land|..." to "Emissions|Gas|AFOLU|Land|..."
+  # so bottom-up aggregation follows the same hierarchy as OPEN-PROM data.
+  varNames <- getNames(afolu)
+  varNames <- ifelse(
+    grepl("\\|AFOLU\\|Land", varNames),
+    varNames,
+    str_replace(varNames, "^(Emissions\\|[^|]+)\\|Land(.*)$", "\\1|AFOLU|Land\\2")
+  )
+  getNames(afolu) <- varNames
+  varsNoUnits <- trimws(gsub("\\s*\\(.*\\)$", "", getItems(afolu, dim = 3)))
+  getItems(afolu, 3.1) <- varsNoUnits
+
+  magpieCDRmapping <- toolGetMapping("open-prom-magpie-CDR-mapping.csv",
+    type = "sectoral",
+    where = "postprom"
+  )
+  cdr <- suppressMessages(toolAggregate(
+    afolu,
+    dim = 3,
+    rel = magpieCDRmapping,
+    partrel = TRUE
+  ))
+  # MAgPIE reports land-based CO2 sinks as negative emissions; this script
+  # relabels them as `Carbon Removal|*` which by IAMC convention is reported
+  # as a positive gross flux. Match the abs() convention used in
+  # getGLOBIOMEU() and getREMIND_MAgPIE_SoCDR().
+  cdr <- abs(cdr)
+
+  emissionsN2O <- getNames(afolu)[grepl("N2O", getNames(afolu))]
+  afolu[, , emissionsN2O] <- afolu[, , emissionsN2O] * 1000
+
+  return(list(
+    afolu = afolu,
+    co2 = afolu[, , varsCO2],
+    cdr = cdr,
+    ch4N2o = afolu[, , varsCH4N2O],
+    extra = afolu[, , !(getNames(afolu) %in% c(varsCO2, varsCH4N2O))]
+  ))
+}
+
 extractAggregatedData <- function(scenario, x, years, ...) {
   map <- toolGetMapping(
     name = "NavigateEmissions.csv",

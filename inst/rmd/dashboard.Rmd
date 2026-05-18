@@ -1,0 +1,1659 @@
+---
+title: "Simple Dashboard"
+author: "`r params$scenarioname`"
+output: 
+  flexdashboard::flex_dashboard:
+    vertical_layout: fill
+
+params:
+  scenarioname: NULL
+  magpie_data: NULL
+---
+
+```{r setup, include=FALSE}
+library(flexdashboard)
+library(ggplot2)
+library(plotly)
+library(magclass)
+library(mip)
+library(quitte)
+
+configFile <- system.file(package = "postprom", file.path("extdata", "validationConfig_OPEN-PROM.csv"))
+piam <- read.csv(configFile, sep = ";", stringsAsFactors = FALSE)
+regionspiam <- unique(piam$region)
+
+data <- params$magpie_data
+names(dimnames(data))[3] <- "variable.unit"
+#keep only regions in PIAM config
+data <- data[intersect(getRegions(data), strsplit(regionspiam[2], ",")[[1]]),,]
+facet_order <- intersect(getRegions(data), strsplit(regionspiam[2], ",")[[1]])
+ncol <- ceiling(length(facet_order) / 3)
+
+```
+
+# Emissions CO2 {data-icon="glyphicon glyphicon-stats"}
+
+```{r Emissions CO2 plot}
+vars <- c(
+  "Emissions|CO2|Energy|Demand|Industry.Mt CO2/yr",
+  "Emissions|CO2|Energy|Demand|Residential and Commercial.Mt CO2/yr",
+  "Emissions|CO2|Energy|Demand|Transportation.Mt CO2/yr",
+  "Emissions|CO2|Energy|Demand|Bunkers.Mt CO2/yr",
+  "Emissions|CO2|Energy|Supply.Mt CO2/yr",
+  "Emissions|CO2|Industrial Processes.Mt CO2/yr",
+  "Emissions|CO2|AFOLU.Mt CO2/yr",
+  "Emissions|CO2|Energy|Demand|Enhanced Weathering.Mt CO2/yr",
+  "Emissions|CO2|Energy|Demand|Direct Air Capture.Mt CO2/yr"
+)
+
+in_plot <- c(
+  "Industry",
+  "Residential and Commercial",
+  "Transportation",
+  "Bunkers",
+  "Supply",
+  "Industrial Processes",
+  "AFOLU",
+  "Enhanced Weathering",
+  "Direct Air Capture"
+)
+
+unit <- sub(".*\\.", "", vars[1])
+totalvar <- "Emissions|CO2"
+
+elMix <- as.quitte(data[, , vars]) %>%
+  select(-c(unit, model, scenario))
+
+elMix$region <- factor(elMix$region, levels = facet_order)
+
+total <- as.quitte(data[, , totalvar]) %>%
+  select(-c(unit, model, scenario))
+
+total$region <- factor(total$region, levels = facet_order)
+
+vars_unique <- unique(elMix$variable)
+
+# map original variable names -> short labels
+var_labels <- setNames(in_plot, vars_unique)
+
+# consistent colors
+cols <- colorRampPalette(
+  RColorBrewer::brewer.pal(12, "Set3")
+)(length(vars_unique))
+
+# use short labels for color names
+names(cols) <- in_plot
+
+plist <- list()
+
+for(i in seq_along(facet_order)) {
+
+  r <- facet_order[i]
+
+  df <- elMix %>%
+    filter(region == r)
+
+  df_total <- total %>%
+    filter(region == r)
+
+  p <- plot_ly()
+
+  for(v in vars_unique) {
+
+    display_name <- var_labels[v]
+
+    df_v <- df %>%
+      filter(variable == v)
+
+    # positive values only
+    df_pos <- df_v %>%
+      mutate(value = ifelse(value > 0, value, NA))
+
+    # negative values only
+    df_neg <- df_v %>%
+      mutate(value = ifelse(value < 0, value, NA))
+
+    hover_txt <- paste0(
+      "<b>", display_name, "</b><br>",
+      "Year: ", df_v$period, "<br>",
+      "Value: ", round(df_v$value, 2)
+    )
+
+    # positive stack
+    p <- p %>%
+      add_trace(
+        data = df_pos,
+        x = ~period,
+        y = ~value,
+
+        type = "scatter",
+        mode = "none",
+
+        stackgroup = "positive",
+
+        fillcolor = cols[display_name],
+        line = list(color = cols[display_name]),
+
+        name = display_name,
+        legendgroup = display_name,
+
+        text = hover_txt,
+        hoverinfo = "text",
+
+        showlegend = (i == 1)
+      )
+
+    # negative stack
+    p <- p %>%
+      add_trace(
+        data = df_neg,
+        x = ~period,
+        y = ~value,
+
+        type = "scatter",
+        mode = "none",
+
+        stackgroup = "negative",
+
+        fillcolor = cols[display_name],
+        line = list(color = cols[display_name]),
+
+        name = display_name,
+        legendgroup = display_name,
+
+        text = hover_txt,
+        hoverinfo = "text",
+
+        showlegend = FALSE
+      )
+  }
+
+  # total emissions line
+  p <- p %>%
+    add_trace(
+      data = df_total,
+      x = ~period,
+      y = ~value,
+
+      type = "scatter",
+      mode = "lines",
+
+      line = list(
+        color = "black",
+        width = 3
+      ),
+
+      name = "Total",
+      legendgroup = "Total",
+
+      showlegend = (i == 1),
+
+      text = ~paste0(
+        "<b>Total</b><br>",
+        "Year: ", period, "<br>",
+        "Value: ", round(value, 2)
+      ),
+
+      hoverinfo = "text"
+    )
+
+  p <- p %>%
+    layout(
+      hovermode = "x unified",
+
+      annotations = list(
+        list(
+          text = paste0("<b>", r, "</b>"),
+          x = 0.5,
+          y = 1.05,
+          xref = "paper",
+          yref = "paper",
+          showarrow = FALSE,
+          font = list(size = 14)
+        ),
+
+        # unit label (top-left)
+        list(
+          text = unit,
+          x = 0,
+          y = 1.05,
+          xref = "paper",
+          yref = "paper",
+          xanchor = "left",
+          showarrow = FALSE,
+          font = list(size = 10)
+        )
+      ),
+
+      xaxis = list(
+        title = ""
+      ),
+
+      yaxis = list(
+        title = "",
+        autorange = TRUE,
+        zeroline = TRUE,
+        zerolinewidth = 2,
+        zerolinecolor = "black"
+      ),
+
+      margin = list(
+        l = 35,
+        r = 10,
+        b = 25,
+        t = 40
+      )
+    )
+
+  plist[[r]] <- p
+}
+
+# combine panels
+g <- subplot(
+  plist,
+  nrows = ceiling(length(plist) / ncol),
+  shareX = TRUE,
+  shareY = FALSE,
+  titleX = FALSE,
+  margin = 0.02
+)
+
+# force x tick labels on all subplots
+for(i in seq_along(plist)) {
+
+  axis_name <- if(i == 1) "xaxis" else paste0("xaxis", i)
+
+  g <- g %>%
+    layout(
+      setNames(
+        list(
+          list(
+            showticklabels = TRUE,
+            matches = NULL
+          )
+        ),
+        axis_name
+      )
+    )
+}
+
+# final layout
+g <- g %>%
+  layout(
+    showlegend = TRUE,
+
+    hovermode = "x unified",
+
+    legend = list(
+      orientation = "h",
+      x = 0.5,
+      xanchor = "center",
+      y = -0.1,
+      yanchor = "top",
+      font = list(size = 10)
+    ),
+
+    height = 800
+  )
+
+g
+```
+
+---
+
+# Carbon Prices {data-icon="glyphicon glyphicon-eur"}
+
+```{r Carbon Prices plot}
+# -----------------------------
+# DATA
+# -----------------------------
+vars <- c(
+  "Price|Carbon.US$2015/tn CO2"
+)
+
+in_plot <- c(
+  "Industry",
+  "Residential and Commercial",
+  "Transportation",
+  "Bunkers",
+  "Supply",
+  "Industrial Processes",
+  "AFOLU",
+  "Enhanced Weathering",
+  "Direct Air Capture"
+)
+
+in_plot <- c(
+  "Price|Carbon")
+
+unit <- sub(".*\\.", "", vars[1])
+totalvar <- "Price|Carbon"
+
+elMix <- as.quitte(data[, , vars]) %>%
+  select(-c(unit, model, scenario))
+
+elMix$region <- factor(elMix$region, levels = facet_order)
+
+total <- as.quitte(data[, , totalvar]) %>%
+  select(-c(unit, model, scenario))
+
+total$region <- factor(total$region, levels = facet_order)
+
+vars_unique <- unique(elMix$variable)
+
+# map original variable names -> short labels
+var_labels <- setNames(in_plot, vars_unique)
+
+# consistent colors
+cols <- colorRampPalette(
+  RColorBrewer::brewer.pal(12, "Set3")
+)(length(vars_unique))
+
+# use short labels for color names
+names(cols) <- in_plot
+
+plist <- list()
+
+for(i in seq_along(facet_order)) {
+
+  r <- facet_order[i]
+
+  df <- elMix %>%
+    filter(region == r)
+
+  df_total <- total %>%
+    filter(region == r)
+
+  p <- plot_ly()
+
+  for(v in vars_unique) {
+
+    display_name <- var_labels[v]
+
+    df_v <- df %>%
+      filter(variable == v)
+
+    # positive values only
+    df_pos <- df_v %>%
+      mutate(value = ifelse(value > 0, value, NA))
+
+    # negative values only
+    df_neg <- df_v %>%
+      mutate(value = ifelse(value < 0, value, NA))
+
+    hover_txt <- paste0(
+      "<b>", display_name, "</b><br>",
+      "Year: ", df_v$period, "<br>",
+      "Value: ", round(df_v$value, 2)
+    )
+
+    # positive stack
+    p <- p %>%
+      add_trace(
+        data = df_pos,
+        x = ~period,
+        y = ~value,
+
+        type = "scatter",
+        mode = "none",
+
+        stackgroup = "positive",
+
+        fillcolor = cols[display_name],
+        line = list(color = cols[display_name]),
+
+        name = display_name,
+        legendgroup = display_name,
+
+        text = hover_txt,
+        hoverinfo = "text",
+
+        showlegend = (i == 1)
+      )
+
+    # negative stack
+    p <- p %>%
+      add_trace(
+        data = df_neg,
+        x = ~period,
+        y = ~value,
+
+        type = "scatter",
+        mode = "none",
+
+        stackgroup = "negative",
+
+        fillcolor = cols[display_name],
+        line = list(color = cols[display_name]),
+
+        name = display_name,
+        legendgroup = display_name,
+
+        text = hover_txt,
+        hoverinfo = "text",
+
+        showlegend = FALSE
+      )
+  }
+
+  # total emissions line
+  p <- p %>%
+    add_trace(
+      data = df_total,
+      x = ~period,
+      y = ~value,
+
+      type = "scatter",
+      mode = "lines",
+
+      line = list(
+        color = "black",
+        width = 3
+      ),
+
+      name = "Total",
+      legendgroup = "Total",
+
+      showlegend = (i == 1),
+
+      text = ~paste0(
+        "<b>Total</b><br>",
+        "Year: ", period, "<br>",
+        "Value: ", round(value, 2)
+      ),
+
+      hoverinfo = "text"
+    )
+
+  p <- p %>%
+    layout(
+      hovermode = "x unified",
+
+      annotations = list(
+        list(
+          text = paste0("<b>", r, "</b>"),
+          x = 0.5,
+          y = 1.05,
+          xref = "paper",
+          yref = "paper",
+          showarrow = FALSE,
+          font = list(size = 14)
+        ),
+
+        # unit label (top-left)
+        list(
+          text = unit,
+          x = 0,
+          y = 1.05,
+          xref = "paper",
+          yref = "paper",
+          xanchor = "left",
+          showarrow = FALSE,
+          font = list(size = 10)
+        )
+      ),
+
+      xaxis = list(
+        title = ""
+      ),
+
+      yaxis = list(
+        title = "",
+        autorange = TRUE,
+        zeroline = TRUE,
+        zerolinewidth = 2,
+        zerolinecolor = "black"
+      ),
+
+      margin = list(
+        l = 35,
+        r = 10,
+        b = 25,
+        t = 40
+      )
+    )
+
+  plist[[r]] <- p
+}
+
+# combine panels
+g <- subplot(
+  plist,
+  nrows = ceiling(length(plist) / ncol),
+  shareX = TRUE,
+  shareY = FALSE,
+  titleX = FALSE,
+  margin = 0.02
+)
+
+# force x tick labels on all subplots
+for(i in seq_along(plist)) {
+
+  axis_name <- if(i == 1) "xaxis" else paste0("xaxis", i)
+
+  g <- g %>%
+    layout(
+      setNames(
+        list(
+          list(
+            showticklabels = TRUE,
+            matches = NULL
+          )
+        ),
+        axis_name
+      )
+    )
+}
+
+# final layout
+g <- g %>%
+  layout(
+    showlegend = TRUE,
+
+    hovermode = "x unified",
+
+    legend = list(
+      orientation = "h",
+      x = 0.5,
+      xanchor = "center",
+      y = -0.1,
+      yanchor = "top",
+      font = list(size = 10)
+    ),
+
+    height = 800
+  )
+
+g
+```
+
+---
+
+# Secondary Energy Electricity {data-icon="glyphicon glyphicon-scale"}
+
+```{r Secondary Energy Electricity plot}
+vars <- c(
+  "Secondary Energy|Electricity|Biofuels|w/ CCS.TWh",
+  "Secondary Energy|Electricity|Biofuels|w/o CCS.TWh",
+  "Secondary Energy|Electricity|Coal|w/ CCS.TWh",
+  "Secondary Energy|Electricity|Coal|w/o CCS.TWh",
+  "Secondary Energy|Electricity|Gas|w/ CCS.TWh",
+  "Secondary Energy|Electricity|Gas|w/o CCS.TWh",
+  "Secondary Energy|Electricity|Geothermal and other renewable sources.TWh",
+  "Secondary Energy|Electricity|Heat.TWh",
+  "Secondary Energy|Electricity|Hydrogen.TWh",
+  "Secondary Energy|Electricity|Oil.TWh",
+  "Secondary Energy|Electricity|Hydro.TWh",
+  "Secondary Energy|Electricity|Wind.TWh",
+  "Secondary Energy|Electricity|Solar.TWh",
+  "Secondary Energy|Electricity|Nuclear.TWh"
+)
+
+in_plot <- c(
+  "Biofuels|w/ CCS",
+  "Biofuels|w/o CCS",
+  "Coal|w/ CCS",
+  "Coal|w/o CCS",
+  "Gas|w/ CCS",
+  "Gas|w/o CCS",
+  "Geothermal and other renewable sources",
+  "Heat",
+  "Hydrogen",
+  "Oil",
+  "Hydro",
+  "Wind",
+  "Solar",
+  "Nuclear"
+)
+
+unit <- sub(".*\\.", "", vars[1])
+totalvar <- "Secondary Energy|Electricity"
+
+elMix <- as.quitte(data[, , vars]) %>%
+  select(-c(unit, model, scenario))
+
+elMix$region <- factor(elMix$region, levels = facet_order)
+
+total <- as.quitte(data[, , totalvar]) %>%
+  select(-c(unit, model, scenario))
+
+total$region <- factor(total$region, levels = facet_order)
+
+vars_unique <- unique(elMix$variable)
+
+# map original variable names -> short labels
+var_labels <- setNames(in_plot, vars_unique)
+
+# consistent colors
+cols <- colorRampPalette(
+  RColorBrewer::brewer.pal(12, "Set3")
+)(length(vars_unique))
+
+# use short labels for color names
+names(cols) <- in_plot
+
+plist <- list()
+
+for(i in seq_along(facet_order)) {
+
+  r <- facet_order[i]
+
+  df <- elMix %>%
+    filter(region == r)
+
+  df_total <- total %>%
+    filter(region == r)
+
+  p <- plot_ly()
+
+  for(v in vars_unique) {
+
+    display_name <- var_labels[v]
+
+    df_v <- df %>%
+      filter(variable == v)
+
+    # positive values only
+    df_pos <- df_v %>%
+      mutate(value = ifelse(value > 0, value, NA))
+
+    # negative values only
+    df_neg <- df_v %>%
+      mutate(value = ifelse(value < 0, value, NA))
+
+    hover_txt <- paste0(
+      "<b>", display_name, "</b><br>",
+      "Year: ", df_v$period, "<br>",
+      "Value: ", round(df_v$value, 2)
+    )
+
+    # positive stack
+    p <- p %>%
+      add_trace(
+        data = df_pos,
+        x = ~period,
+        y = ~value,
+
+        type = "scatter",
+        mode = "none",
+
+        stackgroup = "positive",
+
+        fillcolor = cols[display_name],
+        line = list(color = cols[display_name]),
+
+        name = display_name,
+        legendgroup = display_name,
+
+        text = hover_txt,
+        hoverinfo = "text",
+
+        showlegend = (i == 1)
+      )
+
+    # negative stack
+    p <- p %>%
+      add_trace(
+        data = df_neg,
+        x = ~period,
+        y = ~value,
+
+        type = "scatter",
+        mode = "none",
+
+        stackgroup = "negative",
+
+        fillcolor = cols[display_name],
+        line = list(color = cols[display_name]),
+
+        name = display_name,
+        legendgroup = display_name,
+
+        text = hover_txt,
+        hoverinfo = "text",
+
+        showlegend = FALSE
+      )
+  }
+
+  # total emissions line
+  p <- p %>%
+    add_trace(
+      data = df_total,
+      x = ~period,
+      y = ~value,
+
+      type = "scatter",
+      mode = "lines",
+
+      line = list(
+        color = "black",
+        width = 3
+      ),
+
+      name = "Total",
+      legendgroup = "Total",
+
+      showlegend = (i == 1),
+
+      text = ~paste0(
+        "<b>Total</b><br>",
+        "Year: ", period, "<br>",
+        "Value: ", round(value, 2)
+      ),
+
+      hoverinfo = "text"
+    )
+
+  p <- p %>%
+    layout(
+      hovermode = "x unified",
+
+      annotations = list(
+        list(
+          text = paste0("<b>", r, "</b>"),
+          x = 0.5,
+          y = 1.05,
+          xref = "paper",
+          yref = "paper",
+          showarrow = FALSE,
+          font = list(size = 14)
+        ),
+
+        # unit label (top-left)
+        list(
+          text = unit,
+          x = 0,
+          y = 1.05,
+          xref = "paper",
+          yref = "paper",
+          xanchor = "left",
+          showarrow = FALSE,
+          font = list(size = 10)
+        )
+      ),
+
+      xaxis = list(
+        title = ""
+      ),
+
+      yaxis = list(
+        title = "",
+        autorange = TRUE,
+        zeroline = TRUE,
+        zerolinewidth = 2,
+        zerolinecolor = "black"
+      ),
+
+      margin = list(
+        l = 35,
+        r = 10,
+        b = 25,
+        t = 40
+      )
+    )
+
+  plist[[r]] <- p
+}
+
+# combine panels
+g <- subplot(
+  plist,
+  nrows = ceiling(length(plist) / ncol),
+  shareX = TRUE,
+  shareY = FALSE,
+  titleX = FALSE,
+  margin = 0.02
+)
+
+# force x tick labels on all subplots
+for(i in seq_along(plist)) {
+
+  axis_name <- if(i == 1) "xaxis" else paste0("xaxis", i)
+
+  g <- g %>%
+    layout(
+      setNames(
+        list(
+          list(
+            showticklabels = TRUE,
+            matches = NULL
+          )
+        ),
+        axis_name
+      )
+    )
+}
+
+# final layout
+g <- g %>%
+  layout(
+    showlegend = TRUE,
+
+    hovermode = "x unified",
+
+    legend = list(
+      orientation = "h",
+      x = 0.5,
+      xanchor = "center",
+      y = -0.1,
+      yanchor = "top",
+      font = list(size = 10)
+    ),
+
+    height = 800
+  )
+
+g
+```
+---
+
+# Capacity|Electricity {data-icon="glyphicon glyphicon-scale"}
+
+```{r Capacity Electricity plot}
+vars <- c(
+  "Capacity|Electricity|Biofuels|w/ CCS.GW",
+  "Capacity|Electricity|Biofuels|w/o CCS.GW",
+  "Capacity|Electricity|Coal|w/ CCS.GW",
+  "Capacity|Electricity|Coal|w/o CCS.GW",
+  "Capacity|Electricity|Gas|w/ CCS.GW",
+  "Capacity|Electricity|Gas|w/o CCS.GW",
+  "Capacity|Electricity|Geothermal and other renewable sources.GW",
+  "Capacity|Electricity|Hydrogen.GW",
+  "Capacity|Electricity|Oil.GW",
+  "Capacity|Electricity|Hydro.GW",
+  "Capacity|Electricity|Wind.GW",
+  "Capacity|Electricity|Solar.GW",
+  "Capacity|Electricity|Nuclear.GW"
+)
+
+in_plot <- c(
+  "Biofuels|w/ CCS",
+  "Biofuels|w/o CCS",
+  "Coal|w/ CCS",
+  "Coal|w/o CCS",
+  "Gas|w/ CCS",
+  "Gas|w/o CCS",
+  "Geothermal and other renewable sources",
+  "Hydrogen",
+  "Oil",
+  "Hydro",
+  "Wind",
+  "Solar",
+  "Nuclear"
+)
+
+unit <- sub(".*\\.", "", vars[1])
+totalvar <- "Capacity|Electricity"
+
+elMix <- as.quitte(data[, , vars]) %>%
+  select(-c(unit, model, scenario))
+
+elMix$region <- factor(elMix$region, levels = facet_order)
+
+total <- as.quitte(data[, , totalvar]) %>%
+  select(-c(unit, model, scenario))
+
+total$region <- factor(total$region, levels = facet_order)
+
+vars_unique <- unique(elMix$variable)
+
+# map original variable names -> short labels
+var_labels <- setNames(in_plot, vars_unique)
+
+# consistent colors
+cols <- colorRampPalette(
+  RColorBrewer::brewer.pal(12, "Set3")
+)(length(vars_unique))
+
+# use short labels for color names
+names(cols) <- in_plot
+
+plist <- list()
+
+for(i in seq_along(facet_order)) {
+
+  r <- facet_order[i]
+
+  df <- elMix %>%
+    filter(region == r)
+
+  df_total <- total %>%
+    filter(region == r)
+
+  p <- plot_ly()
+
+  for(v in vars_unique) {
+
+    display_name <- var_labels[v]
+
+    df_v <- df %>%
+      filter(variable == v)
+
+    # positive values only
+    df_pos <- df_v %>%
+      mutate(value = ifelse(value > 0, value, NA))
+
+    # negative values only
+    df_neg <- df_v %>%
+      mutate(value = ifelse(value < 0, value, NA))
+
+    hover_txt <- paste0(
+      "<b>", display_name, "</b><br>",
+      "Year: ", df_v$period, "<br>",
+      "Value: ", round(df_v$value, 2)
+    )
+
+    # positive stack
+    p <- p %>%
+      add_trace(
+        data = df_pos,
+        x = ~period,
+        y = ~value,
+
+        type = "scatter",
+        mode = "none",
+
+        stackgroup = "positive",
+
+        fillcolor = cols[display_name],
+        line = list(color = cols[display_name]),
+
+        name = display_name,
+        legendgroup = display_name,
+
+        text = hover_txt,
+        hoverinfo = "text",
+
+        showlegend = (i == 1)
+      )
+
+    # negative stack
+    p <- p %>%
+      add_trace(
+        data = df_neg,
+        x = ~period,
+        y = ~value,
+
+        type = "scatter",
+        mode = "none",
+
+        stackgroup = "negative",
+
+        fillcolor = cols[display_name],
+        line = list(color = cols[display_name]),
+
+        name = display_name,
+        legendgroup = display_name,
+
+        text = hover_txt,
+        hoverinfo = "text",
+
+        showlegend = FALSE
+      )
+  }
+
+  # total emissions line
+  p <- p %>%
+    add_trace(
+      data = df_total,
+      x = ~period,
+      y = ~value,
+
+      type = "scatter",
+      mode = "lines",
+
+      line = list(
+        color = "black",
+        width = 3
+      ),
+
+      name = "Total",
+      legendgroup = "Total",
+
+      showlegend = (i == 1),
+
+      text = ~paste0(
+        "<b>Total</b><br>",
+        "Year: ", period, "<br>",
+        "Value: ", round(value, 2)
+      ),
+
+      hoverinfo = "text"
+    )
+
+  p <- p %>%
+    layout(
+      hovermode = "x unified",
+
+      annotations = list(
+        list(
+          text = paste0("<b>", r, "</b>"),
+          x = 0.5,
+          y = 1.05,
+          xref = "paper",
+          yref = "paper",
+          showarrow = FALSE,
+          font = list(size = 14)
+        ),
+
+        # unit label (top-left)
+        list(
+          text = unit,
+          x = 0,
+          y = 1.05,
+          xref = "paper",
+          yref = "paper",
+          xanchor = "left",
+          showarrow = FALSE,
+          font = list(size = 10)
+        )
+      ),
+
+      xaxis = list(
+        title = ""
+      ),
+
+      yaxis = list(
+        title = "",
+        autorange = TRUE,
+        zeroline = TRUE,
+        zerolinewidth = 2,
+        zerolinecolor = "black"
+      ),
+
+      margin = list(
+        l = 35,
+        r = 10,
+        b = 25,
+        t = 40
+      )
+    )
+
+  plist[[r]] <- p
+}
+
+# combine panels
+g <- subplot(
+  plist,
+  nrows = ceiling(length(plist) / ncol),
+  shareX = TRUE,
+  shareY = FALSE,
+  titleX = FALSE,
+  margin = 0.02
+)
+
+# force x tick labels on all subplots
+for(i in seq_along(plist)) {
+
+  axis_name <- if(i == 1) "xaxis" else paste0("xaxis", i)
+
+  g <- g %>%
+    layout(
+      setNames(
+        list(
+          list(
+            showticklabels = TRUE,
+            matches = NULL
+          )
+        ),
+        axis_name
+      )
+    )
+}
+
+# final layout
+g <- g %>%
+  layout(
+    showlegend = TRUE,
+
+    hovermode = "x unified",
+
+    legend = list(
+      orientation = "h",
+      x = 0.5,
+      xanchor = "center",
+      y = -0.1,
+      yanchor = "top",
+      font = list(size = 10)
+    ),
+
+    height = 800
+  )
+
+g
+```
+---
+
+# Final Energy {data-icon="glyphicon glyphicon-scale"}
+
+```{r Final Energy plot}
+vars <- c(
+  "Final Energy|Industry.Mtoe",
+  "Final Energy|Transportation.Mtoe",
+  "Final Energy|Non-Energy Use.Mtoe",
+  "Final Energy|Residential and Commercial.Mtoe",
+  "Final Energy|Bunkers.Mtoe",
+  "Final Energy|Carbon Management.Mtoe"
+)
+
+in_plot <- c(
+  "Industry",
+  "Transportation",
+  "Non-Energy Use",
+  "Residential and Commercial",
+  "Bunkers",
+  "Carbon Management"
+)
+
+unit <- sub(".*\\.", "", vars[1])
+totalvar <- "Final Energy"
+
+elMix <- as.quitte(data[, , vars]) %>%
+  select(-c(unit, model, scenario))
+
+elMix$region <- factor(elMix$region, levels = facet_order)
+
+total <- as.quitte(data[, , totalvar]) %>%
+  select(-c(unit, model, scenario))
+
+total$region <- factor(total$region, levels = facet_order)
+
+vars_unique <- unique(elMix$variable)
+
+# map original variable names -> short labels
+var_labels <- setNames(in_plot, vars_unique)
+
+# consistent colors
+cols <- colorRampPalette(
+  RColorBrewer::brewer.pal(12, "Set3")
+)(length(vars_unique))
+
+# use short labels for color names
+names(cols) <- in_plot
+
+plist <- list()
+
+for(i in seq_along(facet_order)) {
+
+  r <- facet_order[i]
+
+  df <- elMix %>%
+    filter(region == r)
+
+  df_total <- total %>%
+    filter(region == r)
+
+  p <- plot_ly()
+
+  for(v in vars_unique) {
+
+    display_name <- var_labels[v]
+
+    df_v <- df %>%
+      filter(variable == v)
+
+    # positive values only
+    df_pos <- df_v %>%
+      mutate(value = ifelse(value > 0, value, NA))
+
+    # negative values only
+    df_neg <- df_v %>%
+      mutate(value = ifelse(value < 0, value, NA))
+
+    hover_txt <- paste0(
+      "<b>", display_name, "</b><br>",
+      "Year: ", df_v$period, "<br>",
+      "Value: ", round(df_v$value, 2)
+    )
+
+    # positive stack
+    p <- p %>%
+      add_trace(
+        data = df_pos,
+        x = ~period,
+        y = ~value,
+
+        type = "scatter",
+        mode = "none",
+
+        stackgroup = "positive",
+
+        fillcolor = cols[display_name],
+        line = list(color = cols[display_name]),
+
+        name = display_name,
+        legendgroup = display_name,
+
+        text = hover_txt,
+        hoverinfo = "text",
+
+        showlegend = (i == 1)
+      )
+
+    # negative stack
+    p <- p %>%
+      add_trace(
+        data = df_neg,
+        x = ~period,
+        y = ~value,
+
+        type = "scatter",
+        mode = "none",
+
+        stackgroup = "negative",
+
+        fillcolor = cols[display_name],
+        line = list(color = cols[display_name]),
+
+        name = display_name,
+        legendgroup = display_name,
+
+        text = hover_txt,
+        hoverinfo = "text",
+
+        showlegend = FALSE
+      )
+  }
+
+  # total emissions line
+  p <- p %>%
+    add_trace(
+      data = df_total,
+      x = ~period,
+      y = ~value,
+
+      type = "scatter",
+      mode = "lines",
+
+      line = list(
+        color = "black",
+        width = 3
+      ),
+
+      name = "Total",
+      legendgroup = "Total",
+
+      showlegend = (i == 1),
+
+      text = ~paste0(
+        "<b>Total</b><br>",
+        "Year: ", period, "<br>",
+        "Value: ", round(value, 2)
+      ),
+
+      hoverinfo = "text"
+    )
+
+  p <- p %>%
+    layout(
+      hovermode = "x unified",
+
+      annotations = list(
+        list(
+          text = paste0("<b>", r, "</b>"),
+          x = 0.5,
+          y = 1.05,
+          xref = "paper",
+          yref = "paper",
+          showarrow = FALSE,
+          font = list(size = 14)
+        ),
+
+        # unit label (top-left)
+        list(
+          text = unit,
+          x = 0,
+          y = 1.05,
+          xref = "paper",
+          yref = "paper",
+          xanchor = "left",
+          showarrow = FALSE,
+          font = list(size = 10)
+        )
+      ),
+
+      xaxis = list(
+        title = ""
+      ),
+
+      yaxis = list(
+        title = "",
+        autorange = TRUE,
+        zeroline = TRUE,
+        zerolinewidth = 2,
+        zerolinecolor = "black"
+      ),
+
+      margin = list(
+        l = 35,
+        r = 10,
+        b = 25,
+        t = 40
+      )
+    )
+
+  plist[[r]] <- p
+}
+
+# combine panels
+g <- subplot(
+  plist,
+  nrows = ceiling(length(plist) / ncol),
+  shareX = TRUE,
+  shareY = FALSE,
+  titleX = FALSE,
+  margin = 0.02
+)
+
+# force x tick labels on all subplots
+for(i in seq_along(plist)) {
+
+  axis_name <- if(i == 1) "xaxis" else paste0("xaxis", i)
+
+  g <- g %>%
+    layout(
+      setNames(
+        list(
+          list(
+            showticklabels = TRUE,
+            matches = NULL
+          )
+        ),
+        axis_name
+      )
+    )
+}
+
+# final layout
+g <- g %>%
+  layout(
+    showlegend = TRUE,
+
+    hovermode = "x unified",
+
+    legend = list(
+      orientation = "h",
+      x = 0.5,
+      xanchor = "center",
+      y = -0.1,
+      yanchor = "top",
+      font = list(size = 10)
+    ),
+
+    height = 800
+  )
+
+g
+```
+---
+
+# Final Energy Fuel {data-icon="glyphicon glyphicon-scale"}
+
+```{r Final Energy Fuel plot}
+vars <- c(
+  "Final Energy|Solids.Mtoe",
+  "Final Energy|Fossil Liquids.Mtoe",
+  "Final Energy|Gas.Mtoe",
+  "Final Energy|Heat.Mtoe",
+  "Final Energy|Renewables.Mtoe",
+  "Final Energy|Electricity.Mtoe",
+  "Final Energy|Hydrogen.Mtoe",
+  "Final Energy|Other fuels.Mtoe",
+  "Final Energy|Biofuels.Mtoe",
+  "Final Energy|Nuclear.Mtoe"
+)
+
+in_plot <- c(
+  "Solids",
+  "Fossil Liquids",
+  "Gas",
+  "Heat",
+  "Renewables",
+  "Electricity",
+  "Hydrogen",
+  "Other fuels",
+  "Biofuels",
+  "Nuclear"
+)
+
+unit <- sub(".*\\.", "", vars[1])
+totalvar <- "Final Energy"
+
+elMix <- as.quitte(data[, , vars]) %>%
+  select(-c(unit, model, scenario))
+
+elMix$region <- factor(elMix$region, levels = facet_order)
+
+total <- as.quitte(data[, , totalvar]) %>%
+  select(-c(unit, model, scenario))
+
+total$region <- factor(total$region, levels = facet_order)
+
+vars_unique <- unique(elMix$variable)
+
+# map original variable names -> short labels
+var_labels <- setNames(in_plot, vars_unique)
+
+# consistent colors
+cols <- colorRampPalette(
+  RColorBrewer::brewer.pal(12, "Set3")
+)(length(vars_unique))
+
+# use short labels for color names
+names(cols) <- in_plot
+
+plist <- list()
+
+for(i in seq_along(facet_order)) {
+
+  r <- facet_order[i]
+
+  df <- elMix %>%
+    filter(region == r)
+
+  df_total <- total %>%
+    filter(region == r)
+
+  p <- plot_ly()
+
+  for(v in vars_unique) {
+
+    display_name <- var_labels[v]
+
+    df_v <- df %>%
+      filter(variable == v)
+
+    # positive values only
+    df_pos <- df_v %>%
+      mutate(value = ifelse(value > 0, value, NA))
+
+    # negative values only
+    df_neg <- df_v %>%
+      mutate(value = ifelse(value < 0, value, NA))
+
+    hover_txt <- paste0(
+      "<b>", display_name, "</b><br>",
+      "Year: ", df_v$period, "<br>",
+      "Value: ", round(df_v$value, 2)
+    )
+
+    # positive stack
+    p <- p %>%
+      add_trace(
+        data = df_pos,
+        x = ~period,
+        y = ~value,
+
+        type = "scatter",
+        mode = "none",
+
+        stackgroup = "positive",
+
+        fillcolor = cols[display_name],
+        line = list(color = cols[display_name]),
+
+        name = display_name,
+        legendgroup = display_name,
+
+        text = hover_txt,
+        hoverinfo = "text",
+
+        showlegend = (i == 1)
+      )
+
+    # negative stack
+    p <- p %>%
+      add_trace(
+        data = df_neg,
+        x = ~period,
+        y = ~value,
+
+        type = "scatter",
+        mode = "none",
+
+        stackgroup = "negative",
+
+        fillcolor = cols[display_name],
+        line = list(color = cols[display_name]),
+
+        name = display_name,
+        legendgroup = display_name,
+
+        text = hover_txt,
+        hoverinfo = "text",
+
+        showlegend = FALSE
+      )
+  }
+
+  # total emissions line
+  p <- p %>%
+    add_trace(
+      data = df_total,
+      x = ~period,
+      y = ~value,
+
+      type = "scatter",
+      mode = "lines",
+
+      line = list(
+        color = "black",
+        width = 3
+      ),
+
+      name = "Total",
+      legendgroup = "Total",
+
+      showlegend = (i == 1),
+
+      text = ~paste0(
+        "<b>Total</b><br>",
+        "Year: ", period, "<br>",
+        "Value: ", round(value, 2)
+      ),
+
+      hoverinfo = "text"
+    )
+
+  p <- p %>%
+    layout(
+      hovermode = "x unified",
+
+      annotations = list(
+        list(
+          text = paste0("<b>", r, "</b>"),
+          x = 0.5,
+          y = 1.05,
+          xref = "paper",
+          yref = "paper",
+          showarrow = FALSE,
+          font = list(size = 14)
+        ),
+
+        # unit label (top-left)
+        list(
+          text = unit,
+          x = 0,
+          y = 1.05,
+          xref = "paper",
+          yref = "paper",
+          xanchor = "left",
+          showarrow = FALSE,
+          font = list(size = 10)
+        )
+      ),
+
+      xaxis = list(
+        title = ""
+      ),
+
+      yaxis = list(
+        title = "",
+        autorange = TRUE,
+        zeroline = TRUE,
+        zerolinewidth = 2,
+        zerolinecolor = "black"
+      ),
+
+      margin = list(
+        l = 35,
+        r = 10,
+        b = 25,
+        t = 40
+      )
+    )
+
+  plist[[r]] <- p
+}
+
+# combine panels
+g <- subplot(
+  plist,
+  nrows = ceiling(length(plist) / ncol),
+  shareX = TRUE,
+  shareY = FALSE,
+  titleX = FALSE,
+  margin = 0.02
+)
+
+# force x tick labels on all subplots
+for(i in seq_along(plist)) {
+
+  axis_name <- if(i == 1) "xaxis" else paste0("xaxis", i)
+
+  g <- g %>%
+    layout(
+      setNames(
+        list(
+          list(
+            showticklabels = TRUE,
+            matches = NULL
+          )
+        ),
+        axis_name
+      )
+    )
+}
+
+# final layout
+g <- g %>%
+  layout(
+    showlegend = TRUE,
+
+    hovermode = "x unified",
+
+    legend = list(
+      orientation = "h",
+      x = 0.5,
+      xanchor = "center",
+      y = -0.1,
+      yanchor = "top",
+      font = list(size = 10)
+    ),
+
+    height = 800
+  )
+
+g
+```

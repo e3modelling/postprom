@@ -1,0 +1,9 @@
+OPEN-PROM-variable,magpie-variable
+Carbon Removal|Land Use|Agroforestry,Emissions|CO2|AFOLU|Land|Land-use Change|Regrowth|+|Cropland Tree Cover
+Carbon Removal|Land Use|Forest Management,Emissions|CO2|AFOLU|Land|+|Indirect
+Carbon Removal|Land Use|Other,Emissions|CO2|AFOLU|Land|Land-use Change|Regrowth|+|Other Land
+Carbon Removal|Land Use|Re/Afforestation|Natural Forest,Emissions|CO2|AFOLU|Land|Land-use Change|Regrowth|+|NPI_NDC AR
+Carbon Removal|Land Use|Re/Afforestation|Natural Forest,Emissions|CO2|AFOLU|Land|Land-use Change|Regrowth|+|Secondary Forest
+Carbon Removal|Land Use|Re/Afforestation|Plantation,Emissions|CO2|AFOLU|Land|Land-use Change|Regrowth|CO2-price AR|+|Plantation
+Carbon Removal|Land Use|Re/Afforestation|Plantation,Emissions|CO2|AFOLU|Land|Land-use Change|Regrowth|+|Timber Plantations
+Carbon Removal|Land Use|Soil Carbon Management|Cropland,Emissions|CO2|AFOLU|Land|Land-use Change|Soil|Cropland management|+|Withdrawals

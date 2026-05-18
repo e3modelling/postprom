@@ -9,6 +9,7 @@ Emissions|CO2|Total,Industrial Processes
 Emissions|CO2|Total,Energy|Demand|Direct Air Capture
 Emissions|CO2|Total,Validation
 Emissions|CO2|Total,
+Emissions|CO2|Total,Energy|Demand|Enhanced Weathering
 Emissions|CO2|Total,VAL
 Emissions|CO2|Cumulated,Cumulated
 Emissions|CO2|Cumulated,Budget1p5C
@@ -24,6 +25,7 @@ Final Energy|Sector,Industry|Validation
 Final Energy|Sector,Transportation|Validation
 Final Energy|Sector,Non-Energy Use
 Final Energy|Sector,Bunkers
+Final Energy|Sector,Carbon Management
 Final Energy|Fuel,Solids
 Final Energy|Fuel,Hydrogen
 Final Energy|Fuel,Gas
