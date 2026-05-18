@@ -38,7 +38,14 @@ reportFinalEnergy <- function(path, regions, years) {
   DSBS_CDR <- readGDX(path, "CDR") %>%
     as.data.frame() %>%
     mutate(SBS = "Carbon Management")
-  DSBS_SBS <- bind_rows(DSBS_Industry, DSBS_Transport, DSBS_NonEnergy, DSBS_CDR) %>%
+  DSBS_COMM <- data.frame(
+    "." = c("SE", "ICT"),
+    "SBS" = "Commercial"
+  )
+  DSBS_SBS <- bind_rows(
+    DSBS_Industry, DSBS_Transport,
+    DSBS_NonEnergy, DSBS_CDR, DSBS_COMM
+  ) %>%
     rename(DSBS = 1) %>%
     left_join(DSBSTable, by = c("DSBS" = "SBS")) %>%
     select(-DSBS) %>%
@@ -46,6 +53,7 @@ reportFinalEnergy <- function(path, regions, years) {
   lookup <- setNames(DSBS_SBS$SBS, DSBS_SBS$DSBS)
   # -------------------------- Prepare data --------------------------------------
   fuel <- readGDX(path, "VmFinalEnergy", field = "l")[regions, years, ]
+  years <- getYears(fuel)
   units <- sub(".*\\((.*)\\).*", "\\1", fuel@description)
   # fuel <- fuel[, , EFSTable$EF]
   # -------------------------- Fuel Aggregations ------------------------------
@@ -94,9 +102,28 @@ reportFinalEnergy <- function(path, regions, years) {
   resCom <- fuel[, , c("Final Energy|Residential", "Final Energy|Commercial", "Final Energy|Agriculture, Fishing, Forestry")]
   resCom <- dimSums(resCom, 3)
   getItems(resCom, 3.1) <- "Final Energy|Residential and Commercial"
+  # -------------------------- Data centers, Infrastructure --------------
+  scenarioICT <- readGDX(path, "ICT")[[1]]
+  DCRatio <- new.magpie(
+    getRegions(fuel),
+    years = years,
+    names = "ratio",
+    fill = 1 / (1 + ifelse(scenarioICT == "Upper", 0.91, 0.78))
+  )
+  DCRatio[, years[years <= "y2023"], ] <- 1 / (1 + 0.91)
 
+  dataCenters <- new.magpie(
+    getRegions(fuel),
+    years = getYears(fuel),
+    names = c(
+      "Final Energy|Commercial|Data centers and Networks|Data centers|Electricity",
+      "Final Energy|Commercial|Data centers and Networks|Infrastructure|Electricity"
+    )
+  )
+  dataCenters[, , "Final Energy|Commercial|Data centers and Networks|Data centers|Electricity"] <- fuel[, , "Final Energy|Commercial|Data centers and Networks|Electricity"] * DCRatio
+  dataCenters[, , "Final Energy|Commercial|Data centers and Networks|Infrastructure|Electricity"] <- fuel[, , "Final Energy|Commercial|Data centers and Networks|Electricity"] * (1-DCRatio)
   # ============================ Add units ================================
-  magpie_object <- mbind(fuel, finalPerFuel, fuelWOBunkers, resCom, finalPerFuelAggregated)
+  magpie_object <- mbind(fuel, finalPerFuel, fuelWOBunkers, resCom, finalPerFuelAggregated, dataCenters)
   magpie_object <- add_dimension(magpie_object, dim = 3.2, add = "unit", nm = units)
   return(magpie_object)
 }

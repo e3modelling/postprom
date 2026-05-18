@@ -70,7 +70,11 @@ reportEmissions <- function(path, regions, years) {
   DSBS_Transport <- readGDX(path, "TRANSE") %>%
     as.data.frame() %>%
     mutate(SBS = "Transportation")
-  DSBS_SBS <- bind_rows(DSBS_Industry, DSBS_Transport) %>%
+  DSBS_COMM <- data.frame(
+    "." = c("SE", "ICT"),
+    "SBS" = "Commercial"
+  )
+  DSBS_SBS <- bind_rows(DSBS_Industry, DSBS_Transport, DSBS_COMM) %>%
     rename(DSBS = 1) %>%
     left_join(DSBSTable, by = c("DSBS" = "SBS")) %>%
     select(-DSBS) %>%
