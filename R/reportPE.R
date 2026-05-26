@@ -9,6 +9,7 @@
 #' \dontrun{
 #' result <- reportPE(system.file("extdata", "blabla.gdx", package = "postprom"), c("MEA"))
 #' }
+#'
 #' @importFrom gdx readGDX
 #' @importFrom madrat toolAggregate
 #' @importFrom magclass getItems getNames add_dimension mbind
@@ -23,17 +24,16 @@ reportPE <- function(path, regions, years) {
       "Other fuels", "Solar", "Wind", "Geothermal and other renewable sources",
       "Hydrogen", "Hydro"
     ))
-  V03ProdPrimary <- readGDX(path, "V03ProdPrimary", field = "l")[regions, years, ]
+  #MtoeToEJ <- 0.041868 units to be Mtoe
+  V03ConsGrssInl <- readGDX(path, "V03ConsGrssInl", field = "l")[regions, years, ]
 
-  V03ProdPrimary <- toolAggregate(V03ProdPrimary,
+  V03ConsGrssInl <- toolAggregate(V03ConsGrssInl,
     weight = NULL, dim = 3,
     rel = BALEFtoEF, from = "BALEF", to = "EF"
   )
-  getItems(V03ProdPrimary, 3) <- paste0("Primary Energy|", getItems(V03ProdPrimary, 3))
+  getItems(V03ConsGrssInl, 3) <- paste0("Primary Energy|", getItems(V03ConsGrssInl, 3))
 
-  magpie_object <- helperAggregateLevel(V03ProdPrimary, level = 1, recursive = TRUE)
-
-  # Add dimensions and bind to magpie object
+  magpie_object <- helperAggregateLevel(V03ConsGrssInl, level = 1, recursive = TRUE)
   magpie_object <- add_dimension(magpie_object, dim = 3.2, add = "unit", nm = "Mtoe")
   return(magpie_object)
 }
