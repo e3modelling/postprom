@@ -728,11 +728,13 @@ getREMIND_MAgPIE_PRISMA <- function(path, magpie_object) {
 
   # Filter REMIND_MAgPIE_PRISMA by scenario
   if (fscenario == 5) {
-    REMIND_MAgPIE_PRISMA <- REMIND_MAgPIE_PRISMA[, , "SSP2 - Asymmetric Roll-Back"]
+    REMIND_MAgPIE_PRISMA <- REMIND_MAgPIE_PRISMA[, , "SSP2_Meet_Aspirations"]
   } else if (fscenario == 6) {
-    REMIND_MAgPIE_PRISMA <- REMIND_MAgPIE_PRISMA[, , "SSP2 - Late Reawakening"]
+    REMIND_MAgPIE_PRISMA <- REMIND_MAgPIE_PRISMA[, , "SSP2_Asymmetric_Roll_Back"]
+  } else if (fscenario == 7) {
+    REMIND_MAgPIE_PRISMA <- REMIND_MAgPIE_PRISMA[, , "SSP2_Late_Reawakening"]
   } else {
-    REMIND_MAgPIE_PRISMA <- REMIND_MAgPIE_PRISMA[, , "SSP2 - Meet Aspirations"]
+    REMIND_MAgPIE_PRISMA <- REMIND_MAgPIE_PRISMA[, , "SSP2_Meet_Aspirations"]
   }
 
   # interpolate years
