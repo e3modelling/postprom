@@ -95,6 +95,22 @@ reportFinalEnergy <- function(path, regions, years) {
 
   getItems(fuel, 3) <- paste0("Final Energy|", name)
 
+  # -------------------------- Data centers, Infrastructure --------------
+  scenarioICT <- readGDX(path, "ICT")[[1]]
+  getItems(fuel, 3) <- gsub(
+    "^Final Energy\\|Commercial\\|Data centers and Networks\\|",
+    "Final Energy|Commercial|Data centers and Networks|Data Centers|",
+    getItems(fuel, 3)
+  )
+
+  dataCenters <- fuel[, , "Final Energy|Commercial|Data centers and Networks|Data Centers", pmatch = TRUE]
+  getItems(dataCenters, 3) <- gsub("\\|Data Centers\\|", "|Infrastructure|", getItems(dataCenters, 3))
+  fuel <- mbind(fuel, dataCenters)
+  fuel[, years[years > "y2023"], "Final Energy|Commercial|Data centers and Networks|Data Centers", pmatch = TRUE] <- fuel[, years[years > "y2023"], "Final Energy|Commercial|Data centers and Networks|Data Centers", pmatch = TRUE] * 1 / (1 + ifelse(scenarioICT == "Upper", 0.91, 0.78))
+  fuel[, years[years <= "y2023"], "Final Energy|Commercial|Data centers and Networks|Data Centers", pmatch = TRUE] <- fuel[, years[years <= "y2023"], "Final Energy|Commercial|Data centers and Networks|Data Centers", pmatch = TRUE] * 1 / (1 + 0.91)
+  fuel[, years[years > "y2023"], "Final Energy|Commercial|Data centers and Networks|Infrastructure", pmatch = TRUE] <- fuel[, years[years > "y2023"], "Final Energy|Commercial|Data centers and Networks|Infrastructure", pmatch = TRUE] * (1 - 1 / (1 + ifelse(scenarioICT == "Upper", 0.91, 0.78)))
+  fuel[, years[years <= "y2023"], "Final Energy|Commercial|Data centers and Networks|Infrastructure", pmatch = TRUE] <- fuel[, years[years <= "y2023"], "Final Energy|Commercial|Data centers and Networks|Infrastructure", pmatch = TRUE] * (1 - 1 / (1 + 0.91))
+  # ----------------------------------------------------------------------------
   fuel <- helperAggregateLevel(fuel, level = 1, recursive = TRUE)
 
   # =========================== Auxiliary variables ======================
@@ -102,28 +118,8 @@ reportFinalEnergy <- function(path, regions, years) {
   resCom <- fuel[, , c("Final Energy|Residential", "Final Energy|Commercial", "Final Energy|Agriculture, Fishing, Forestry")]
   resCom <- dimSums(resCom, 3)
   getItems(resCom, 3.1) <- "Final Energy|Residential and Commercial"
-  # -------------------------- Data centers, Infrastructure --------------
-  scenarioICT <- readGDX(path, "ICT")[[1]]
-  DCRatio <- new.magpie(
-    getRegions(fuel),
-    years = years,
-    names = "ratio",
-    fill = 1 / (1 + ifelse(scenarioICT == "Upper", 0.91, 0.78))
-  )
-  DCRatio[, years[years <= "y2023"], ] <- 1 / (1 + 0.91)
-
-  dataCenters <- new.magpie(
-    getRegions(fuel),
-    years = getYears(fuel),
-    names = c(
-      "Final Energy|Commercial|Data centers and Networks|Data centers|Electricity",
-      "Final Energy|Commercial|Data centers and Networks|Infrastructure|Electricity"
-    )
-  )
-  dataCenters[, , "Final Energy|Commercial|Data centers and Networks|Data centers|Electricity"] <- fuel[, , "Final Energy|Commercial|Data centers and Networks|Electricity"] * DCRatio
-  dataCenters[, , "Final Energy|Commercial|Data centers and Networks|Infrastructure|Electricity"] <- fuel[, , "Final Energy|Commercial|Data centers and Networks|Electricity"] * (1-DCRatio)
   # ============================ Add units ================================
-  magpie_object <- mbind(fuel, finalPerFuel, fuelWOBunkers, resCom, finalPerFuelAggregated, dataCenters)
+  magpie_object <- mbind(fuel, finalPerFuel, fuelWOBunkers, resCom, finalPerFuelAggregated)
   magpie_object <- add_dimension(magpie_object, dim = 3.2, add = "unit", nm = units)
   return(magpie_object)
 }

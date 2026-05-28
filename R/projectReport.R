@@ -124,6 +124,6 @@ projectReport <- function(.path, openPromFile) {
 
   #finalDataMagpie <- mbind(finalResults$object,tierMagpie)
   finalDataMagpie <- mbind(finalResults$object)
-  write.report(finalDataMagpie,file.path(.path,"outputForProject.mif"), model = "OPEN-PROM 2.0", scenario = scenarioName)
+  write.report(finalDataMagpie,file.path(.path,"outputForProject.mif"), model = "OPEN-PROM 2.2", scenario = scenarioName)
   message(paste0("Saving project mif file in ", .path))
 }
