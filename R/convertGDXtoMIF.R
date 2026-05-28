@@ -61,14 +61,23 @@ convertGDXtoMIF <- function(.path, mif_name, regions = NULL, years = NULL,
         save = save,
         emissions = emissions,
         htmlReport = htmlReport,
-        projectReport = projectReport
+        projectReport = FALSE
       )
     },
     .path, scenario_name,
     SIMPLIFY = FALSE
   )
+  names(scenarios_reports) <- scenario_name
 
   if (fullValidation == TRUE) appendValidationMIF(.path[1], path_mif)
+  if (save == TRUE && projectReport == TRUE) {
+    projectReport(
+      .path = dirname(path_mif),
+      openPromVariables = scenarios_reports,
+      openPromFile = path_mif,
+      scenario_name = scenario_name
+    )
+  }
 
   return(scenarios_reports)
 }
@@ -132,7 +141,6 @@ convertGDXtoMIF_single <- function(.path, path_mif, append, regions = NULL,
     print(paste0("Saving mif file in ", path_mif))
     
     if (htmlReport == TRUE) htmlReportValidation(.path, path_mif)
-    if (projectReport == TRUE) projectReport(.path, path_mif)
     
     if (dashboard == TRUE & htmlReport == TRUE) rmarkdown::render(
       system.file("rmd", "dashboard.Rmd", package = "postprom"),
