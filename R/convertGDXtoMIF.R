@@ -7,6 +7,9 @@
 #' @param regions Optional; a character vector specifying the regions to include. Defaults to `NULL`, in which case regions are read from the GDX file.
 #' @param fullValidation Optional; a logical value indicating whether full validation should be performed. Defaults to `TRUE`.
 #' @param scenario_name Optional; a character vector specifying the scenario names. Defaults to the basename of `.path`.
+#' @param model Optional; model name written to MIF/project-report outputs. Defaults to `"OPEN-PROM"`.
+#' @param project_template Optional; project template filename or path used by
+#'   `projectReport`. If `NULL`, project reporting is skipped.
 #' @param aggregate Optional; a logical value indicating whether to aggregate data. Defaults to `TRUE`.
 #' @param save Optional; a logical value indicating whether to save the output. Defaults to `TRUE`.
 #' @param emissions Optional; a logical value indicating whether to generate a separate emissions csv file for running climate assessment. Defaults to `TRUE`.
@@ -26,6 +29,8 @@
 #'   regions = c("runCYL", "World"),
 #'   fullValidation = TRUE,
 #'   scenario_name = c("Scenario1", "Scenario2"),
+#'   model = "OPEN-PROM",
+#'   project_template = "project-template.csv",
 #'   aggregate = TRUE,
 #'   emissions = TRUE,
 #'   save = TRUE,
@@ -38,9 +43,16 @@
 #' @export
 convertGDXtoMIF <- function(.path, mif_name, regions = NULL, years = NULL,
                             fullValidation = TRUE, scenario_name = NULL,
-                            aggregate = TRUE, emissions = TRUE, save = TRUE,
-                            htmlReport = FALSE, projectReport = FALSE) {
+                            model = "OPEN-PROM", aggregate = TRUE,
+                            emissions = TRUE, save = TRUE, htmlReport = FALSE,
+                            projectReport = FALSE,
+                            project_template = "project-template.csv") {
   if (is.null(scenario_name)) scenario_name <- basename(.path)
+  if (is.character(projectReport) && length(projectReport) == 1) {
+    project_template <- projectReport
+    projectReport <- TRUE
+  }
+  if (is.null(projectReport) || is.null(project_template)) projectReport <- FALSE
   current_time <- format(Sys.time(), "%Y-%m-%d_%H-%M")
   append <- length(.path) > 1
   path_mif <- file.path(
@@ -56,6 +68,7 @@ convertGDXtoMIF <- function(.path, mif_name, regions = NULL, years = NULL,
         years = years,
         path_mif = path_mif,
         scenario_name = scenario,
+        model = model,
         aggregate = aggregate,
         append = append,
         save = save,
@@ -71,11 +84,14 @@ convertGDXtoMIF <- function(.path, mif_name, regions = NULL, years = NULL,
 
   if (fullValidation == TRUE) appendValidationMIF(.path[1], path_mif)
   if (save == TRUE && projectReport == TRUE) {
-    projectReport(
+    projectReportFunction <- get("projectReport", mode = "function")
+    projectReportFunction(
       .path = dirname(path_mif),
       openPromVariables = scenarios_reports,
       openPromFile = path_mif,
-      scenario_name = scenario_name
+      scenario_name = scenario_name,
+      model = model,
+      project_template = project_template
     )
   }
 
@@ -84,7 +100,8 @@ convertGDXtoMIF <- function(.path, mif_name, regions = NULL, years = NULL,
 # Helpers -----------------------------------------------------------------
 convertGDXtoMIF_single <- function(.path, path_mif, append, regions = NULL,
                                    years = NULL, scenario_name = NULL,
-                                   aggregate = TRUE, emissions = TRUE, save = TRUE,
+                                   model = "OPEN-PROM", aggregate = TRUE,
+                                   emissions = TRUE, save = TRUE,
                                    htmlReport = TRUE, projectReport = TRUE,
                                    dashboard = TRUE) {
   print(paste0("Region aggregation: ", aggregate))
@@ -134,7 +151,7 @@ convertGDXtoMIF_single <- function(.path, path_mif, append, regions = NULL,
     write.report(
       reports,
       file = path_mif,
-      model = "OPEN-PROM",
+      model = model,
       scenario = scenario_name,
       append = append
     )

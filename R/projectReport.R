@@ -4,16 +4,19 @@
 #' units, keeps five-year periods, removes EU aggregate regions, and writes one
 #' concatenated project report for all supplied scenarios.
 #'
-#' @param .path A run path used to locate `../project-template.csv` and write the
+#' @param .path A run path used to locate the project template and write the
 #'   output files.
-#' @param openPromVariables A MAgPIE object, a named list of MAgPIE objects, or a
-#'   `read.report()`-style nested list (`scenario -> model -> magpie`).
+#' @param openPromVariables A MAgPIE object, a named list of MAgPIE objects, a
+#'   `read.report()`-style nested list (`scenario -> model -> magpie`), or a MIF
+#'   path for backwards-compatible file input.
 #' @param openPromFile Optional MIF file path to check and use as fallback input
 #'   when `openPromVariables` is `NULL`.
 #' @param scenario_name Optional scenario name(s). Required for unnamed single
 #'   MAgPIE object input.
 #' @param model Model name to use when it cannot be detected from nested input.
 #' @param output_basename Base name for the written `.mif` and `.xlsx` files.
+#' @param project_template Project template filename or path. If `NULL`, the
+#'   project report is skipped.
 #' @return Invisibly returns a list with output paths and the prepared tables.
 #'
 #' @examples
@@ -29,7 +32,19 @@
 #' @export
 projectReport <- function(.path, openPromVariables = NULL, openPromFile = NULL,
                           scenario_name = NULL, model = "OPEN-PROM",
-                          output_basename = "outputForProject") {
+                          output_basename = "outputForProject",
+                          project_template = "project-template.csv") {
+
+  if (is.null(project_template)) {
+    message("Skipping project report: 'project_template' is NULL.")
+    return(invisible(NULL))
+  }
+
+  if (is.character(openPromVariables) && length(openPromVariables) == 1 &&
+      is.null(openPromFile) && is.null(scenario_name)) {
+    openPromFile <- openPromVariables
+    openPromVariables <- NULL
+  }
 
   if (!is.null(openPromFile) && !file.exists(openPromFile)) {
     stop("Error: The data file '", openPromFile, "' does not exist.\n",
@@ -43,12 +58,7 @@ projectReport <- function(.path, openPromVariables = NULL, openPromFile = NULL,
     openPromVariables <- read.report(openPromFile)
   }
 
-  templatePath <- file.path(.path, "..", "project-template.csv")
-
-  if (!file.exists(templatePath)) {
-    stop("Error: Could not find project-template.csv at: ",
-         normalizePath(templatePath, mustWork = FALSE))
-  }
+  templatePath <- findProjectTemplatePath(.path, project_template)
 
   project <- read.csv(templatePath)
   map <- toolGetMapping(name = "prom-project-template.csv", where = "postprom")
@@ -143,6 +153,24 @@ normalizeProjectReportInput <- function(openPromVariables, scenario_name = NULL,
   }
 
   return(reports)
+}
+
+findProjectTemplatePath <- function(.path, project_template = "project-template.csv") {
+  candidates <- unique(c(
+    project_template,
+    file.path(.path, project_template),
+    file.path(dirname(.path), project_template)
+  ))
+  existing <- candidates[file.exists(candidates)]
+
+  if (length(existing)) {
+    return(existing[1])
+  }
+
+  stop(
+    "Error: Could not find project template '", project_template, "'. Checked: ",
+    paste(normalizePath(candidates, mustWork = FALSE), collapse = "; ")
+  )
 }
 
 prepareProjectReportScenario <- function(dataMagpie, project, map) {
