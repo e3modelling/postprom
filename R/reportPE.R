@@ -31,9 +31,20 @@ reportPE <- function(path, regions, years) {
     weight = NULL, dim = 3,
     rel = BALEFtoEF, from = "BALEF", to = "EF"
   )
-  getItems(V03ConsGrssInl, 3) <- paste0("Primary Energy|", getItems(V03ConsGrssInl, 3))
+     
+  RatioPrimaryFuels <- readGDX(path, "i03RatioPrimaryFuels")[regions, years, ]
+  RatioPrimaryFuels[, paste0("y", seq(2024, 2100)), ] <- RatioPrimaryFuels[, "y2023", ]
 
-  magpie_object <- helperAggregateLevel(V03ConsGrssInl, level = 1, recursive = TRUE)
+  RatioPrimaryFuels <- toolAggregate(RatioPrimaryFuels,
+    weight = NULL, dim = 3,
+    rel = BALEFtoEF, from = "BALEF", to = "EF"
+  )
+
+  PrimaryEnergy <- V03ConsGrssInl * RatioPrimaryFuels
+  
+  getItems(PrimaryEnergy, 3) <- paste0("Primary Energy|", getItems(PrimaryEnergy, 3))
+
+  magpie_object <- helperAggregateLevel(PrimaryEnergy, level = 1, recursive = TRUE)
   magpie_object <- add_dimension(magpie_object, dim = 3.2, add = "unit", nm = "Mtoe")
   return(magpie_object)
 }

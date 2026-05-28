@@ -68,6 +68,7 @@ Capacity|Electricity|Total,Hydro
 Capacity|Electricity|Total,Hydrogen
 Capacity|Electricity|Total,VAL
 Price|Carbon,Carbon
+Gross Inland Consumption|Biofuels,Biofuels
 Gross Emissions|CO2|Total,Energy|Supply
 Gross Emissions|CO2|Total,Energy|Demand
 Gross Emissions|CO2|Total,
