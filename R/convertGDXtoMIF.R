@@ -45,14 +45,11 @@ convertGDXtoMIF <- function(.path, mif_name, regions = NULL, years = NULL,
                             fullValidation = TRUE, scenario_name = NULL,
                             model = "OPEN-PROM", aggregate = TRUE,
                             emissions = TRUE, save = TRUE, htmlReport = FALSE,
-                            projectReport = FALSE,
+                            projectReport = TRUE,
                             project_template = "project-template.csv") {
   if (is.null(scenario_name)) scenario_name <- basename(.path)
-  if (is.character(projectReport) && length(projectReport) == 1) {
-    project_template <- projectReport
-    projectReport <- TRUE
-  }
-  if (is.null(projectReport) || is.null(project_template)) projectReport <- FALSE
+  if (is.null(project_template)) projectReport <- FALSE
+  
   current_time <- format(Sys.time(), "%Y-%m-%d_%H-%M")
   append <- length(.path) > 1
   path_mif <- file.path(
