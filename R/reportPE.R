@@ -27,20 +27,17 @@ reportPE <- function(path, regions, years) {
   #MtoeToEJ <- 0.041868 units to be Mtoe
   V03ConsGrssInl <- readGDX(path, "V03ConsGrssInl", field = "l")[regions, years, ]
 
-  V03ConsGrssInl <- toolAggregate(V03ConsGrssInl,
-    weight = NULL, dim = 3,
-    rel = BALEFtoEF, from = "BALEF", to = "EF"
-  )
      
   RatioPrimaryFuels <- readGDX(path, "i03RatioPrimaryFuels")[regions, years, ]
   RatioPrimaryFuels[, paste0("y", seq(2024, 2100)), ] <- RatioPrimaryFuels[, "y2023", ]
 
-  RatioPrimaryFuels <- toolAggregate(RatioPrimaryFuels,
+  PrimaryEnergy <- V03ConsGrssInl * RatioPrimaryFuels
+
+  PrimaryEnergy <- toolAggregate(PrimaryEnergy,
     weight = NULL, dim = 3,
     rel = BALEFtoEF, from = "BALEF", to = "EF"
   )
 
-  PrimaryEnergy <- V03ConsGrssInl * RatioPrimaryFuels
   
   getItems(PrimaryEnergy, 3) <- paste0("Primary Energy|", getItems(PrimaryEnergy, 3))
 
