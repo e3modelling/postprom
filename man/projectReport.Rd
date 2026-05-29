@@ -2,25 +2,56 @@
 % Please edit documentation in R/projectReport.R
 \name{projectReport}
 \alias{projectReport}
-\title{Create a project-ready MIF report from OPEN-PROM results}
+\title{Create a project-ready report from OPEN-PROM results}
 \usage{
-projectReport(.path, openPromFile)
+projectReport(
+  .path,
+  openPromVariables = NULL,
+  openPromFile = NULL,
+  scenario_name = NULL,
+  model = "OPEN-PROM",
+  output_basename = "outputForProject",
+  project_template = "project-template.csv",
+  strip_scenario_timestamp = TRUE
+)
 }
 \arguments{
-\item{openPromFile}{A mif file that contains OPEN-PROM results.}
+\item{.path}{A run path used to locate the project template and write the
+output files.}
+
+\item{openPromVariables}{A MAgPIE object, a named list of MAgPIE objects, a
+\code{read.report()}-style nested list (\code{scenario -> model -> magpie}), or a MIF
+path for backwards-compatible file input.}
+
+\item{openPromFile}{Optional MIF file path to check and use as fallback input
+when \code{openPromVariables} is \code{NULL}.}
+
+\item{scenario_name}{Optional scenario name(s). Required for unnamed single
+MAgPIE object input.}
+
+\item{model}{Model name to use when it cannot be detected from nested input.}
+
+\item{output_basename}{Base name for the written \code{.mif} and \code{.xlsx} files.}
+
+\item{project_template}{Project template filename or path. If \code{NULL}, the
+project report is skipped.}
+
+\item{strip_scenario_timestamp}{Logical; remove trailing timestamps like
+\code{_2026-05-11_16-57-15} from project-report scenario names.}
 }
 \value{
-This function creates a report file specific to each project needs
+Invisibly returns a list with output paths and the prepared tables.
 }
 \description{
-Reads an OPEN-PROM MIF output file, renames variables to match a project
-template using a mapping table, checks units against the project template,
-converts mismatching units (where supported), and writes a standardized MIF
-report (`outputForProject.mif`) for downstream use.
+Renames OPEN-PROM variables to match a project template, checks and converts
+units, keeps five-year periods, removes EU aggregate regions, and writes one
+concatenated project report for all supplied scenarios.
 }
 \examples{
 \dontrun{
-projectReport(.path = "path/to/run", "path/to/mif")
+projectReport(.path = "path/to/run", openPromVariables = reports,
+              scenario_name = "Scenario1")
+projectReport(.path = "path/to/run", openPromFile = "path/to/reporting.mif")
 }
 
 }

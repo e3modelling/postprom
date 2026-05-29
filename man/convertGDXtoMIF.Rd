@@ -11,11 +11,13 @@ convertGDXtoMIF(
   years = NULL,
   fullValidation = TRUE,
   scenario_name = NULL,
+  model = "OPEN-PROM",
   aggregate = TRUE,
   emissions = TRUE,
   save = TRUE,
   htmlReport = FALSE,
-  projectReport = FALSE
+  projectReport = FALSE,
+  project_template = "project-template.csv"
 )
 }
 \arguments{
@@ -28,6 +30,11 @@ convertGDXtoMIF(
 \item{fullValidation}{Optional; a logical value indicating whether full validation should be performed. Defaults to `TRUE`.}
 
 \item{scenario_name}{Optional; a character vector specifying the scenario names. Defaults to the basename of `.path`.}
+
+\item{model}{Optional; model name written to MIF/project-report outputs. Defaults to \code{"OPEN-PROM"}.}
+
+\item{project_template}{Optional; project template filename or path used by
+\code{projectReport}. If \code{NULL}, project reporting is skipped.}
 
 \item{aggregate}{Optional; a logical value indicating whether to aggregate data. Defaults to `TRUE`.}
 
@@ -56,6 +63,8 @@ convertGDXtoMIF(
   regions = c("runCYL", "World"),
   fullValidation = TRUE,
   scenario_name = c("Scenario1", "Scenario2"),
+  model = "OPEN-PROM",
+  project_template = "project-template.csv",
   aggregate = TRUE,
   emissions = TRUE,
   save = TRUE,
