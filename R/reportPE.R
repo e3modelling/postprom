@@ -23,7 +23,8 @@ reportPE <- function(path, regions, years) {
       "Coal", "Gas", "Nuclear", "Biofuels", "Oil", "Electricity", "Heat",
       "Other fuels", "Solar", "Wind", "Geothermal and other renewable sources",
       "Hydrogen", "Hydro"
-    ))
+    )) %>%
+    rename(EFS =EF)
   #MtoeToEJ <- 0.041868 units to be Mtoe
   V03ConsGrssInl <- readGDX(path, "V03ConsGrssInl", field = "l")[regions, years, ]
 
@@ -35,13 +36,23 @@ reportPE <- function(path, regions, years) {
 
   PrimaryEnergy <- toolAggregate(PrimaryEnergy,
     weight = NULL, dim = 3,
-    rel = BALEFtoEF, from = "BALEF", to = "EF"
+    rel = BALEFtoEF, from = "BALEF", to = "EFS"
   )
 
   
   getItems(PrimaryEnergy, 3) <- paste0("Primary Energy|", getItems(PrimaryEnergy, 3))
 
   magpie_object <- helperAggregateLevel(PrimaryEnergy, level = 1, recursive = TRUE)
+  
+# -------------------------- Remove non-primary carriers ------------------
+magpie_object <- magpie_object[, , 
+  !getItems(magpie_object, 3) %in% c(
+    "Primary Energy|Electricity",
+    "Primary Energy|Heat",
+    "Primary Energy|Hydrogen"
+  )
+]
+
   magpie_object <- add_dimension(magpie_object, dim = 3.2, add = "unit", nm = "Mtoe")
   return(magpie_object)
 }
