@@ -17,6 +17,8 @@
 #' @param output_basename Base name for the written `.mif` and `.xlsx` files.
 #' @param project_template Project template filename or path. If `NULL`, the
 #'   project report is skipped.
+#' @param stripScenarioTimestamp Logical; remove trailing timestamps like
+#'   `_2026-05-11_16-57-15` from project-report scenario names.
 #' @return Invisibly returns a list with output paths and the prepared tables.
 #'
 #' @examples
@@ -33,7 +35,8 @@
 projectReport <- function(.path, openPromVariables = NULL, openPromFile = NULL,
                           scenario_name = NULL, model = "OPEN-PROM",
                           output_basename = "outputForProject",
-                          project_template = "project-template.csv") {
+                          project_template = "project-template.csv",
+                          stripScenarioTimestamp = TRUE) {
 
   if (is.null(project_template)) {
     message("Skipping project report: 'project_template' is NULL.")
@@ -63,6 +66,9 @@ projectReport <- function(.path, openPromVariables = NULL, openPromFile = NULL,
   project <- read.csv(templatePath)
   map <- toolGetMapping(name = "prom-project-template.csv", where = "postprom")
   reports <- normalizeProjectReportInput(openPromVariables, scenario_name, model)
+  if (stripScenarioTimestamp) {
+    reports <- stripProjectReportScenarioTimestamps(reports)
+  }
 
   outputMif <- file.path(.path, paste0(output_basename, ".mif"))
   outputXlsx <- file.path(.path, paste0(output_basename, ".xlsx"))
@@ -150,6 +156,18 @@ normalizeProjectReportInput <- function(openPromVariables, scenario_name = NULL,
 
   if (!length(reports)) {
     stop("No MAgPIE reports found in 'openPromVariables'.")
+  }
+
+  return(reports)
+}
+
+stripProjectReportScenarioTimestamps <- function(reports) {
+  for (i in seq_along(reports)) {
+    reports[[i]]$scenario <- sub(
+      "_[0-9]{4}-[0-9]{2}-[0-9]{2}_[0-9]{2}-[0-9]{2}-[0-9]{2}$",
+      "",
+      reports[[i]]$scenario
+    )
   }
 
   return(reports)
