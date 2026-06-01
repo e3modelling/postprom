@@ -13,6 +13,8 @@
 #' @importFrom gdx readGDX
 #' @importFrom madrat toolAggregate
 #' @importFrom magclass getItems getNames add_dimension mbind
+#' @importFrom dplyr filter
+#' @importFrom tidyr separate_rows
 #' @export
 reportPE <- function(path, regions, years) {
   BALEFtoEF <- read.csv(
