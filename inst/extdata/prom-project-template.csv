@@ -75,3 +75,8 @@ Price|Final Energy|Transportation|Bus|Electricity,Price|Final Energy|Transportat
 Price|Final Energy|Transportation|Bus|Liquids,Price|Final Energy|Transportation|PB|GDO
 Price|Final Energy|Transportation|Bus|Hydrogen,Price|Final Energy|Transportation|PB|H2F
 Price|Final Energy|Transportation|Rail|Electricity,Price|Final Energy|Transportation|PT|ELC
+Final Energy|Commercial|ICT,Final Energy|Commercial|Data centers and Networks
+Final Energy|Commercial|ICT|Data Centers,Final Energy|Commercial|Data centers and Networks|Data Centers
+Final Energy|Commercial|ICT|Infrastructure,Final Energy|Commercial|Data centers and Networks|Infrastructure
+Final Energy|Commercial|ICT|Data Centers|Electricity,Final Energy|Commercial|Data centers and Networks|Data Centers|Electricity
+Final Energy|Commercial|ICT|Infrastructure|Electricity,Final Energy|Commercial|Data centers and Networks|Infrastructure|Electricity
