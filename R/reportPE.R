@@ -9,9 +9,12 @@
 #' \dontrun{
 #' result <- reportPE(system.file("extdata", "blabla.gdx", package = "postprom"), c("MEA"))
 #' }
+#'
 #' @importFrom gdx readGDX
 #' @importFrom madrat toolAggregate
 #' @importFrom magclass getItems getNames add_dimension mbind
+#' @importFrom dplyr filter
+#' @importFrom tidyr separate_rows
 #' @export
 reportPE <- function(path, regions, years) {
   BALEFtoEF <- read.csv(
@@ -22,18 +25,36 @@ reportPE <- function(path, regions, years) {
       "Coal", "Gas", "Nuclear", "Biofuels", "Oil", "Electricity", "Heat",
       "Other fuels", "Solar", "Wind", "Geothermal and other renewable sources",
       "Hydrogen", "Hydro"
-    ))
-  V03ProdPrimary <- readGDX(path, "V03ProdPrimary", field = "l")[regions, years, ]
+    )) %>%
+    rename(EFS =EF)
+  #MtoeToEJ <- 0.041868 units to be Mtoe
+  V03ConsGrssInl <- readGDX(path, "V03ConsGrssInl", field = "l")[regions, years, ]
 
-  V03ProdPrimary <- toolAggregate(V03ProdPrimary,
+     
+  RatioPrimaryFuels <- readGDX(path, "i03RatioPrimaryFuels")[regions, years, ]
+  RatioPrimaryFuels[, paste0("y", seq(2024, 2100)), ] <- RatioPrimaryFuels[, "y2023", ]
+
+  PrimaryEnergy <- V03ConsGrssInl * RatioPrimaryFuels
+
+  PrimaryEnergy <- toolAggregate(PrimaryEnergy,
     weight = NULL, dim = 3,
-    rel = BALEFtoEF, from = "BALEF", to = "EF"
+    rel = BALEFtoEF, from = "BALEF", to = "EFS"
   )
-  getItems(V03ProdPrimary, 3) <- paste0("Primary Energy|", getItems(V03ProdPrimary, 3))
 
-  magpie_object <- helperAggregateLevel(V03ProdPrimary, level = 1, recursive = TRUE)
+  
+  getItems(PrimaryEnergy, 3) <- paste0("Primary Energy|", getItems(PrimaryEnergy, 3))
 
-  # Add dimensions and bind to magpie object
+  magpie_object <- helperAggregateLevel(PrimaryEnergy, level = 1, recursive = TRUE)
+  
+# -------------------------- Remove non-primary carriers ------------------
+magpie_object <- magpie_object[, , 
+  !getItems(magpie_object, 3) %in% c(
+    "Primary Energy|Electricity",
+    "Primary Energy|Heat",
+    "Primary Energy|Hydrogen"
+  )
+]
+
   magpie_object <- add_dimension(magpie_object, dim = 3.2, add = "unit", nm = "Mtoe")
   return(magpie_object)
 }
