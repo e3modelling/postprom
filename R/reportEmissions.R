@@ -104,7 +104,7 @@ reportEmissions <- function(path, regions, years) {
     extraAFOLU <- magpieAfolu$extra
   } else {
     # Use default sources — choose between SoCDR and PRISMA
-    afoluSource <- "PRISMA"  # "SoCDR" or "PRISMA"
+    afoluSource <- "SoCDR"  # "SoCDR" or "PRISMA"
     if (afoluSource == "PRISMA") {
       AFOLU_CDR <- mbind(
         getGLOBIOMEU(path, grossCO2Demand)[, years, ],
@@ -671,7 +671,7 @@ getREMIND_MAgPIE_SoCDR <- function(path, magpie_object) {
   # Filter REMIND_MAgPIE_SoCDR by scenario
   if (fscenario %in% c(0, 1)) {
     REMIND_MAgPIE_SoCDR <- REMIND_MAgPIE_SoCDR[, , "SoCDR_Ed3_CurrentTargets"]
-  } else if (fscenario %in% c(2, 5, 6)) {
+  } else if (fscenario == 2) {
     REMIND_MAgPIE_SoCDR <- REMIND_MAgPIE_SoCDR[, , "SoCDR_Ed3_HighestAmbition"]
   } else if (fscenario == 3) {
     REMIND_MAgPIE_SoCDR <- REMIND_MAgPIE_SoCDR[, , "SoCDR_Ed3_DelayedAction"]
@@ -733,9 +733,7 @@ getREMIND_MAgPIE_PRISMA <- function(path, magpie_object) {
     REMIND_MAgPIE_PRISMA <- REMIND_MAgPIE_PRISMA[, , "SSP2_Asymmetric_Roll_Back"]
   } else if (fscenario == 7) {
     REMIND_MAgPIE_PRISMA <- REMIND_MAgPIE_PRISMA[, , "SSP2_Late_Reawakening"]
-  } else {
-    REMIND_MAgPIE_PRISMA <- REMIND_MAgPIE_PRISMA[, , "SSP2_Meet_Aspirations"]
-  }
+  } 
 
   # interpolate years
   REMIND_MAgPIE_PRISMA <- as.quitte(REMIND_MAgPIE_PRISMA) %>%
