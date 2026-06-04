@@ -193,24 +193,9 @@ findProjectTemplatePath <- function(.path, project_template = "project-template.
 
 prepareProjectReportScenario <- function(dataMagpie, project, map) {
   dataMagpie <- flattenProjectReportNames(dataMagpie)
+  dataMagpie <- mapProjectReportVariables(dataMagpie, map)
 
-  varNames <- getItems(dataMagpie, dim = 3)
-  varsClean <- cleanProjectReportVariable(varNames)
-  units <- extractProjectReportUnit(varNames)
-  hasUnits <- !is.na(units)
-
-  map$OPEN_PROM <- trimws(map$OPEN_PROM)
-  rename_lookup <- setNames(trimws(map$project_template), map$OPEN_PROM)
-
-  renamedVars <- varsClean
-  matchedVars <- varsClean %in% names(rename_lookup)
-  renamedVars[matchedVars] <- rename_lookup[varsClean[matchedVars]]
-
-  renamedVarsFinal <- renamedVars
-  renamedVarsFinal[hasUnits] <- paste0(renamedVars[hasUnits], " (", units[hasUnits], ")")
-  getItems(dataMagpie, dim = 3) <- renamedVarsFinal
-
-  renamedClean <- cleanProjectReportVariable(renamedVarsFinal)
+  renamedClean <- cleanProjectReportVariable(getItems(dataMagpie, dim = 3))
   commonVars <- intersect(project$variable, renamedClean)
 
   if (!length(commonVars)) {
@@ -253,6 +238,128 @@ prepareProjectReportScenario <- function(dataMagpie, project, map) {
   finalDataMagpie <- filterProjectReportYears(finalDataMagpie)
 
   return(mbind(finalDataMagpie))
+}
+
+mapProjectReportVariables <- function(dataMagpie, map) {
+  varNames <- getItems(dataMagpie, dim = 3)
+  varsClean <- cleanProjectReportVariable(varNames)
+  units <- extractProjectReportUnit(varNames)
+
+  map$OPEN_PROM <- trimws(map$OPEN_PROM)
+  map$project_template <- trimws(map$project_template)
+  map <- map[map$OPEN_PROM %in% varsClean, , drop = FALSE]
+
+  if (!nrow(map)) {
+    return(dataMagpie)
+  }
+
+  mappedIndex <- match(map$OPEN_PROM, varsClean)
+  passthroughIndex <- setdiff(seq_along(varNames), mappedIndex)
+
+  mappedMagpie <- dataMagpie[, , mappedIndex]
+  mappedNames <- map$project_template
+  mappedHasUnits <- !is.na(units[mappedIndex])
+  mappedNames[mappedHasUnits] <- paste0(
+    mappedNames[mappedHasUnits],
+    " (",
+    units[mappedIndex][mappedHasUnits],
+    ")"
+  )
+  getItems(mappedMagpie, dim = 3) <- mappedNames
+
+  mappedSourceClean <- map$OPEN_PROM
+
+  if (length(passthroughIndex)) {
+    passthroughMagpie <- dataMagpie[, , passthroughIndex]
+    mappedMagpie <- mbind(passthroughMagpie, mappedMagpie)
+    mappedSourceClean <- c(varsClean[passthroughIndex], mappedSourceClean)
+  }
+
+  return(collapseProjectReportDuplicates(mappedMagpie, dataMagpie, mappedSourceClean))
+}
+
+collapseProjectReportDuplicates <- function(dataMagpie, sourceMagpie, sourceClean) {
+  itemNames <- getItems(dataMagpie, dim = 3)
+  targetClean <- cleanProjectReportVariable(itemNames)
+  targetUnits <- extractProjectReportUnit(itemNames)
+  out <- NULL
+
+  for (target in unique(targetClean)) {
+    idx <- which(targetClean == target)
+    unit <- unique(targetUnits[idx][!is.na(targetUnits[idx])])
+    itemName <- target
+    if (length(unit)) itemName <- paste0(target, " (", unit[1], ")")
+
+    if (length(idx) == 1) {
+      item <- dataMagpie[, , idx]
+    } else if (grepl("^Price\\|", target)) {
+      item <- weightedProjectReportPrice(
+        prices = dataMagpie[, , idx],
+        sourceMagpie = sourceMagpie,
+        sourcePriceClean = sourceClean[idx],
+        target = target
+      )
+    } else {
+      item <- dimSums(dataMagpie[, , idx], dim = 3, na.rm = TRUE)
+    }
+
+    getItems(item, dim = 3) <- itemName
+    out <- mbind(out, item)
+  }
+
+  return(out)
+}
+
+weightedProjectReportPrice <- function(prices, sourceMagpie, sourcePriceClean, target) {
+  sourceWeightClean <- sub("^Price\\|", "", sourcePriceClean)
+  sourceNames <- getItems(sourceMagpie, dim = 3)
+  sourceClean <- cleanProjectReportVariable(sourceNames)
+  weightIndex <- match(sourceWeightClean, sourceClean)
+
+  if (anyNA(weightIndex)) {
+    missingWeights <- sourceWeightClean[is.na(weightIndex)]
+    keepWeighted <- !is.na(weightIndex)
+
+    if (any(keepWeighted)) {
+      warning(
+        "Ignoring unweighted price source(s) for '", target,
+        "' because matching final-energy weights were not found for: ",
+        paste(missingWeights, collapse = "; "),
+        call. = FALSE
+      )
+      prices <- prices[, , keepWeighted]
+      sourcePriceClean <- sourcePriceClean[keepWeighted]
+      sourceWeightClean <- sourceWeightClean[keepWeighted]
+      weightIndex <- weightIndex[keepWeighted]
+    } else {
+      warning(
+        "Using arithmetic mean for '", target,
+        "' because matching final-energy weights were not found for: ",
+        paste(missingWeights, collapse = "; "),
+        call. = FALSE
+      )
+      return(dimSums(prices, dim = 3, na.rm = TRUE) / length(sourcePriceClean))
+    }
+  }
+
+  if (length(sourcePriceClean) == 1) {
+    return(prices)
+  }
+
+  weights <- sourceMagpie[, , weightIndex]
+  getItems(weights, dim = 3) <- getItems(prices, dim = 3)
+
+  denominator <- dimSums(weights, dim = 3, na.rm = TRUE)
+  if (any(as.array(denominator) == 0, na.rm = TRUE)) {
+    warning(
+      "Zero final-energy weights found for '", target,
+      "'. Weighted price will be undefined for those cells.",
+      call. = FALSE
+    )
+  }
+
+  numerator <- dimSums(prices * weights, dim = 3, na.rm = TRUE)
+  return(numerator / denominator)
 }
 
 flattenProjectReportNames <- function(dataMagpie) {
