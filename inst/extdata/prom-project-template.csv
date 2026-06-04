@@ -1,8 +1,12 @@
 project_template,OPEN_PROM
-Capacity Additions|Electricity|Biomass|w/ CCS,Capacity Additions|Electricity|ATHBMSCCS
-Capacity Additions|Electricity|Biomass|w/o CCS,Capacity Additions|Electricity|ATHBMSWAS
-Capacity Additions|Electricity|Coal|w/ CCS,Capacity Additions|Electricity|ATHCOALCCS
-Capacity Additions|Electricity|Gas|w/ CCS,Capacity Additions|Electricity|ATHGASCCS
+Capacity Additions|Electricity|Biomass,Capacity Additions|Electricity|Biofuels
+Capacity Additions|Electricity|Biomass|w/ CCS,Capacity Additions|Electricity|Biofuels|w/ CCS
+Capacity Additions|Electricity|Biomass|w/o CCS,Capacity Additions|Electricity|Biofuels|w/o CCS
+Capacity Additions|Electricity|Non-Biomass Renewables,Capacity Additions|Electricity|Geothermal and other renewable sources
+Capacity|Electricity|Biomass,Capacity|Electricity|Biofuels
+Capacity|Electricity|Biomass|w/ CCS,Capacity|Electricity|Biofuels|w/ CCS
+Capacity|Electricity|Biomass|w/o CCS,Capacity|Electricity|Biofuels|w/o CCS
+Capacity|Electricity|Non-Biomass Renewables,Capacity|Electricity|Geothermal and other renewable sources
 Carbon Capture|Energy|Supply|Electricity|Biomass,Carbon Capture|Energy|Supply|Electricity|Biofuels
 Carbon Capture|Energy|Demand|Industry|Chemicals,Carbon Capture|Energy|Demand|Chemicals
 Carbon Capture|Energy|Demand|Industry|Iron and Steel,Carbon Capture|Energy|Demand|Iron and Steel
@@ -17,6 +21,7 @@ Price|Final Energy|Industry|Chemicals|Electricity,Price|Final Energy|Industry|CH
 Price|Final Energy|Industry|Chemicals|Hydrogen,Price|Final Energy|Industry|CH|H2F
 Price|Final Energy|Industry|Chemicals|Heat,Price|Final Energy|Industry|CH|STE
 Price|Final Energy|Industry|Gases|Other,Price|Final Energy|Industry|Derived gases
+Price|Final Energy|Industry|Gases|Other,Price|Final Energy|Industry|OGS
 Price|Final Energy|Industry|Liquids|Oil,Price|Final Energy|Industry|Diesel oil
 Price|Final Energy|Industry|Liquids|Oil,Price|Final Energy|Industry|Fuel oil
 Price|Final Energy|Industry|Gases,Price|Final Energy|Industry|Gases
@@ -60,7 +65,11 @@ Price|Final Energy|Commercial|Gases,Price|Final Energy|Residential and Commercia
 Price|Final Energy|Commercial|Heat,Price|Final Energy|Residential and Commercial|SE|STE
 Price|Final Energy|Transportation|Liquids|Biomass,Price|Final Energy|Transportation|Biofuels
 Price|Final Energy|Transportation|Gases|Other,Price|Final Energy|Transportation|Derived gases
+Price|Final Energy|Transportation|Gases|Other,Price|Final Energy|Transportation|OGS
 Price|Final Energy|Transportation|Liquids|Oil,Price|Final Energy|Transportation|Diesel oil
+Price|Final Energy|Transportation|Liquids|Oil,Price|Final Energy|Transportation|Fuel oil
+Price|Final Energy|Transportation|Liquids|Oil,Price|Final Energy|Transportation|GDO
+Price|Final Energy|Transportation|Liquids|Oil,Price|Final Energy|Transportation|RFO
 Price|Final Energy|Transportation|Gases,Price|Final Energy|Transportation|Gases
 Price|Final Energy|Transportation|Domestic Shipping|Liquids,Price|Final Energy|Transportation|GN|GDO
 Price|Final Energy|Transportation|Domestic Shipping|Hydrogen,Price|Final Energy|Transportation|GN|H2F
@@ -69,8 +78,10 @@ Price|Final Energy|Transportation|Freight|Liquids,Price|Final Energy|Transportat
 Price|Final Energy|Transportation|Truck|Electricity,Price|Final Energy|Transportation|GU|ELC
 Price|Final Energy|Transportation|Truck|Hydrogen,Price|Final Energy|Transportation|GU|H2F
 Price|Final Energy|Transportation|Hydrogen,Price|Final Energy|Transportation|Hydrogen
+Price|Final Energy|Transportation|Hydrogen,Price|Final Energy|Transportation|H2F
 Price|Final Energy|Transportation|Liquids,Price|Final Energy|Transportation|Liquids
 Price|Final Energy|Transportation|Gases|Gas,Price|Final Energy|Transportation|Natural gas
+Price|Final Energy|Transportation|Gases|Gas,Price|Final Energy|Transportation|NGS
 Price|Final Energy|Transportation|Bus|Electricity,Price|Final Energy|Transportation|PB|ELC
 Price|Final Energy|Transportation|Bus|Liquids,Price|Final Energy|Transportation|PB|GDO
 Price|Final Energy|Transportation|Bus|Hydrogen,Price|Final Energy|Transportation|PB|H2F
@@ -80,3 +91,15 @@ Final Energy|Commercial|ICT|Data Centers,Final Energy|Commercial|Data centers an
 Final Energy|Commercial|ICT|Infrastructure,Final Energy|Commercial|Data centers and Networks|Infrastructure
 Final Energy|Commercial|ICT|Data Centers|Electricity,Final Energy|Commercial|Data centers and Networks|Data Centers|Electricity
 Final Energy|Commercial|ICT|Infrastructure|Electricity,Final Energy|Commercial|Data centers and Networks|Infrastructure|Electricity
+Secondary Energy|Electricity|Biomass,Secondary Energy|Electricity|Biofuels
+Secondary Energy|Electricity|Biomass|w/ CCS,Secondary Energy|Electricity|Biofuels|w/ CCS
+Secondary Energy|Electricity|Biomass|w/o CCS,Secondary Energy|Electricity|Biofuels|w/o CCS
+Secondary Energy|Electricity|Non-Biomass Renewables,Secondary Energy|Electricity|Geothermal and other renewable sources
+Secondary Energy|Heat|Biomass,Secondary Energy|Heat|Biofuels
+Secondary Energy|Heat|Biomass|w/ CCS,Secondary Energy|Heat|Biofuels|w/ CCS
+Secondary Energy|Heat|Biomass|w/o CCS,Secondary Energy|Heat|Biofuels|w/o CCS
+Secondary Energy|Heat|Non-Biomass Renewables,Secondary Energy|Heat|Geothermal and other renewable sources
+Secondary Energy|Hydrogen|Biomass,Secondary Energy|Hydrogen|Biofuels
+Secondary Energy|Hydrogen|Biomass|w/ CCS,Secondary Energy|Hydrogen|Biofuels|w/ CCS
+Secondary Energy|Hydrogen|Biomass|w/o CCS,Secondary Energy|Hydrogen|Biofuels|w/o CCS
+Secondary Energy|Hydrogen|Non-Biomass Renewables,Secondary Energy|Hydrogen|Geothermal and other renewable sources
