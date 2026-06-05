@@ -32,7 +32,7 @@ reportPE <- function(path, regions, years) {
 
      
   RatioPrimaryFuels <- readGDX(path, "i03RatioPrimaryFuels")[regions, years, ]
-  RatioPrimaryFuels[, paste0("y", seq(2024, 2100)), ] <- RatioPrimaryFuels[, "y2023", ]
+  RatioPrimaryFuels[, paste0("y", seq(2024, max(getYears(RatioPrimaryFuels, as.integer = TRUE)))), ] <- RatioPrimaryFuels[, "y2023", ]
 
   PrimaryEnergy <- V03ConsGrssInl * RatioPrimaryFuels
 
