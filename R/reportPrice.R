@@ -66,18 +66,19 @@ reportPrice <- function(path, regions, years) {
     PRICE_by_sector_and_EF <- add_dimension(PRICE_by_sector_and_EF, dim = 3.2, add = "unit", nm = sub(".*\\((.*)\\).*", "\\1", iFuelPrice@description))
     magpie_object <- mbind(magpie_object, PRICE_by_sector_and_EF)
 
-    #aggregation by SECTOR and EF
-    iFuelPrice2 <- iFuelPrice %>%
-      as.quitte() %>%
-      mutate(value = mean(value, na.rm = TRUE), .by = c("model", "scenario","period", "variable","EF")) %>%
-      select(c("EF", "model", "scenario", "region", "variable", "unit", "period", "value")) %>%
-      distinct()
-    PRICE_by_EF_OPEN_PROM <- as.quitte(iFuelPrice2) %>% as.magpie()
-
-    # complete names
-    getItems(PRICE_by_EF_OPEN_PROM, 3) <- paste0("Price|Final Energy|", sector_name[y],"|", getItems(PRICE_by_EF_OPEN_PROM, 3))
-    PRICE_by_EF_OPEN_PROM <- add_dimension(PRICE_by_EF_OPEN_PROM, dim = 3.2, add = "unit", nm = sub(".*\\((.*)\\).*", "\\1", iFuelPrice@description))
-    magpie_object <- mbind(magpie_object, PRICE_by_EF_OPEN_PROM)
+    # remove it because it is counted with BALEF2EFS in the next step
+    # aggregation by SECTOR and EF
+    # iFuelPrice2 <- iFuelPrice %>%
+    #   as.quitte() %>%
+    #   mutate(value = mean(value, na.rm = TRUE), .by = c("model", "scenario","period", "variable","EF")) %>%
+    #   select(c("EF", "model", "scenario", "region", "variable", "unit", "period", "value")) %>%
+    #   distinct()
+    # PRICE_by_EF_OPEN_PROM <- as.quitte(iFuelPrice2) %>% as.magpie()
+    # 
+    # # complete names
+    # getItems(PRICE_by_EF_OPEN_PROM, 3) <- paste0("Price|Final Energy|", sector_name[y],"|", getItems(PRICE_by_EF_OPEN_PROM, 3))
+    # PRICE_by_EF_OPEN_PROM <- add_dimension(PRICE_by_EF_OPEN_PROM, dim = 3.2, add = "unit", nm = sub(".*\\((.*)\\).*", "\\1", iFuelPrice@description))
+    # magpie_object <- mbind(magpie_object, PRICE_by_EF_OPEN_PROM)
 
     # Fuel categories
     # Energy Forms Aggregations
