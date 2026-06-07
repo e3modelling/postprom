@@ -603,11 +603,23 @@ coupleMagpieToProm <- function(reportMifPath,
     outCsvPath, nrow(priceMat), length(SBS), length(yearCols)
   ))
 
+  # ---- 5a-bis. Standardise N2O to the OPEN-PROM convention (kt) at this single
+  # MAgPIE -> OPEN-PROM boundary. Everything else in OPEN-PROM (GLOBIOM lookup,
+  # EMTYPE, GAMS post-solve, reporting.mif, the Kyoto factor) treats N2O as kt;
+  # MAgPIE reports it as Mt. Converting here (once) keeps iEmissions_magpie.mif
+  # consistent with that convention, so no downstream reader has to re-handle it.
+  n2oVars <- grep("\\|N2O\\|", magclass::getNames(emiResCy), value = TRUE)
+  if (length(n2oVars)) {
+    emiResCy[, , n2oVars] <- emiResCy[, , n2oVars] * 1000          # Mt N2O -> kt N2O
+    magclass::getNames(emiResCy) <- gsub("(Mt N2O/yr)", "(kt N2O/yr)",
+                                         magclass::getNames(emiResCy), fixed = TRUE)
+  }
+
   # ---- 5b. write iEmissions_magpie.mif via magclass::write.report
   # Output is standard IAMC mif: ;-delimited Model;Scenario;Region;Variable;Unit;<years>
   # Variable names retain `|+|` markers (matching MAgPIE source convention).
-  # write.report auto-extracts the "(Mt X/yr)" suffix in variable names into
-  # the dedicated Unit column.
+  # write.report auto-extracts the "(<unit>)" suffix in variable names into
+  # the dedicated Unit column (CH4/CO2 in Mt, N2O in kt after the step above).
   emiOut <- magclass::add_dimension(emiResCy, dim = 3.1, add = "model",
                                     nm = "OPENPROM")
   emiOut <- magclass::add_dimension(emiOut,   dim = 3.2, add = "scenario",

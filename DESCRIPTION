@@ -1,7 +1,7 @@
 Package: postprom
 Type: Package
 Title: A Tool for Comparative Analysis of OPEN-PROM Data
-Version: 0.12.14
+Version: 0.12.15
 Authors@R: c(
     person(
       "Michael", "Madianos",
@@ -21,6 +21,11 @@ Authors@R: c(
     person(
       "Alexandros", "Tsimpoukis",
       email = "Alexandros.Tsimpoukis@ricardo.com",
+      role = c("aut")
+    )
+    person(
+      "Songmin", "Yu",
+      email = "Songmin.Yu@wsp.com",
       role = c("aut")
     )
   )
