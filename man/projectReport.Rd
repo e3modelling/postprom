@@ -11,8 +11,7 @@ projectReport(
   scenario_name = NULL,
   model = "OPEN-PROM",
   output_basename = "outputForProject",
-  project_template = "project-template.csv",
-  strip_scenario_timestamp = TRUE
+  project_template = "project-template.csv"
 )
 }
 \arguments{
@@ -35,9 +34,6 @@ MAgPIE object input.}
 
 \item{project_template}{Project template filename or path. If \code{NULL}, the
 project report is skipped.}
-
-\item{strip_scenario_timestamp}{Logical; remove trailing timestamps like
-\code{_2026-05-11_16-57-15} from project-report scenario names.}
 }
 \value{
 Invisibly returns a list with output paths and the prepared tables.

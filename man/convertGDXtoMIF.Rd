@@ -13,10 +13,11 @@ convertGDXtoMIF(
   scenario_name = NULL,
   model = "OPEN-PROM",
   aggregate = TRUE,
+  stripScenarioTimestamp = FALSE,
   emissions = TRUE,
   save = TRUE,
   htmlReport = FALSE,
-  projectReport = FALSE,
+  projectReport = TRUE,
   project_template = "project-template.csv"
 )
 }
@@ -32,6 +33,11 @@ convertGDXtoMIF(
 \item{scenario_name}{Optional; a character vector specifying the scenario names. Defaults to the basename of `.path`.}
 
 \item{model}{Optional; model name written to MIF/project-report outputs. Defaults to \code{"OPEN-PROM"}.}
+
+\item{stripScenarioTimestamp}{Optional; a logical value indicating whether
+trailing timestamps like \code{_2026-05-11_16-57} or
+\code{_2026-05-11_16-57-15} should be removed from scenario names written to
+\code{reporting.mif}. Defaults to \code{FALSE}.}
 
 \item{project_template}{Optional; project template filename or path used by
 \code{projectReport}. If \code{NULL}, project reporting is skipped.}
@@ -64,6 +70,7 @@ convertGDXtoMIF(
   fullValidation = TRUE,
   scenario_name = c("Scenario1", "Scenario2"),
   model = "OPEN-PROM",
+  stripScenarioTimestamp = TRUE,
   project_template = "project-template.csv",
   aggregate = TRUE,
   emissions = TRUE,

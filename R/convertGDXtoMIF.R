@@ -8,6 +8,10 @@
 #' @param fullValidation Optional; a logical value indicating whether full validation should be performed. Defaults to `TRUE`.
 #' @param scenario_name Optional; a character vector specifying the scenario names. Defaults to the basename of `.path`.
 #' @param model Optional; model name written to MIF/project-report outputs. Defaults to `"OPEN-PROM"`.
+#' @param stripScenarioTimestamp Optional; a logical value indicating whether
+#'   trailing timestamps like `_2026-05-11_16-57` or
+#'   `_2026-05-11_16-57-15` should be removed from scenario names written to
+#'   `reporting.mif`. Defaults to `FALSE`.
 #' @param project_template Optional; project template filename or path used by
 #'   `projectReport`. If `NULL`, project reporting is skipped.
 #' @param aggregate Optional; a logical value indicating whether to aggregate data. Defaults to `TRUE`.
@@ -30,6 +34,7 @@
 #'   fullValidation = TRUE,
 #'   scenario_name = c("Scenario1", "Scenario2"),
 #'   model = "OPEN-PROM",
+#'   stripScenarioTimestamp = TRUE,
 #'   project_template = "project-template.csv",
 #'   aggregate = TRUE,
 #'   emissions = TRUE,
@@ -44,11 +49,16 @@
 convertGDXtoMIF <- function(.path, mif_name, regions = NULL, years = NULL,
                             fullValidation = TRUE, scenario_name = NULL,
                             model = "OPEN-PROM", aggregate = TRUE,
+                            stripScenarioTimestamp = FALSE,
                             emissions = TRUE, save = TRUE, htmlReport = FALSE,
                             projectReport = TRUE,
                             project_template = "project-template.csv") {
   if (is.null(scenario_name)) scenario_name <- basename(.path)
   if (is.null(project_template)) projectReport <- FALSE
+  report_scenario_name <- stripScenarioTimestampFromName(
+    scenario_name,
+    stripScenarioTimestamp
+  )
   
   current_time <- format(Sys.time(), "%Y-%m-%d_%H-%M")
   append <- length(.path) > 1
@@ -74,10 +84,10 @@ convertGDXtoMIF <- function(.path, mif_name, regions = NULL, years = NULL,
         projectReport = FALSE
       )
     },
-    .path, scenario_name,
+    .path, report_scenario_name,
     SIMPLIFY = FALSE
   )
-  names(scenarios_reports) <- scenario_name
+  names(scenarios_reports) <- report_scenario_name
 
   if (fullValidation == TRUE) appendValidationMIF(.path[1], path_mif)
   if (save == TRUE && projectReport == TRUE) {
@@ -86,7 +96,7 @@ convertGDXtoMIF <- function(.path, mif_name, regions = NULL, years = NULL,
       .path = dirname(path_mif),
       openPromVariables = scenarios_reports,
       openPromFile = path_mif,
-      scenario_name = scenario_name,
+      scenario_name = report_scenario_name,
       model = model,
       project_template = project_template
     )
@@ -95,6 +105,16 @@ convertGDXtoMIF <- function(.path, mif_name, regions = NULL, years = NULL,
   return(scenarios_reports)
 }
 # Helpers -----------------------------------------------------------------
+stripScenarioTimestampFromName <- function(scenario_name, strip = TRUE) {
+  if (!strip) return(scenario_name)
+
+  sub(
+    "_[0-9]{4}-[0-9]{2}-[0-9]{2}_[0-9]{2}-[0-9]{2}(-[0-9]{2})?$",
+    "",
+    scenario_name
+  )
+}
+
 convertGDXtoMIF_single <- function(.path, path_mif, append, regions = NULL,
                                    years = NULL, scenario_name = NULL,
                                    model = "OPEN-PROM", aggregate = TRUE,
