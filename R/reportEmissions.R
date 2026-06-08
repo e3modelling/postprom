@@ -96,27 +96,46 @@ reportEmissions <- function(path, regions, years) {
   getItems(grossCO2Supply, 3.1) <- paste0("Gross Emissions|CO2|Energy|Supply|", name)
   getItems(netCO2Supply, 3.1) <- paste0("Emissions|CO2|Energy|Supply|", name)
   # ========================= AFOLU & Land Use ===============================
+  # Single source of truth: the GAMS-derived tag sLandEmiMode (written to the gdx)
+  # decides the AFOLU source — no more file.exists guessing (which mis-read a
+  # stale mif as a soft-link run and double-counted). Three modes:
+  #   curve   = internal land-use-emulator curves computed in postsolve (read gdx)
+  #   softmif = MAgPIE soft-link emissions (read iEmissions_magpie.mif; error if absent)
+  #   exo     = external default sources (legacy compatibility)
   iEmissions_magpie <- file.path(dirname(path), "iEmissions_magpie.mif")
-  useMagpieAfolu <- file.exists(iEmissions_magpie)
+  landEmiMode <- readGDX(path, "sLandEmiMode", react = "silent")
+  landEmiMode <- if (!is.null(landEmiMode) && length(landEmiMode))
+    as.character(landEmiMode)[1]
+  else if (file.exists(iEmissions_magpie)) "softmif" else "exo"  # fallback for pre-tag gdx
 
-  if (useMagpieAfolu) {
+  AFOLUCh4N2o <- NULL; extraAFOLU <- NULL; kyotoAfolu <- NULL
+  if (landEmiMode == "softmif") {
+    if (!file.exists(iEmissions_magpie))
+      stop("sLandEmiMode=softmif but iEmissions_magpie.mif is missing at ", iEmissions_magpie)
     magpieAfolu <- prepareMagpieAfolu(iEmissions_magpie)
     AFOLU_CDR <- magpieAfolu$afolu
     AFOLUCO2 <- magpieAfolu$co2
     CDRCO2 <- magpieAfolu$cdr
     AFOLUCh4N2o <- magpieAfolu$ch4N2o
     extraAFOLU <- magpieAfolu$extra
+    kyotoAfolu <- magpieAfolu$kyoto
+  } else if (landEmiMode == "curve") {
+    internalAfolu <- getInternalAfolu(path, regions, years)
+    AFOLU_CDR <- internalAfolu$afolu
+    AFOLUCO2 <- internalAfolu$co2
+    CDRCO2 <- internalAfolu$cdr
+    AFOLUCh4N2o <- internalAfolu$ch4N2o
+    extraAFOLU <- internalAfolu$extra
   } else {
-    # Use default sources
+    # exo: external default sources (legacy)
     AFOLU_CDR <- mbind(
       getGLOBIOMEU(path, grossCO2Demand)[, years, ],
       getREMIND_MAgPIE_SoCDR(path, grossCO2Demand)[, years, ]
     )[regions, , ]
     AFOLUCO2 <- AFOLU_CDR[, , "Emissions|CO2|AFOLU"]
     CDRCO2 <- AFOLU_CDR[, , "Carbon Removal|Land Use"]
-    AFOLUCh4N2o <- NULL
-    extraAFOLU <- NULL
   }
+  useMagpieAfolu <- landEmiMode %in% c("softmif", "curve")   # both provide AFOLU CH4/N2O
   # ========================= Industrial Processes ===========================
   IndustrialProcesses <- getIndustrialProcesses(
     path, grossCO2Demand
@@ -310,6 +329,12 @@ reportEmissions <- function(path, regions, years) {
     )
     magpie_object <- mbind(magpie_object, extraAFOLU)
   }
+  # AFOLU-sector Kyoto Gases (Mt CO2-equiv/yr), synthesized from the gas trees.
+  if (!is.null(kyotoAfolu)) {
+    kyotoAfolu <- add_dimension(kyotoAfolu, dim = 3.2, add = "unit",
+                                nm = "Mt CO2-equiv/yr")
+    magpie_object <- mbind(magpie_object, kyotoAfolu)
+  }
 
   return(magpie_object)
 }
@@ -342,6 +367,8 @@ getUnit <- function(varName) {
     } else {
       gasName <- sub(".*\\|", "", varName)
     }
+    # IAMC reports Sulfur in SO2-equivalent mass and NOx in NO2-equivalent mass.
+    gasName <- switch(gasName, "Sulfur" = "SO2", "NOx" = "NO2", gasName)
     return(paste0("Mt ", gasName, "/yr"))
   }
 }
@@ -372,10 +399,12 @@ calcKyoto <- function(cat) {
 }
 # Get CO2 Equivalent Factor
 getCo2EqFactor <- function(varName) {
-  # Define GWP Factors (AR4 100-year values standard for reporting)
+  # Define GWP Factors (GWP-100). CH4/N2O updated to AR6 (27 / 273); F-gas values
+  # remain AR4 — AFOLU carries no F-gas, so update these too only if full-AR6
+  # F-gas accounting is required elsewhere.
   gwpMap <- c(
-    "CH4" = 25,
-    "N2O" = 298,
+    "CH4" = 27,
+    "N2O" = 273,
     "SF6" = 22800,
     "HFC125" = 3500,
     "HFC134a" = 1430,
@@ -428,59 +457,125 @@ calculateGhg <- function(dataMagpie) {
   return(totalCo2Eq)
 }
 
-prepareMagpieAfolu <- function(iEmissions_magpie) {
-  varsCO2 <- c(
-    "Emissions|CO2|AFOLU|Land",
-    "Emissions|CO2|AFOLU|Agriculture",
-    "Emissions|CO2|AFOLU|Land|Fires"
-  )
-  varsCH4N2O <- c(
-    "Emissions|CH4|AFOLU|Land",
-    "Emissions|CH4|AFOLU|Land|Fires",
-    "Emissions|N2O|AFOLU|Land",
-    "Emissions|N2O|AFOLU|Land|Fires"
-  )
+# Synthesize Emissions|Kyoto Gases|AFOLU|* (Mt CO2-equiv/yr) from the IAMC-aligned
+# CO2/CH4/N2O AFOLU tree: Kyoto(node) = CO2(node) + CH4(node)*GWP + N2O(node)*GWP.
+# DRY: the Kyoto node set is derived from the gas trees (gas -> "Kyoto Gases"), so
+# it tracks exactly the AFOLU nodes the alignment produced — no hard-coded list and
+# no separate csv column. GWP from getCo2EqFactor (AR6: CH4 27, N2O 273/1000 since
+# N2O is in kt); CO2 factor = 1. F-gases are absent in AFOLU. Nodes MAgPIE does not
+# produce (e.g. Land|Other) never appear, so they are silently skipped.
+buildKyotoAfolu <- function(afolu) {
+  v <- getItems(afolu, dim = 3.1)
+  ghg <- grep("^Emissions\\|(CO2|CH4|N2O)\\|AFOLU", v, value = TRUE)
+  if (length(ghg) == 0) return(NULL)
+  kyotoNames <- unique(sub("^Emissions\\|(CO2|CH4|N2O)\\|",
+                           "Emissions|Kyoto Gases|", ghg))
+  out <- NULL
+  for (kv in kyotoNames) {
+    acc <- NULL
+    for (g in c("CO2", "CH4", "N2O")) {
+      gv <- sub("^Emissions\\|Kyoto Gases\\|", paste0("Emissions|", g, "|"), kv)
+      if (gv %in% v) {
+        f <- if (g == "CO2") 1 else getCo2EqFactor(gv)
+        contrib <- afolu[, , gv] * f
+        acc <- if (is.null(acc)) contrib else acc + contrib
+      }
+    }
+    out <- mbind(out, setNames(acc, kv))
+  }
+  out
+}
 
+prepareMagpieAfolu <- function(iEmissions_magpie) {
   dataMagpie <- read.report(iEmissions_magpie)
   afolu <- dataMagpie[[1]][[1]]
 
-  # Convert "Emissions|Gas|Land|..." to "Emissions|Gas|AFOLU|Land|..."
-  # so bottom-up aggregation follows the same hierarchy as OPEN-PROM data.
-  varNames <- getNames(afolu)
-  varNames <- ifelse(
-    grepl("\\|AFOLU\\|Land", varNames),
-    varNames,
-    str_replace(varNames, "^(Emissions\\|[^|]+)\\|Land(.*)$", "\\1|AFOLU|Land\\2")
-  )
-  getNames(afolu) <- varNames
-  varsNoUnits <- trimws(gsub("\\s*\\(.*\\)$", "", getItems(afolu, dim = 3)))
-  getItems(afolu, 3.1) <- varsNoUnits
+  # Strip the "(unit)" suffix so names match the csv's `variable` column and
+  # the IAMC `iamc_variable` targets (both unit-free).
+  getItems(afolu, 3.1) <- trimws(gsub("\\s*\\(.*\\)$", "", getItems(afolu, dim = 3)))
 
+  # ---- (1) Carbon Removal|Land Use ----------------------------------------
+  # Must run BEFORE the IAMC remap: the CDR mapping keys on the fine MAgPIE LUC
+  # leaves (Regrowth / Indirect / Soil Withdrawals ...) that the remap dissolves
+  # into "Land Use and Land-Use Change". The CDR mapping keys on the AFOLU-
+  # prefixed names, so add the prefix on a throwaway copy first.
+  afoluPrefixed <- afolu
+  pn <- getItems(afoluPrefixed, 3.1)
+  pn <- ifelse(
+    grepl("\\|AFOLU\\|Land", pn),
+    pn,
+    str_replace(pn, "^(Emissions\\|[^|]+)\\|Land(.*)$", "\\1|AFOLU|Land\\2")
+  )
+  getItems(afoluPrefixed, 3.1) <- pn
   magpieCDRmapping <- toolGetMapping("open-prom-magpie-CDR-mapping.csv",
     type = "sectoral",
     where = "postprom"
   )
   cdr <- suppressMessages(toolAggregate(
-    afolu,
+    afoluPrefixed,
     dim = 3,
     rel = magpieCDRmapping,
     partrel = TRUE
   ))
-  # MAgPIE reports land-based CO2 sinks as negative emissions; this script
-  # relabels them as `Carbon Removal|*` which by IAMC convention is reported
-  # as a positive gross flux. Match the abs() convention used in
-  # getGLOBIOMEU() and getREMIND_MAgPIE_SoCDR().
+  # MAgPIE reports land-based CO2 sinks as negative emissions; relabel as
+  # `Carbon Removal|*` (IAMC convention: positive gross flux). Same abs() as
+  # getGLOBIOMEU() / getREMIND_MAgPIE_SoCDR().
   cdr <- abs(cdr)
 
-  emissionsN2O <- getNames(afolu)[grepl("N2O", getNames(afolu))]
-  afolu[, , emissionsN2O] <- afolu[, , emissionsN2O] * 1000
+  # ---- (2) Align variable names to IAMC common-definitions ----------------
+  # Merge MAgPIE leaves -> IAMC names (pure '|', no '+') via the `iamc_variable`
+  # column of magpie-afolu-emission-variables.csv. Rows with a blank target
+  # (NO3-, CO2 agricultural-waste-burning, and every parent row) are dropped;
+  # many-to-one rows are summed (over-fine MAgPIE leaves roll up to the coarser
+  # IAMC node — e.g. all LUC leaves + Indirect -> Land Use and Land-Use Change).
+  emiCsv <- read.csv(
+    system.file("extdata", "magpie-afolu-emission-variables.csv", package = "postprom"),
+    stringsAsFactors = FALSE
+  )
+  emiCsv$variable <- trimws(gsub("\\s*\\(.*\\)$", "", emiCsv$variable))
+  rel <- emiCsv[nzchar(emiCsv$iamc_variable), c("variable", "iamc_variable")]
+  rel <- rel[rel$variable %in% getItems(afolu, 3.1), ]
+  leaves <- suppressMessages(toolAggregate(
+    afolu,
+    dim = 3.1, rel = rel, from = "variable", to = "iamc_variable", partrel = TRUE
+  ))
+
+  # ---- (3) Rebuild IAMC parent nodes from the leaves ----------------------
+  # IAMC names are pure '|', so helperAggregateLevel (truncates on '|')
+  # reconstructs every parent down to level 3 = Emissions|<gas>|AFOLU. Level-2
+  # totals (Emissions|<gas>) are left to the caller's own aggregation.
+  afolu <- helperAggregateLevel(leaves, level = 3, recursive = TRUE)
+
+  # N2O is already kt here: coupleMagpieToProm now converts MAgPIE-native Mt -> kt
+  # at the boundary when it writes iEmissions_magpie.mif, so no conversion is done
+  # here (all OPEN-PROM N2O is kt: GLOBIOM lookup, EMTYPE, GAMS, the Kyoto factor
+  # below). CH4/CO2 stay in Mt.
+
+  # ---- (4) Split for the caller -------------------------------------------
+  # IMPORTANT: co2 / ch4N2o hand the caller ONLY the gas-AFOLU TOP nodes. The
+  # caller runs helperAggregateLevel(level = 2) on them to build the gas totals
+  # (Emissions|CO2, Emissions|CH4, ...); passing the whole subtree there would
+  # double-count parents + children. All finer nodes ride in `extra`, which is
+  # mbind-ed verbatim (no further aggregation), so the IAMC sub-trees are kept.
+  nm <- getItems(afolu, 3.1)
+  # CO2 tops fed into the CO2 sum (Fires now lives under AFOLU|Land):
+  co2Tops    <- intersect(c("Emissions|CO2|AFOLU|Land",
+                            "Emissions|CO2|AFOLU|Agriculture"), nm)
+  # CH4/N2O AFOLU level-3 tops; replace the nonCO2 AFOLU block in the caller:
+  ch4n2oTops <- intersect(c("Emissions|CH4|AFOLU", "Emissions|N2O|AFOLU"), nm)
+  # Everything else: CO2 AFOLU|Land sub-tree + CH4/N2O AFOLU sub-trees (below
+  # their tops) + all air-pollutant AFOLU trees. Drop the tops handed above and
+  # the redundant Emissions|CO2|AFOLU level-3 total (the CO2 aggregation rebuilds
+  # it; the CH4/N2O level-3 tops are kept here only via ch4N2o, not extra).
+  extraSel   <- setdiff(nm, c(co2Tops, "Emissions|CO2|AFOLU", ch4n2oTops))
 
   return(list(
-    afolu = afolu,
-    co2 = afolu[, , varsCO2],
-    cdr = cdr,
-    ch4N2o = afolu[, , varsCH4N2O],
-    extra = afolu[, , !(getNames(afolu) %in% c(varsCO2, varsCH4N2O))]
+    afolu  = afolu,
+    co2    = afolu[, , co2Tops],
+    cdr    = cdr,
+    ch4N2o = afolu[, , ch4n2oTops],
+    extra  = afolu[, , extraSel],
+    kyoto  = buildKyotoAfolu(afolu)
   ))
 }
 
@@ -634,6 +729,49 @@ getMAGPIE <- function(path, magpie_object) {
 }
 
 # getGLOBIOMEU function to generate AFOLU and Land_CDR from GLOBIOMEU
+# getInternalAfolu: read the land-use-emulator emissions computed in GAMS postsolve
+# (imAfoluLandEmis = land CO2, imAfoluAgriEmis = agriculture CH4/N2O) and assemble the
+# full IAMC AFOLU sub-tree the caller writes: both AFOLU|Land and AFOLU|Agriculture
+# nodes, each with all three gases, plus the AFOLU gas tops (= Land + Agriculture).
+# In the emulator's split CO2 lives entirely under Land and CH4/N2O entirely under
+# Agriculture, so the cross cells (CO2|Agriculture, CH4/N2O|Land) are 0 by design,
+# which makes that modelling choice explicit in the report.
+# Units chain-consistent: CO2/CH4 Mt/yr, N2O kt/yr. Carbon Removal = 0 (the emulator
+# CO2 is a net flux; sinks are in the regression intercept). Backend-agnostic
+# (globiom/magpie write the same gdx variables).
+getInternalAfolu <- function(path, regions, years) {
+  land <- readGDX(path, "imAfoluLandEmis")[regions, years, ]   # CO2 populated, CH4/N2O = 0
+  agri <- readGDX(path, "imAfoluAgriEmis")[regions, years, ]   # CH4/N2O populated, CO2 = 0
+  emt <- c(CO2 = "CO2LandUse", CH4 = "CH4LandUse", N2O = "N2OLandUse")
+  named <- function(x, em, name) { y <- collapseNames(x[, , em]); getItems(y, 3) <- name; y }
+
+  parts <- list()
+  for (g in names(emt)) {
+    parts[[paste0("Emissions|", g, "|AFOLU|Land")]] <-
+      named(land, emt[[g]], paste0("Emissions|", g, "|AFOLU|Land"))
+    parts[[paste0("Emissions|", g, "|AFOLU|Agriculture")]] <-
+      named(agri, emt[[g]], paste0("Emissions|", g, "|AFOLU|Agriculture"))
+    top <- parts[[paste0("Emissions|", g, "|AFOLU|Land")]] +
+           parts[[paste0("Emissions|", g, "|AFOLU|Agriculture")]]
+    getItems(top, 3) <- paste0("Emissions|", g, "|AFOLU")
+    parts[[paste0("Emissions|", g, "|AFOLU")]] <- top
+  }
+  cdr <- parts[[1]]; cdr[, , ] <- 0; getItems(cdr, 3) <- "Carbon Removal|Land Use"
+  afolu <- mbind(c(unname(parts), list(cdr)))
+
+  list(
+    afolu  = afolu,
+    # CO2 sub-nodes feed the CO2 aggregation (helperAggregateLevel rebuilds CO2|AFOLU):
+    co2    = afolu[, , c("Emissions|CO2|AFOLU|Land", "Emissions|CO2|AFOLU|Agriculture")],
+    cdr    = afolu[, , "Carbon Removal|Land Use"],
+    # CH4/N2O AFOLU tops replace the non-CO2 AFOLU block in the caller:
+    ch4N2o = afolu[, , c("Emissions|CH4|AFOLU", "Emissions|N2O|AFOLU")],
+    # CH4/N2O Land/Agriculture sub-nodes written directly via extraAFOLU:
+    extra  = afolu[, , c("Emissions|CH4|AFOLU|Land", "Emissions|CH4|AFOLU|Agriculture",
+                         "Emissions|N2O|AFOLU|Land", "Emissions|N2O|AFOLU|Agriculture")]
+  )
+}
+
 getGLOBIOMEU <- function(path, magpie_object) {
   # Add Globiom
   GLOBIOMEU <- readSource("GLOBIOMEU", convert = FALSE)
