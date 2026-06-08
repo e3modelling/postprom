@@ -264,9 +264,11 @@ collapseProjectReportDuplicates <- function(dataMagpie, sourceMagpie, sourceClea
   itemNames <- getItems(dataMagpie, dim = 3)
   targetClean <- cleanProjectReportVariable(itemNames)
   targetUnits <- extractProjectReportUnit(itemNames)
-  out <- NULL
+  targets <- unique(targetClean)
+  out <- vector("list", length(targets))
 
-  for (target in unique(targetClean)) {
+  for (targetIndex in seq_along(targets)) {
+    target <- targets[targetIndex]
     idx <- which(targetClean == target)
     unit <- unique(targetUnits[idx][!is.na(targetUnits[idx])])
     itemName <- target
@@ -286,10 +288,10 @@ collapseProjectReportDuplicates <- function(dataMagpie, sourceMagpie, sourceClea
     }
 
     getItems(item, dim = 3) <- itemName
-    out <- mbind(out, item)
+    out[[targetIndex]] <- item
   }
 
-  return(out)
+  return(do.call(mbind, out))
 }
 
 weightedProjectReportPrice <- function(prices, sourceMagpie, sourcePriceClean, target) {
