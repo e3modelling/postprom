@@ -84,7 +84,22 @@ reportSE <- function(path, regions, years) {
   elcDemand <- readGDX(path, "V04DemElecTot", field = "l")[regions, years, ]
   getItems(elcDemand, 3) <- paste0("Secondary Energy|Electricity|Demand")
 
-  magpie_object <- mbind(magpie_object, elcDemand)
+  # ================ Secondary Liquids / Gases / Solids =========================
+  # reportSE previously reported only Electricity, Heat and Hydrogen, leaving the
+  # Secondary Energy total ~1/3 low (mostly refinery liquids). The other secondary
+  # carriers are the transformation output of sectors LQD (refineries), GAS (gas
+  # works) and SLD (coke/solids) — V03OutTotTransf(allCy, SSBS, EFS, YTIME) in
+  # module 03_RestOfEnergy. Sum over output fuels EFS; Mtoe -> TWh (same unit).
+  outTransf <- readGDX(path, "V03OutTotTransf", field = "l")[regions, years, ]
+  sectCarrier <- c(LQD = "Liquids", GAS = "Gases", SLD = "Solids")
+  prodCarriers <- NULL
+  for (s in names(sectCarrier)) {
+    v <- dimSums(outTransf[, , s], dim = 3) * MtoeToTWh
+    getItems(v, 3) <- paste0("Secondary Energy|", sectCarrier[[s]])
+    prodCarriers <- mbind(prodCarriers, v)
+  }
+
+  magpie_object <- mbind(magpie_object, elcDemand, prodCarriers)
   magpie_object <- add_dimension(magpie_object, dim = 3.2, add = "unit", nm = units)
   return(magpie_object)
 }
