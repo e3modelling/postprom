@@ -1,5 +1,5 @@
 BALEF,EF
-"Total","HCL,LGN,CRO,LPG,GSL,BGSL,KRS,BKRS,GDO,BGDO,RFO,OLQ,NGS,OGS,NUC,STE,HYD,WND,SOL,BMSWAS,GEO,MET,ETH,H2F,ELC"
+"Total","HCL,LGN,CRO,LPG,GSL,BGSL,KRS,BKRS,GDO,BGDO,RFO,OLQ,NGS,OGS,BGAS,NUC,STE,HYD,WND,SOL,BMSWAS,GEO,MET,ETH,H2F,ELC"
 "Solids","HCL,LGN"
 "Hard coal","HCL"
 "Lignite","LGN"
@@ -26,7 +26,8 @@ BALEF,EF
 "Wind","WND"
 "Solar","SOL"
 "Biomass","BMSWAS"
-"Biofuels","BMSWAS,BGSL,BKRS,BGDO"
+"Biogas","BGAS"
+"Biofuels","BMSWAS,BGSL,BKRS,BGDO,BGAS"
 "Geothermal and other renewable sources","GEO"
 "Methanol","MET"
 "Hydrogen","H2F"
