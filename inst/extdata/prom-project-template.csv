@@ -103,3 +103,15 @@ Secondary Energy|Hydrogen|Biomass,Secondary Energy|Hydrogen|Biofuels
 Secondary Energy|Hydrogen|Biomass|w/ CCS,Secondary Energy|Hydrogen|Biofuels|w/ CCS
 Secondary Energy|Hydrogen|Biomass|w/o CCS,Secondary Energy|Hydrogen|Biofuels|w/o CCS
 Secondary Energy|Hydrogen|Non-Biomass Renewables,Secondary Energy|Hydrogen|Geothermal and other renewable sources
+Primary Energy|Biomass,Primary Energy|Biofuels
+Primary Energy|Geothermal,Primary Energy|Geothermal and other renewable sources
+Primary Energy|Other,Primary Energy|Other fuels
+Final Energy|Gases,Final Energy|Gas
+Final Energy|Geothermal,Final Energy|Geothermal and other renewable sources
+Final Energy|Other,Final Energy|Other fuels
+Final Energy|Liquids,Final Energy|Fossil Liquids
+Final Energy|Liquids,Final Energy|Biodiesel
+Final Energy|Liquids,Final Energy|Biogasoline
+Final Energy|Liquids,Final Energy|Biokerosene
+Final Energy|Solids,Final Energy|Biomass and Waste
+Final Energy|Agriculture,"Final Energy|Agriculture, Fishing, Forestry"
