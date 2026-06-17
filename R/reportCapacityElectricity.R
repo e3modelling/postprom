@@ -15,7 +15,7 @@
 #' @importFrom gdx readGDX
 #' @importFrom magclass getItems add_dimension mbind dimSums
 #' @importFrom madrat toolAggregate
-#' @importFrom dplyr %>% rename coalesce group_by summarise
+#' @importFrom dplyr %>% rename coalesce full_join group_by summarise na_if
 #' @export
 reportCapacityElectricity <- function(path, regions, years) {
   BALEFtoEF <- read.csv(
