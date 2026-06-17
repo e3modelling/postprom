@@ -115,7 +115,7 @@ reportFinalEnergy <- function(path, regions, years) {
 
   # =========================== Auxiliary variables ======================
   # --------------------------- Residential & Comercial ------------------
-  resCom <- fuel[, , c("Final Energy|Residential", "Final Energy|Commercial", "Final Energy|Agriculture, Fishing, Forestry")]
+  resCom <- fuel[, , c("Final Energy|Residential", "Final Energy|Commercial")]
   resCom <- dimSums(resCom, 3)
   getItems(resCom, 3.1) <- "Final Energy|Residential and Commercial"
   # ============================ Add units ================================
