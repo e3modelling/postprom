@@ -72,6 +72,8 @@ reportPrice <- function(path, regions, years) {
   ) # prepend SBS (e.g., IS|HCL -> Industry|IS|HCL)
 
   getItems(prices, 3) <- paste0("Prices|Final Energy|", name)
+  
+  prices <- add_dimension(prices, dim = 3.2, add = "unit", nm = "k$2015/toe")
 
   return(prices)
 }

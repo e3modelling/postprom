@@ -18,6 +18,7 @@
 #' @param save Optional; a logical value indicating whether to save the output. Defaults to `TRUE`.
 #' @param emissions Optional; a logical value indicating whether to generate a separate emissions csv file for running climate assessment. Defaults to `TRUE`.
 #' @param htmlReport Optional; a logical value indicating whether to generate a HTML report file with piamValidation. Defaults to `FALSE`.
+#' @param dashboard Optional; a logical value indicating whether to generate a dashboard. Defaults to `TRUE`.
 
 #' @return A list of scenario reports generated from the provided GDX files.
 #' @details
@@ -52,6 +53,7 @@ convertGDXtoMIF <- function(.path, mif_name, regions = NULL, years = NULL,
                             stripScenarioTimestamp = FALSE,
                             emissions = TRUE, save = TRUE, htmlReport = FALSE,
                             projectReport = TRUE,
+                            dashboard = TRUE,
                             project_template = "project-template.csv") {
   if (is.null(scenario_name)) scenario_name <- basename(.path)
   if (is.null(project_template)) projectReport <- FALSE
@@ -81,7 +83,8 @@ convertGDXtoMIF <- function(.path, mif_name, regions = NULL, years = NULL,
         save = save,
         emissions = emissions,
         htmlReport = htmlReport,
-        projectReport = FALSE
+        projectReport = FALSE,
+        dashboard = dashboard
       )
     },
     .path, report_scenario_name,
@@ -144,6 +147,7 @@ convertGDXtoMIF_single <- function(.path, path_mif, append, regions = NULL,
   reports <- mbind(reports, reportACTV(path_gdx, regions, years))
   reports <- mbind(reports, reportCapacityAdditions(path_gdx, regions, years))
   reports <- mbind(reports, reportCostsPGtechnologies(path_gdx, regions, years))
+  reports <- mbind(reports, reportEnergySystemCosts(path_gdx, regions, years))
   reports <- mbind(reports, reportVehicles(path_gdx, regions, years))
   reports <- mbind(reports, reportGrossInlandConsumption(path_gdx, regions, years))
   reports <- mbind(reports, reportEquipmentCapacityShare(path_gdx, regions, years))
@@ -176,12 +180,12 @@ convertGDXtoMIF_single <- function(.path, path_mif, append, regions = NULL,
     
     if (htmlReport == TRUE) htmlReportValidation(.path, path_mif)
     
-    if (dashboard == TRUE & htmlReport == TRUE) rmarkdown::render(
+    if (dashboard == TRUE) rmarkdown::render(
       system.file("rmd", "dashboard.Rmd", package = "postprom"),
       output_file = paste0(.path, "/dashboard.html"),
       params = list(scenarioname = basename(.path), magpie_data = reports)
     )
-    if (dashboard == TRUE & htmlReport == TRUE) bindhtml(.path)
+    if (dashboard == TRUE) bindhtml(.path)
 
   }
 
@@ -198,7 +202,8 @@ aggregateMIF <- function(report) {
   itemsToSum <- items[!grepl("^Price|^Activity growth rate", items)]
 
   # Take Price|Final Energy, Activity growth rate (excluding Carbon)
-  itemsWeightedGdp <- items[grep("^(Price|Activity growth rate)(?!.*Carbon)", items, perl = TRUE)]
+  itemsWeightedGdp <- items[grep("^(Price|Activity growth rate)", items, perl = TRUE)]
+  itemsWeightedGdp <- setdiff(itemsWeightedGdp, "Price|Carbon.US$2015/tn CO2")
   itemPriceCarbon <- "Price|Carbon"
 
   # --- Extract Weights ---

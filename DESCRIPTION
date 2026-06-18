@@ -27,6 +27,11 @@ Authors@R: c(
       "Songmin", "Yu",
       email = "Songmin.Yu@wsp.com",
       role = c("aut")
+    ),
+    person(
+      "Christos", "Koumparakis",
+      email = "Christos.Koumparakis@wsp.com",
+      role = c("aut")
     )
   )
 Description: A post-processing tool for analyzing, visualizing,
