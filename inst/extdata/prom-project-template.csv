@@ -115,3 +115,9 @@ Final Energy|Liquids,Final Energy|Biogasoline
 Final Energy|Liquids,Final Energy|Biokerosene
 Final Energy|Solids,Final Energy|Biomass and Waste
 Final Energy|Agriculture,"Final Energy|Agriculture, Fishing, Forestry"
+Price|Secondary Energy|Electricity,"Price|Final Energy|Industry|Electricity"
+Price|Primary Energy|Coal,"Price|Final Energy|Industry|Solids"
+Price|Primary Energy|Gas,"Price|Final Energy|Industry|Natural gas"
+Price|Primary Energy|Biomass,"Price|Final Energy|Industry|Biomass"
+Price|Primary Energy|Fossil,"Price|Final Energy|Industry|Fossil"
+Price|Primary Energy|Oil,"Price|Final Energy|Industry|Crude oil and Feedstocks"
