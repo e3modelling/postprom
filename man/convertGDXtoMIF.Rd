@@ -18,6 +18,7 @@ convertGDXtoMIF(
   save = TRUE,
   htmlReport = FALSE,
   projectReport = TRUE,
+  dashboard = TRUE,
   project_template = "project-template.csv"
 )
 }
@@ -32,23 +33,25 @@ convertGDXtoMIF(
 
 \item{scenario_name}{Optional; a character vector specifying the scenario names. Defaults to the basename of `.path`.}
 
-\item{model}{Optional; model name written to MIF/project-report outputs. Defaults to \code{"OPEN-PROM"}.}
-
-\item{stripScenarioTimestamp}{Optional; a logical value indicating whether
-trailing timestamps like \code{_2026-05-11_16-57} or
-\code{_2026-05-11_16-57-15} should be removed from scenario names written to
-\code{reporting.mif}. Defaults to \code{FALSE}.}
-
-\item{project_template}{Optional; project template filename or path used by
-\code{projectReport}. If \code{NULL}, project reporting is skipped.}
+\item{model}{Optional; model name written to MIF/project-report outputs. Defaults to `"OPEN-PROM"`.}
 
 \item{aggregate}{Optional; a logical value indicating whether to aggregate data. Defaults to `TRUE`.}
+
+\item{stripScenarioTimestamp}{Optional; a logical value indicating whether
+trailing timestamps like `_2026-05-11_16-57` or
+`_2026-05-11_16-57-15` should be removed from scenario names written to
+`reporting.mif`. Defaults to `FALSE`.}
 
 \item{emissions}{Optional; a logical value indicating whether to generate a separate emissions csv file for running climate assessment. Defaults to `TRUE`.}
 
 \item{save}{Optional; a logical value indicating whether to save the output. Defaults to `TRUE`.}
 
 \item{htmlReport}{Optional; a logical value indicating whether to generate a HTML report file with piamValidation. Defaults to `FALSE`.}
+
+\item{dashboard}{Optional; a logical value indicating whether to generate a dashboard. Defaults to `TRUE`.}
+
+\item{project_template}{Optional; project template filename or path used by
+`projectReport`. If `NULL`, project reporting is skipped.}
 }
 \value{
 A list of scenario reports generated from the provided GDX files.
