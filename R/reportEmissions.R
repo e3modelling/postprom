@@ -109,6 +109,7 @@ reportEmissions <- function(path, regions, years) {
   else if (file.exists(iEmissions_magpie)) "softmif" else "exo"  # fallback for pre-tag gdx
 
   AFOLUCh4N2o <- NULL; extraAFOLU <- NULL; kyotoAfolu <- NULL
+
   if (landEmiMode == "softmif") {
     if (!file.exists(iEmissions_magpie))
       stop("sLandEmiMode=softmif but iEmissions_magpie.mif is missing at ", iEmissions_magpie)

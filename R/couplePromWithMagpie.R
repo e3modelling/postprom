@@ -138,8 +138,9 @@ couplePromToMagpie <- function(gdxPath,
   # of the 0.4 / 0.6 / 0.6 weights and what BMSWAS / BGSL / BKRS represent.
   bio <- bio[, , "BMSWAS"] * 0.4 +
          bio[, , "BGSL"]   * 0.6 +
-         bio[, , "BKRS"]   * 0.6              # 39 x 91 x 1
-
+         bio[, , "BKRS"]   * 0.6 +             # 39 x 91 x 1
+         bio[, , "BGAS"]   * 0.6
+  
   # Collapse the 3rd dim naming.
   co2 <- magclass::collapseDim(co2, dim = 3)
   bio <- magclass::collapseDim(bio, dim = 3)

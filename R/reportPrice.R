@@ -20,90 +20,60 @@
 #' @importFrom tidyr drop_na
 #' @export
 reportPrice <- function(path, regions, years) {
-  #add model OPEN-PROM data Electricity prices
-
-  set_names <- c(
-    "SECtoEF", # Link between Model Subsectors and Fuels
-    "BALEF2EFS" # GAMS set used for reporting of Final Energy
+  DSBS <- rgdx.set(path, "DSBS", te = FALSE)
+  DSBSTable <- rgdx.set(path, "DSBS", te = TRUE)
+  EFSTable <- rgdx.set(path, "EFS", te = TRUE)
+  
+  #---------- Create a DSBS TO SBS mapping (e.g., Iron & Steel -> Industry)
+  DSBS_Industry <- readGDX(path, "INDSE") %>%
+    as.data.frame() %>%
+    mutate(SBS = "Industry")
+  DSBS_Transport <- readGDX(path, "TRANSE") %>%
+    as.data.frame() %>%
+    mutate(SBS = "Transportation")
+  DSBS_NonEnergy <- readGDX(path, "NENSE") %>%
+    as.data.frame() %>%
+    filter(. != "BU") %>%
+    mutate(SBS = "Non-Energy Use")
+  DSBS_CDR <- readGDX(path, "CDR") %>%
+    as.data.frame() %>%
+    mutate(SBS = "Carbon Management")
+  DSBS_COMM <- data.frame(
+    "." = c("SE", "ICT"),
+    "SBS" = "Commercial"
   )
-  sets <- readGDX(path, set_names)
+  DSBS_SBS <- bind_rows(
+    DSBS_Industry, DSBS_Transport,
+    DSBS_NonEnergy, DSBS_CDR, DSBS_COMM
+  ) %>%
+    rename(DSBS = 1) %>%
+    left_join(DSBSTable, by = c("DSBS" = "SBS")) %>%
+    select(-DSBS) %>%
+    rename(DSBS = .te)
+  lookup <- setNames(DSBS_SBS$SBS, DSBS_SBS$DSBS)
+  # -------------------------- Prepare data --------------------------------------
+  prices <- readGDX(path, "VmPriceFuelSubsecCarVal", field = "l")[regions, years, DSBS]
+  years <- getYears(prices)
+  units <- sub(".*\\((.*)\\).*", "\\1", prices@description)
+  # -------------------------- Renamings ------------------------------
+  name <- DSBSTable$.te[match(getItems(prices, 3.1), DSBSTable$SBS)]
+  getItems(prices, 3.1) <- name
+  getItems(prices, 3.2) <- EFSTable$.te[match(getItems(prices, 3.2), EFSTable$EF)]
 
-  names(sets$BALEF2EFS) <- c("BAL", "EF")
-  sets$BALEF2EFS[["BAL"]] <- gsub("Gas fuels", "Gases", sets$BALEF2EFS[["BAL"]])
-  sets$BALEF2EFS[["BAL"]] <- gsub("Steam", "Heat", sets$BALEF2EFS[["BAL"]])
+  # Replace sep in dimensions and prepend the sector
+  name <- gsub("\\.", "|", getItems(prices, dim = 3)) # e.g., IS.HCL --> IS|HCL
+  key <- str_extract(name, "^[^|]+")
+  mapped <- lookup[key]
 
-  sector <- c("TRANSE", "INDSE", "DOMSE", "NENSE", "PG")
-  sector_name <- c("Transportation", "Industry", "Residential and Commercial", "Non Energy and Bunkers",
-                   "Power and Steam Generation")
-  magpie_object <- NULL
-  z <- NULL
-  for (y in seq_along(sector)) {
-    # read GAMS set used for reporting of Final Energy different for each sector
-    sets6 <- NULL
-    # load current postprom set configuration for each sector
-    sets6 <- tryCatch({
-      readGDX(path, sector[y])
-    }, warning = function(w) {
-      message("Custom warning: Sector ", sector[y], " not found in GDX. Returning NULL.")
-      sector[y]
-    })
-    sets6 <- as.data.frame(sets6)
+  name <- if_else(
+    !is.na(mapped),
+    str_replace(name, "^[^|]+", paste0(mapped, "|\\0")),
+    name
+  ) # prepend SBS (e.g., IS|HCL -> Industry|IS|HCL)
 
-    map_subsectors <- sets$SECtoEF %>% filter(SBS %in% as.character(sets6[, 1]))
-    map_subsectors$EF = paste(map_subsectors$SBS, map_subsectors$EF, sep=".")
+  getItems(prices, 3) <- paste0("Prices|Final Energy|", name)
+  
+  prices <- add_dimension(prices, dim = 3.2, add = "unit", nm = "k$2015/toe")
 
-    #add model OPEN-PROM data VPriceFuelSubsecCarVal
-    iFuelPrice <- readGDX(path, "VmPriceFuelSubsecCarVal", field = "l")[regions, years, ][,,map_subsectors$EF]
-    PRICE_by_sector_and_EF <- iFuelPrice
-    # complete names
-    getItems(PRICE_by_sector_and_EF, 3.1) <- paste0("Price|Final Energy|", sector_name[y],"|", getItems(PRICE_by_sector_and_EF, 3.1))
-    # remove . from magpie object and replace with |
-    PRICE_by_sector_and_EF <- as.quitte(PRICE_by_sector_and_EF)
-    PRICE_by_sector_and_EF[["SBS"]] <- paste0(PRICE_by_sector_and_EF[["SBS"]], "|", PRICE_by_sector_and_EF[["EF"]])
-    PRICE_by_sector_and_EF <- select(PRICE_by_sector_and_EF, -c("variable","EF"))
-    PRICE_by_sector_and_EF <- as.quitte(PRICE_by_sector_and_EF) %>% as.magpie()
-
-    PRICE_by_sector_and_EF <- add_dimension(PRICE_by_sector_and_EF, dim = 3.2, add = "unit", nm = sub(".*\\((.*)\\).*", "\\1", iFuelPrice@description))
-    magpie_object <- mbind(magpie_object, PRICE_by_sector_and_EF)
-
-    # remove it because it is counted with BALEF2EFS in the next step
-    # aggregation by SECTOR and EF
-    # iFuelPrice2 <- iFuelPrice %>%
-    #   as.quitte() %>%
-    #   mutate(value = mean(value, na.rm = TRUE), .by = c("model", "scenario","period", "variable","EF")) %>%
-    #   select(c("EF", "model", "scenario", "region", "variable", "unit", "period", "value")) %>%
-    #   distinct()
-    # PRICE_by_EF_OPEN_PROM <- as.quitte(iFuelPrice2) %>% as.magpie()
-    # 
-    # # complete names
-    # getItems(PRICE_by_EF_OPEN_PROM, 3) <- paste0("Price|Final Energy|", sector_name[y],"|", getItems(PRICE_by_EF_OPEN_PROM, 3))
-    # PRICE_by_EF_OPEN_PROM <- add_dimension(PRICE_by_EF_OPEN_PROM, dim = 3.2, add = "unit", nm = sub(".*\\((.*)\\).*", "\\1", iFuelPrice@description))
-    # magpie_object <- mbind(magpie_object, PRICE_by_EF_OPEN_PROM)
-
-    # Fuel categories
-    # Energy Forms Aggregations
-    EFtoEFA <- readGDX(path, "EFtoEFA")
-    EFtoEFA <- EFtoEFA[grep("^STE", EFtoEFA[,1]),]
-    EFtoEFA[,2] <- "Heat"
-    names(EFtoEFA) <- sub("EFA", "BAL", names(EFtoEFA))
-    sets$BALEF2EFS <- rbind(sets$BALEF2EFS, EFtoEFA)
-    # aggregate from fuels to reporting fuel categories
-    sum_open_prom <- iFuelPrice %>%
-      as.quitte() %>%
-      left_join(sets$BALEF2EFS, by = "EF") %>% ## add mapping
-      mutate(value = mean(value, na.rm = TRUE), .by = c("model", "scenario", "region",
-                                                        "unit","period","BAL" )) %>%
-      distinct() %>%
-      select(c("model","scenario","region","unit", "period","value","BAL")) %>%
-      distinct() %>%
-      drop_na() %>%
-      as.quitte() %>%
-      as.magpie()
-    # complete names
-    getItems(sum_open_prom, 3) <- paste0("Price|Final Energy|", sector_name[y],"|", getItems(sum_open_prom, 3))
-
-    sum_open_prom <- add_dimension(sum_open_prom, dim = 3.2, add = "unit", nm = sub(".*\\((.*)\\).*", "\\1", iFuelPrice@description))
-    magpie_object <- mbind(magpie_object, sum_open_prom)
-  }
-  return(magpie_object)
+  return(prices)
 }

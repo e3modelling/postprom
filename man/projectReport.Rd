@@ -19,20 +19,20 @@ projectReport(
 output files.}
 
 \item{openPromVariables}{A MAgPIE object, a named list of MAgPIE objects, a
-\code{read.report()}-style nested list (\code{scenario -> model -> magpie}), or a MIF
+`read.report()`-style nested list (`scenario -> model -> magpie`), or a MIF
 path for backwards-compatible file input.}
 
 \item{openPromFile}{Optional MIF file path to check and use as fallback input
-when \code{openPromVariables} is \code{NULL}.}
+when `openPromVariables` is `NULL`.}
 
 \item{scenario_name}{Optional scenario name(s). Required for unnamed single
 MAgPIE object input.}
 
 \item{model}{Model name to use when it cannot be detected from nested input.}
 
-\item{output_basename}{Base name for the written \code{.mif} and \code{.xlsx} files.}
+\item{output_basename}{Base name for the written `.mif` and `.xlsx` files.}
 
-\item{project_template}{Project template filename or path. If \code{NULL}, the
+\item{project_template}{Project template filename or path. If `NULL`, the
 project report is skipped.}
 }
 \value{
