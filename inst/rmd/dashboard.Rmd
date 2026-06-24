@@ -29,63 +29,47 @@ data <- data[intersect(getRegions(data), strsplit(regionspiam[2], ",")[[1]]),,]
 facet_order <- intersect(getRegions(data), strsplit(regionspiam[2], ",")[[1]])
 ncol <- ceiling(length(facet_order) / 3)
 nrows <- ceiling(length(facet_order) / ncol)
-plot_height <- max(900, 330 * nrows + 160)
+plot_height <- max(1000, 420 * nrows + 220)
 knitr::opts_chunk$set(out.height = paste0(plot_height, "px"))
 
 ```
 
 ```{css, echo=FALSE}
-/* Make flexdashboard pages use the browser scrollbar instead of clipping tall widgets. */
-html,
-body {
+/* Preserve flexdashboard/Plotly titles and layout; only fix page height/scrolling. */
+html, body {
   height: auto !important;
   min-height: 100% !important;
-  overflow-y: scroll !important;
-  overflow-x: hidden !important;
+  overflow-y: auto !important;
 }
 
-body {
-  position: relative !important;
-}
-
-/* Remove the fixed viewport-height containers used by flexdashboard fill layouts. */
-.container-fluid,
+/* Let the page, not the chart panel, provide vertical scrolling. */
 .dashboard-page-wrapper,
 .dashboard-page,
-.section,
 .section.level1,
 .section.level2,
 .chart-wrapper,
 .chart-stage {
   height: auto !important;
   max-height: none !important;
-  min-height: 0 !important;
   overflow: visible !important;
-  position: relative !important;
 }
 
-/* Give each Plotly widget enough vertical room for all region rows plus the legend. */
+/* Remove the grey unused flexdashboard area below the widget. */
 .chart-wrapper {
-  min-height: `r plot_height + 120`px !important;
+  min-height: 0 !important;
+  margin-bottom: 20px !important;
 }
 
-.chart-stage,
+/* Keep Plotly sizing controlled by layout(height = plot_height). */
 .html-widget,
 .plotly,
-.js-plotly-plot,
-.plot-container,
-.svg-container {
-  min-height: `r plot_height`px !important;
-  height: `r plot_height`px !important;
+.js-plotly-plot {
+  height: auto !important;
   max-height: none !important;
   overflow: visible !important;
 }
-
-/* Extra space below the horizontal legend. */
-.js-plotly-plot {
-  margin-bottom: 90px !important;
-}
 ```
+
 
 # Emissions CO2 {data-icon="glyphicon glyphicon-stats"}
 
