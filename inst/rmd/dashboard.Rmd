@@ -29,7 +29,7 @@ data <- data[intersect(getRegions(data), strsplit(regionspiam[2], ",")[[1]]),,]
 facet_order <- intersect(getRegions(data), strsplit(regionspiam[2], ",")[[1]])
 ncol <- ceiling(length(facet_order) / 3)
 nrows <- ceiling(length(facet_order) / ncol)
-plot_height <- max(1000, 420 * nrows + 220)
+plot_height <- max(1200, 420 * nrows + 220)
 knitr::opts_chunk$set(out.height = paste0(plot_height, "px"))
 
 ```
