@@ -102,14 +102,16 @@ reportEmissions <- function(path, regions, years) {
   #   curve   = internal land-use-emulator curves computed in postsolve (read gdx)
   #   softmif = MAgPIE soft-link emissions (read iEmissions_magpie.mif; error if absent)
   #   exo     = external default sources (legacy compatibility)
+
   iEmissions_magpie <- file.path(dirname(path), "iEmissions_magpie.mif")
   landEmiMode <- readGDX(path, "sLandEmiMode", react = "silent")
+  landEmiMode <- "exo"
   landEmiMode <- if (!is.null(landEmiMode) && length(landEmiMode))
     as.character(landEmiMode)[1]
   else if (file.exists(iEmissions_magpie)) "softmif" else "exo"  # fallback for pre-tag gdx
 
   AFOLUCh4N2o <- NULL; extraAFOLU <- NULL; kyotoAfolu <- NULL
-
+  #landEmiMode = NULL
   if (landEmiMode == "softmif") {
     if (!file.exists(iEmissions_magpie))
       stop("sLandEmiMode=softmif but iEmissions_magpie.mif is missing at ", iEmissions_magpie)
@@ -135,6 +137,33 @@ reportEmissions <- function(path, regions, years) {
     )[regions, , ]
     AFOLUCO2 <- AFOLU_CDR[, , "Emissions|CO2|AFOLU"]
     CDRCO2 <- AFOLU_CDR[, , "Carbon Removal|Land Use"]
+
+    # --- Regional override: replace the Emissions|CO2|AFOLU and
+    # Carbon Removal|Land Use slices for selected regions from a temporary
+    # .mif sitting next to the gdx (if present). ---
+    afoluMif <- file.path(dirname(path), "iEmissions_AFOLU.mif")
+    if (file.exists(afoluMif)) {
+      overrideAfolu <- read.report(afoluMif)[[1]][[1]]
+      # Strip the "(unit)" suffix so names match the magpie object variables.
+      getItems(overrideAfolu, 3.1) <-
+        trimws(gsub("\\s*\\(.*\\)$", "", getItems(overrideAfolu, dim = 3)))
+      overrideVars <- getItems(overrideAfolu, 3.1)
+      overrideRegions <- intersect(
+        # c("IND","MEA","LAM", "OAS","SSA"),
+         c("LAM", "SSA"),
+        intersect(getItems(AFOLUCO2, 1), getItems(overrideAfolu, 1))
+      )
+      for (reg in overrideRegions) {
+        if ("Emissions|CO2|AFOLU" %in% overrideVars) {
+          AFOLUCO2[reg, , "Emissions|CO2|AFOLU"] <-
+            overrideAfolu[reg, years, "Emissions|CO2|AFOLU"]
+        }
+        if ("Carbon Removal|Land Use" %in% overrideVars) {
+          CDRCO2[reg, , "Carbon Removal|Land Use"] <-
+            overrideAfolu[reg, years, "Carbon Removal|Land Use"]
+        }
+      }
+    }
   }
   useMagpieAfolu <- landEmiMode %in% c("softmif", "curve")   # both provide AFOLU CH4/N2O
   # ========================= Industrial Processes ===========================
