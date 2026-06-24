@@ -22,7 +22,7 @@
 reportPrice <- function(path, regions, years) {
   DSBS <- rgdx.set(path, "DSBS", te = FALSE)
   DSBSTable <- rgdx.set(path, "DSBS", te = TRUE)
-  EFSTable <- rgdx.set(path, "EFS", te = TRUE)
+  EFTable <- rgdx.set(path, "EF", te = TRUE)
   
   #---------- Create a DSBS TO SBS mapping (e.g., Iron & Steel -> Industry)
   DSBS_Industry <- readGDX(path, "INDSE") %>%
@@ -58,7 +58,14 @@ reportPrice <- function(path, regions, years) {
   # -------------------------- Renamings ------------------------------
   name <- DSBSTable$.te[match(getItems(prices, 3.1), DSBSTable$SBS)]
   getItems(prices, 3.1) <- name
-  getItems(prices, 3.2) <- EFSTable$.te[match(getItems(prices, 3.2), EFSTable$EF)]
+  # VmPriceFuelSubsecCarVal spans the full EF set (incl. aggregates LQD/SLD/GAS/REN,
+  # NFF, NEF, HEATPUMP), which is wider than EFS - use EF so every code gets a name
+  # (matching against EFS leaves the 7 extras as NA, collapsing into duplicate names).
+  fuelNames <- EFTable$.te[match(getItems(prices, 3.2), EFTable[[1]])]
+  # Strip any trailing "(...)" - write.report treats a parenthetical in a variable
+  # name as the unit (EF's GEO = "...renewable sources (Tidal, etc)"), which would
+  # otherwise blank out the Unit column for the entire reporting.mif.
+  getItems(prices, 3.2) <- trimws(sub("\\s*\\(.*?\\)", "", fuelNames))
 
   # Replace sep in dimensions and prepend the sector
   name <- gsub("\\.", "|", getItems(prices, dim = 3)) # e.g., IS.HCL --> IS|HCL
@@ -71,9 +78,19 @@ reportPrice <- function(path, regions, years) {
     name
   ) # prepend SBS (e.g., IS|HCL -> Industry|IS|HCL)
 
-  getItems(prices, 3) <- paste0("Prices|Final Energy|", name)
+  getItems(prices, 3) <- paste0("Price|Final Energy|", name)
   
   prices <- add_dimension(prices, dim = 3.2, add = "unit", nm = "k$2015/toe")
+
+  # Long-term average power generation cost -> Price|Secondary Energy|Electricity
+  costPowGen <- readGDX(path, "VmCostPowGenAvgLng", field = "l")[regions, years, ]
+  getItems(costPowGen, 3) <- "Price|Secondary Energy|Electricity"
+  costPowGen <- add_dimension(
+    costPowGen,
+    dim = 3.2, add = "unit", nm = "US$2015/kWh"
+  )
+
+  prices <- mbind(prices, costPowGen)
 
   return(prices)
 }
