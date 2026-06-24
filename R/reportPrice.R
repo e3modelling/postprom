@@ -90,10 +90,9 @@ reportPrice <- function(path, regions, years) {
   ) %>%
     rename(DSBS = 1) %>%
     full_join(DSBSTable, by = c("DSBS" = "SBS")) %>%
-    mutate(SBS = coalesce(SBS, .te)) %>%
-    select(-DSBS)
+    filter(!is.na(SBS))
   
-  pricesNoAgr <- toolAggregate(pricesNoAgr, dim = 3.1, rel = DSBS_SBS_full, from = ".te", to = "SBS")
+  pricesNoAgr <- toolAggregate(pricesNoAgr[,,DSBS_SBS_full$.te], dim = 3.1, rel = DSBS_SBS_full, from = ".te", to = "SBS")
   
   # aggregate from fuels to reporting fuel categories
   sum_open_prom <- pricesNoAgr %>%
