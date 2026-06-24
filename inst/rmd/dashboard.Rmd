@@ -3,7 +3,7 @@ title: "Simple Dashboard"
 author: "`r params$scenarioname`"
 output: 
   flexdashboard::flex_dashboard:
-    vertical_layout: fill
+    vertical_layout: scroll
 
 params:
   scenarioname: NULL
@@ -28,7 +28,63 @@ names(dimnames(data))[3] <- "variable.unit"
 data <- data[intersect(getRegions(data), strsplit(regionspiam[2], ",")[[1]]),,]
 facet_order <- intersect(getRegions(data), strsplit(regionspiam[2], ",")[[1]])
 ncol <- ceiling(length(facet_order) / 3)
+nrows <- ceiling(length(facet_order) / ncol)
+plot_height <- max(900, 330 * nrows + 160)
+knitr::opts_chunk$set(out.height = paste0(plot_height, "px"))
 
+```
+
+```{css, echo=FALSE}
+/* Make flexdashboard pages use the browser scrollbar instead of clipping tall widgets. */
+html,
+body {
+  height: auto !important;
+  min-height: 100% !important;
+  overflow-y: scroll !important;
+  overflow-x: hidden !important;
+}
+
+body {
+  position: relative !important;
+}
+
+/* Remove the fixed viewport-height containers used by flexdashboard fill layouts. */
+.container-fluid,
+.dashboard-page-wrapper,
+.dashboard-page,
+.section,
+.section.level1,
+.section.level2,
+.chart-wrapper,
+.chart-stage {
+  height: auto !important;
+  max-height: none !important;
+  min-height: 0 !important;
+  overflow: visible !important;
+  position: relative !important;
+}
+
+/* Give each Plotly widget enough vertical room for all region rows plus the legend. */
+.chart-wrapper {
+  min-height: `r plot_height + 120`px !important;
+}
+
+.chart-stage,
+.html-widget,
+.plotly,
+.js-plotly-plot,
+.plot-container,
+.svg-container {
+  min-height: `r plot_height`px !important;
+  height: `r plot_height`px !important;
+  max-height: none !important;
+  overflow: visible !important;
+}
+
+/* Extra space below the horizontal legend. */
+.js-plotly-plot {
+  margin-bottom: 90px !important;
+}
 ```
 
 # Emissions CO2 {data-icon="glyphicon glyphicon-stats"}
@@ -293,7 +349,7 @@ g <- g %>%
       font = list(size = 10)
     ),
 
-    height = 800
+    height = plot_height
   )
 
 g
@@ -561,7 +617,7 @@ g <- g %>%
       font = list(size = 10)
     ),
 
-    height = 800
+    height = plot_height
   )
 
 g
@@ -841,7 +897,7 @@ g <- g %>%
       font = list(size = 10)
     ),
 
-    height = 800
+    height = plot_height
   )
 
 g
@@ -1118,7 +1174,7 @@ g <- g %>%
       font = list(size = 10)
     ),
 
-    height = 800
+    height = plot_height
   )
 
 g
@@ -1134,7 +1190,8 @@ vars <- c(
   "Final Energy|Non-Energy Use.Mtoe",
   "Final Energy|Residential and Commercial.Mtoe",
   "Final Energy|Bunkers.Mtoe",
-  "Final Energy|Carbon Management.Mtoe"
+  "Final Energy|Carbon Management.Mtoe",
+  "Final Energy|Agriculture, Fishing, Forestry.Mtoe"
 )
 
 in_plot <- c(
@@ -1143,7 +1200,8 @@ in_plot <- c(
   "Non-Energy Use",
   "Residential and Commercial",
   "Bunkers",
-  "Carbon Management"
+  "Carbon Management",
+  "Agriculture"
 )
 
 unit <- sub(".*\\.", "", vars[1])
@@ -1381,7 +1439,7 @@ g <- g %>%
       font = list(size = 10)
     ),
 
-    height = 800
+    height = plot_height
   )
 
 g
@@ -1652,7 +1710,7 @@ g <- g %>%
       font = list(size = 10)
     ),
 
-    height = 800
+    height = plot_height
   )
 
 g

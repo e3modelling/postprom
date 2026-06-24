@@ -185,7 +185,7 @@ convertGDXtoMIF_single <- function(.path, path_mif, append, regions = NULL,
       output_file = paste0(.path, "/dashboard.html"),
       params = list(scenarioname = basename(.path), magpie_data = reports)
     )
-    if (dashboard == TRUE) bindhtml(.path)
+    #if (dashboard == TRUE) bindhtml(.path)
 
   }
 
