@@ -100,6 +100,7 @@ Capital Cost|Electricity|Biomass|w/ CCS, "Capital Cost|Energy Supply|Electricity
 Capital Cost|Electricity|Biomass|w/o CCS, "Capital Cost|Energy Supply|Electricity|Biofuels|w/o CCS"
 Capital Cost|Electricity|Coal, "Capital Cost|Energy Supply|Electricity|Coal"
 Capital Cost|Electricity|Coal|w/ CCS, "Capital Cost|Energy Supply|Electricity|Coal|w/ CCS"
+Capital Cost|Electricity|Coal|w/o CCS, "Capital Cost|Energy Supply|Electricity|Coal|w/o CCS"
 Capital Cost|Electricity|Gas, "Capital Cost|Energy Supply|Electricity|Gas"
 Capital Cost|Electricity|Gas|w/ CCS, "Capital Cost|Energy Supply|Electricity|Gas|w/ CCS"
 Capital Cost|Electricity|Gas|w/o CCS, "Capital Cost|Energy Supply|Electricity|Gas|w/o CCS"
