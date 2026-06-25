@@ -136,13 +136,14 @@ convertGDXtoMIF_single <- function(.path, path_mif, append, regions = NULL,
   }
 
   reports <- reportFinalEnergy(path_gdx, regions, years)
+  weightsForreportPrice <- reports
   reports <- mbind(reports, reportEmissions(path_gdx, regions, years))
   reports <- mbind(reports, reportSE(path_gdx, regions, years))
   reports <- mbind(reports, reportPE(path_gdx, regions, years))
   reports <- mbind(reports, reportGDP(path_gdx, regions, years))
   reports <- mbind(reports, reportPOP(path_gdx, regions, years))
   reports <- mbind(reports, reportPriceCarbon(path_gdx, regions, years))
-  reports <- mbind(reports, reportPrice(path_gdx, regions, years))
+  reports <- mbind(reports, reportPrice(path_gdx, regions, years, weightsForreportPrice))
   reports <- mbind(reports, reportCapacityElectricity(path_gdx, regions, years))
   reports <- mbind(reports, reportACTV(path_gdx, regions, years))
   reports <- mbind(reports, reportCapacityAdditions(path_gdx, regions, years))
@@ -185,7 +186,7 @@ convertGDXtoMIF_single <- function(.path, path_mif, append, regions = NULL,
       output_file = paste0(.path, "/dashboard.html"),
       params = list(scenarioname = basename(.path), magpie_data = reports)
     )
-    if (dashboard == TRUE) bindhtml(.path)
+    #if (dashboard == TRUE) bindhtml(.path)
 
   }
 

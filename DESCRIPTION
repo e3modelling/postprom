@@ -44,9 +44,9 @@ Depends:
 Imports: gdx, gdxrrw, madrat, magclass, stringr, quitte, rlang, plotly, flexdashboard,
          tidyr, dplyr, purrr, ggplot2, rmarkdown, knitr, mip,
          piamValidation, rmarkdown, pandoc, grDevices, grid, gridExtra, writexl
-RoxygenNote: 7.3.3
 Suggests:
     testthat (>= 3.0.0),
     tinytex,
     magpie4
 Config/testthat/edition: 3
+Config/roxygen2/version: 8.0.0
