@@ -27,7 +27,7 @@ BALEF,EF
 "Solar","SOL"
 "Biomass","BMSWAS"
 "Biogas","BGAS"
-"Biofuels","BMSWAS,BGSL,BKRS,BGDO,BGAS"
+"Biofuels","BMSWAS,BGSL,BKRS,BGDO"
 "Geothermal and other renewable sources","GEO"
 "Methanol","MET"
 "Hydrogen","H2F"

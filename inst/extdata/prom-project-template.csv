@@ -11,81 +11,6 @@ Carbon Capture|Energy|Supply|Electricity|Biomass,Carbon Capture|Energy|Supply|El
 Carbon Capture|Energy|Demand|Industry|Chemicals,Carbon Capture|Energy|Demand|Chemicals
 Carbon Capture|Energy|Demand|Industry|Iron and Steel,Carbon Capture|Energy|Demand|Iron and Steel
 Carbon Capture|Energy|Demand|Industry|Non-Metallic Minerals,Carbon Capture|Energy|Demand|Non-Metallic Minerals
-Price|Final Energy|Industry|Liquids|Biomass,Price|Final Energy|Industry|Biofuels
-Price|Final Energy|Industry|Solids|Biomass,Price|Final Energy|Industry|Biomass
-Price|Final Energy|Industry|Non-Metallic Minerals|Electricity,Price|Final Energy|Industry|BM|ELC
-Price|Final Energy|Industry|Non-Metallic Minerals|Hydrogen,Price|Final Energy|Industry|BM|H2F
-Price|Final Energy|Industry|Non-Metallic Minerals|Heat,Price|Final Energy|Industry|BM|STE
-Price|Final Energy|Industry|Solids|Biomass,Price|Final Energy|Industry|BMSWAS
-Price|Final Energy|Industry|Chemicals|Electricity,Price|Final Energy|Industry|CH|ELC
-Price|Final Energy|Industry|Chemicals|Hydrogen,Price|Final Energy|Industry|CH|H2F
-Price|Final Energy|Industry|Chemicals|Heat,Price|Final Energy|Industry|CH|STE
-Price|Final Energy|Industry|Gases|Other,Price|Final Energy|Industry|Derived gases
-Price|Final Energy|Industry|Gases|Other,Price|Final Energy|Industry|OGS
-Price|Final Energy|Industry|Liquids|Oil,Price|Final Energy|Industry|Diesel oil
-Price|Final Energy|Industry|Liquids|Oil,Price|Final Energy|Industry|Fuel oil
-Price|Final Energy|Industry|Gases,Price|Final Energy|Industry|Gases
-Price|Final Energy|Industry|Liquids|Oil,Price|Final Energy|Industry|GDO
-Price|Final Energy|Industry|Hydrogen,Price|Final Energy|Industry|H2F
-Price|Final Energy|Industry|Solids|Coal,Price|Final Energy|Industry|HCL
-Price|Final Energy|Industry|Heat,Price|Final Energy|Industry|Heat
-Price|Final Energy|Industry|Hydrogen,Price|Final Energy|Industry|Hydrogen
-Price|Final Energy|Industry|Iron and Steel|Electricity,Price|Final Energy|Industry|IS|ELC
-Price|Final Energy|Industry|Iron and Steel|Hydrogen,Price|Final Energy|Industry|IS|H2F
-Price|Final Energy|Industry|Iron and Steel|Heat,Price|Final Energy|Industry|IS|STE
-Price|Final Energy|Industry|Liquids,Price|Final Energy|Industry|Liquids
-Price|Final Energy|Industry|Gases|Gas,Price|Final Energy|Industry|Natural gas
-Price|Final Energy|Industry|Non-Ferrous Metals|Electricity,Price|Final Energy|Industry|NF|ELC
-Price|Final Energy|Industry|Non-Ferrous Metals|Hydrogen,Price|Final Energy|Industry|NF|H2F
-Price|Final Energy|Industry|Non-Ferrous Metals|Heat,Price|Final Energy|Industry|NF|STE
-Price|Final Energy|Industry|Gases|Gas,Price|Final Energy|Industry|NGS
-Price|Final Energy|Industry|Liquids|Other,Price|Final Energy|Industry|Other liquids
-Price|Final Energy|Industry|Pulp and Paper|Electricity,Price|Final Energy|Industry|PP|ELC
-Price|Final Energy|Industry|Pulp and Paper|Gases,Price|Final Energy|Industry|PP|NGS
-Price|Final Energy|Industry|Pulp and Paper|Heat,Price|Final Energy|Industry|PP|STE
-Price|Final Energy|Industry|Liquids|Oil,Price|Final Energy|Industry|RFO
-Price|Final Energy|Industry|Solids,Price|Final Energy|Industry|Solids
-Price|Final Energy|Industry|Heat,Price|Final Energy|Industry|STE
-Price|Final Energy|Industry,Price|Final Energy|Industry|Total
-Price|Final Energy|Bunkers|Hydrogen,Price|Final Energy|Non Energy and Bunkers|BU|H2F
-Price|Final Energy|Agriculture|Electricity,Price|Final Energy|Residential and Commercial|AG|ELC
-Price|Final Energy|Agriculture|Liquids,Price|Final Energy|Residential and Commercial|AG|GDO
-Price|Final Energy|Agriculture|Solids,Price|Final Energy|Residential and Commercial|AG|HCL
-Price|Final Energy|Agriculture|Gases,Price|Final Energy|Residential and Commercial|AG|NGS
-Price|Final Energy|Agriculture|Heat,Price|Final Energy|Residential and Commercial|AG|STE
-Price|Final Energy|Residential and Commercial|Electricity,Price|Final Energy|Residential and Commercial|ELC
-Price|Final Energy|Residential|Electricity,Price|Final Energy|Residential and Commercial|HOU|ELC
-Price|Final Energy|Residential|Liquids,Price|Final Energy|Residential and Commercial|HOU|GDO
-Price|Final Energy|Residential|Solids,Price|Final Energy|Residential and Commercial|HOU|HCL
-Price|Final Energy|Residential|Gases,Price|Final Energy|Residential and Commercial|HOU|NGS
-Price|Final Energy|Residential|Heat,Price|Final Energy|Residential and Commercial|HOU|STE
-Price|Final Energy|Commercial|Electricity,Price|Final Energy|Residential and Commercial|SE|ELC
-Price|Final Energy|Commercial|Solids,Price|Final Energy|Residential and Commercial|SE|HCL
-Price|Final Energy|Commercial|Gases,Price|Final Energy|Residential and Commercial|SE|NGS
-Price|Final Energy|Commercial|Heat,Price|Final Energy|Residential and Commercial|SE|STE
-Price|Final Energy|Transportation|Liquids|Biomass,Price|Final Energy|Transportation|Biofuels
-Price|Final Energy|Transportation|Gases|Other,Price|Final Energy|Transportation|Derived gases
-Price|Final Energy|Transportation|Gases|Other,Price|Final Energy|Transportation|OGS
-Price|Final Energy|Transportation|Liquids|Oil,Price|Final Energy|Transportation|Diesel oil
-Price|Final Energy|Transportation|Liquids|Oil,Price|Final Energy|Transportation|Fuel oil
-Price|Final Energy|Transportation|Liquids|Oil,Price|Final Energy|Transportation|GDO
-Price|Final Energy|Transportation|Liquids|Oil,Price|Final Energy|Transportation|RFO
-Price|Final Energy|Transportation|Gases,Price|Final Energy|Transportation|Gases
-Price|Final Energy|Transportation|Domestic Shipping|Liquids,Price|Final Energy|Transportation|GN|GDO
-Price|Final Energy|Transportation|Domestic Shipping|Hydrogen,Price|Final Energy|Transportation|GN|H2F
-Price|Final Energy|Transportation|Freight|Electricity,Price|Final Energy|Transportation|GT|ELC
-Price|Final Energy|Transportation|Freight|Liquids,Price|Final Energy|Transportation|GT|GDO
-Price|Final Energy|Transportation|Truck|Electricity,Price|Final Energy|Transportation|GU|ELC
-Price|Final Energy|Transportation|Truck|Hydrogen,Price|Final Energy|Transportation|GU|H2F
-Price|Final Energy|Transportation|Hydrogen,Price|Final Energy|Transportation|Hydrogen
-Price|Final Energy|Transportation|Hydrogen,Price|Final Energy|Transportation|H2F
-Price|Final Energy|Transportation|Liquids,Price|Final Energy|Transportation|Liquids
-Price|Final Energy|Transportation|Gases|Gas,Price|Final Energy|Transportation|Natural gas
-Price|Final Energy|Transportation|Gases|Gas,Price|Final Energy|Transportation|NGS
-Price|Final Energy|Transportation|Bus|Electricity,Price|Final Energy|Transportation|PB|ELC
-Price|Final Energy|Transportation|Bus|Liquids,Price|Final Energy|Transportation|PB|GDO
-Price|Final Energy|Transportation|Bus|Hydrogen,Price|Final Energy|Transportation|PB|H2F
-Price|Final Energy|Transportation|Rail|Electricity,Price|Final Energy|Transportation|PT|ELC
 Final Energy|Commercial|ICT,Final Energy|Commercial|Data centers and Networks
 Final Energy|Commercial|ICT|Data Centers,Final Energy|Commercial|Data centers and Networks|Data Centers
 Final Energy|Commercial|ICT|Infrastructure,Final Energy|Commercial|Data centers and Networks|Infrastructure
@@ -115,3 +40,74 @@ Final Energy|Liquids,Final Energy|Biogasoline
 Final Energy|Liquids,Final Energy|Biokerosene
 Final Energy|Solids,Final Energy|Biomass and Waste
 Final Energy|Agriculture,"Final Energy|Agriculture, Fishing, Forestry"
+Price|Final Energy|Bunkers|Gases|Gas, "Price|Final Energy|Bunkers|Natural Gas"
+Price|Final Energy|Bunkers|Gases|Other, "Price|Final Energy|Bunkers|Other Gases"
+Price|Final Energy|Bunkers|Heat, "Price|Final Energy|Bunkers|Steam"
+Price|Final Energy|Bunkers|Liquids, "Price|Final Energy|Bunkers|All Liquids"
+Price|Final Energy|Bunkers|Liquids|Other, "Price|Final Energy|Bunkers|Other Liquids"
+Price|Final Energy|Bunkers|Solids, "Price|Final Energy|Bunkers|Solid Fuels"
+Price|Final Energy|Bunkers|Solids|Biomass, "Price|Final Energy|Bunkers|Biomass and Waste"
+Price|Final Energy|Transportation|Bus|Gases, "Price|Final Energy|Transportation|Passenger Transport - Busses|Gases"
+Price|Final Energy|Transportation|Truck|Gases, "Price|Final Energy|Transportation|Goods Transport - Trucks|Gases"
+Price|Final Energy|Transportation|Truck|Liquids, "Price|Final Energy|Transportation|Goods Transport - Trucks|All Liquids"
+Price|Final Energy|Agriculture|Electricity, "Price|Final Energy|Agriculture, Fishing, Forestry|Electricity"
+Price|Final Energy|Agriculture|Gases, "Price|Final Energy|Agriculture, Fishing, Forestry|Gases"
+Price|Final Energy|Agriculture|Heat, "Price|Final Energy|Agriculture, Fishing, Forestry|Steam"
+Price|Final Energy|Agriculture|Hydrogen, "Price|Final Energy|Agriculture, Fishing, Forestry|Hydrogen"
+Price|Final Energy|Agriculture|Liquids, "Price|Final Energy|Agriculture, Fishing, Forestry|All Liquids"
+Price|Final Energy|Agriculture|Solids, "Price|Final Energy|Agriculture, Fishing, Forestry|Solid Fuels"
+Price|Final Energy|Commercial|Electricity, "Price|Final Energy|Commercial|Services|Electricity"
+Price|Final Energy|Commercial|Gases, "Price|Final Energy|Commercial|Services|Gases"
+Price|Final Energy|Commercial|Heat, "Price|Final Energy|Commercial|Services|Steam"
+Price|Final Energy|Commercial|Hydrogen, "Price|Final Energy|Commercial|Services|Hydrogen"
+Price|Final Energy|Commercial|Solids, "Price|Final Energy|Commercial|Services|Solid Fuels"
+Price|Final Energy|Industry|Chemicals|Heat, "Price|Final Energy|Industry|Chemicals|Steam"
+Price|Final Energy|Industry|Iron and Steel|Heat, "Price|Final Energy|Industry|Iron and Steel|Steam"
+Price|Final Energy|Industry|Non-Ferrous Metals|Electricity, "Price|Final Energy|Industry|Non Ferrous Metals|Electricity"
+Price|Final Energy|Industry|Non-Ferrous Metals|Heat, "Price|Final Energy|Industry|Non Ferrous Metals|Steam"
+Price|Final Energy|Industry|Non-Ferrous Metals|Hydrogen, "Price|Final Energy|Industry|Non Ferrous Metals|Hydrogen"
+Price|Final Energy|Industry|Non-Metallic Minerals|Electricity, "Price|Final Energy|Industry|Non Metallic Minerals|Electricity"
+Price|Final Energy|Industry|Non-Metallic Minerals|Heat, "Price|Final Energy|Industry|Non Metallic Minerals|Steam"
+Price|Final Energy|Industry|Non-Metallic Minerals|Hydrogen, "Price|Final Energy|Industry|Non Metallic Minerals|Hydrogen"
+Price|Final Energy|Industry|Pulp and Paper|Electricity, "Price|Final Energy|Industry|Paper and Pulp|Electricity"
+Price|Final Energy|Industry|Pulp and Paper|Gases, "Price|Final Energy|Industry|Paper and Pulp|Gases"
+Price|Final Energy|Industry|Pulp and Paper|Heat, "Price|Final Energy|Industry|Paper and Pulp|Steam"
+Price|Final Energy|Residential|Heat, "Price|Final Energy|Residential|Steam"
+Price|Final Energy|Residential|Liquids, "Price|Final Energy|Residential|All Liquids"
+Price|Final Energy|Residential|Solids, "Price|Final Energy|Residential|Solid Fuels"
+Price|Final Energy|Transportation|Bus|Electricity, "Price|Final Energy|Transportation|Passenger Transport - Busses|Electricity"
+Price|Final Energy|Transportation|Bus|Hydrogen, "Price|Final Energy|Transportation|Passenger Transport - Busses|Hydrogen"
+Price|Final Energy|Transportation|Bus|Liquids, "Price|Final Energy|Transportation|Passenger Transport - Busses|All Liquids"
+Price|Final Energy|Transportation|Truck|Electricity, "Price|Final Energy|Transportation|Goods Transport - Trucks|Electricity"
+Price|Final Energy|Transportation|Truck|Hydrogen, "Price|Final Energy|Transportation|Goods Transport - Trucks|Hydrogen"
+Price|Final Energy|Transportation|Domestic Aviation|Electricity, "Price|Final Energy|Transportation|Passenger Transport - Aviation|Electricity"
+Price|Final Energy|Transportation|Domestic Aviation|Gases, "Price|Final Energy|Transportation|Passenger Transport - Aviation|Gases"
+Price|Final Energy|Transportation|Domestic Aviation|Hydrogen, "Price|Final Energy|Transportation|Passenger Transport - Aviation|Hydrogen"
+Price|Final Energy|Transportation|Domestic Aviation|Liquids, "Price|Final Energy|Transportation|Passenger Transport - Aviation|All Liquids"
+Price|Final Energy|Transportation|Domestic Shipping|Electricity, "Price|Final Energy|Transportation|Goods Transport - Inland Navigation|Electricity"
+Price|Final Energy|Transportation|Domestic Shipping|Gases, "Price|Final Energy|Transportation|Goods Transport - Inland Navigation|Gases"
+Price|Final Energy|Transportation|Domestic Shipping|Hydrogen, "Price|Final Energy|Transportation|Goods Transport - Inland Navigation|Hydrogen"
+Price|Final Energy|Transportation|Domestic Shipping|Liquids, "Price|Final Energy|Transportation|Goods Transport - Inland Navigation|All Liquids"
+Price|Final Energy|Transportation|Freight|Electricity, "Price|Final Energy|Transportation|Goods Transport - Rail|Electricity"
+Price|Final Energy|Transportation|Freight|Liquids, "Price|Final Energy|Transportation|Goods Transport - Rail|All Liquids"
+Price|Final Energy|Transportation|Rail|Electricity, "Price|Final Energy|Transportation|Passenger Transport - Rail|Electricity"
+Investment|Energy Supply|Electricity|Biomass, "Investment|Energy Supply|Electricity|Biofuels"
+Investment|Energy Supply|Electricity|Biomass|w/ CCS, "Investment|Energy Supply|Electricity|Biofuels|w/ CCS"
+Investment|Energy Supply|Electricity|Biomass|w/o CCS, "Investment|Energy Supply|Electricity|Biofuels|w/o CCS"
+Investment|Energy Supply|Electricity|Geothermal, "Investment|Energy Supply|Electricity|Geothermal and other renewable sources"
+Capital Cost|Electricity|Biomass, "Capital Cost|Energy Supply|Electricity|Biofuels"
+Capital Cost|Electricity|Biomass|w/ CCS, "Capital Cost|Energy Supply|Electricity|Biofuels|w/ CCS"
+Capital Cost|Electricity|Biomass|w/o CCS, "Capital Cost|Energy Supply|Electricity|Biofuels|w/o CCS"
+Capital Cost|Electricity|Coal, "Capital Cost|Energy Supply|Electricity|Coal"
+Capital Cost|Electricity|Coal|w/ CCS, "Capital Cost|Energy Supply|Electricity|Coal|w/ CCS"
+Capital Cost|Electricity|Gas, "Capital Cost|Energy Supply|Electricity|Gas"
+Capital Cost|Electricity|Gas|w/ CCS, "Capital Cost|Energy Supply|Electricity|Gas|w/ CCS"
+Capital Cost|Electricity|Gas|w/o CCS, "Capital Cost|Energy Supply|Electricity|Gas|w/o CCS"
+Capital Cost|Electricity|Geothermal, "Capital Cost|Energy Supply|Electricity|Geothermal and other renewable sources"
+Capital Cost|Electricity|Hydro, "Capital Cost|Energy Supply|Electricity|Hydro"
+Capital Cost|Electricity|Hydrogen, "Capital Cost|Energy Supply|Electricity|Hydrogen"
+Capital Cost|Electricity|Nuclear, "Capital Cost|Energy Supply|Electricity|Nuclear"
+Capital Cost|Electricity|Oil, "Capital Cost|Energy Supply|Electricity|Oil"
+Capital Cost|Electricity|Oil|w/o CCS, "Capital Cost|Energy Supply|Electricity|Oil|w/o CCS"
+Capital Cost|Electricity|Solar, "Capital Cost|Energy Supply|Electricity|Solar"
+Capital Cost|Electricity|Wind, "Capital Cost|Energy Supply|Electricity|Wind"
