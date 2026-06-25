@@ -13,13 +13,14 @@
 #' }
 #'
 #' @importFrom gdx readGDX
-#' @importFrom magclass getItems add_dimension mbind as.magpie
+#' @importFrom magclass getItems add_dimension mbind as.magpie getYears collapseDim
 #' @importFrom madrat toolAggregate
 #' @importFrom quitte as.quitte
-#' @importFrom dplyr select filter mutate left_join distinct %>%
+#' @importFrom dplyr select filter mutate left_join full_join bind_rows rename if_else rowwise ungroup %>%
 #' @importFrom tidyr drop_na
+#' @importFrom stringr str_extract str_replace str_count str_starts fixed
 #' @export
-reportPrice <- function(path, regions, years) {
+reportPrice <- function(path, regions, years, weightsForreportPrice) {
   DSBS <- rgdx.set(path, "DSBS", te = FALSE)
   DSBSTable <- rgdx.set(path, "DSBS", te = TRUE)
   EFSTable <- rgdx.set(path, "EFS", te = TRUE)
@@ -76,12 +77,6 @@ reportPrice <- function(path, regions, years) {
   
   prices <- add_dimension(prices, dim = 3.2, add = "unit", nm = units)
   
-  BALEF2EFS <- readGDX(path, "BALEF2EFS")
-  names(BALEF2EFS) <- c("BAL", "EF")
-  
-  BALEF2EFS[["BAL"]] <- gsub("Gas fuels", "Gases", BALEF2EFS[["BAL"]])
-  BALEF2EFS[["BAL"]] <- gsub("Steam", "Heat", BALEF2EFS[["BAL"]])
-  
   pricesNoAgr <- toolAggregate(pricesNoAgr, dim = 3.1, rel = DSBSTable, from = "SBS", to = ".te")
   
   DSBS_SBS_full <- bind_rows(
@@ -92,39 +87,79 @@ reportPrice <- function(path, regions, years) {
     full_join(DSBSTable, by = c("DSBS" = "SBS")) %>%
     filter(!is.na(SBS))
   
-  pricesNoAgr <- toolAggregate(pricesNoAgr[,,DSBS_SBS_full$.te], dim = 3.1, rel = DSBS_SBS_full, from = ".te", to = "SBS")
+  weightsForreportPrice <- collapseDim(weightsForreportPrice, 3.2)
   
-  # aggregate from fuels to reporting fuel categories
-  sum_open_prom <- pricesNoAgr %>%
-    as.quitte() %>%
-    left_join(BALEF2EFS, by = "EF") %>% ## add mapping
-    mutate(value = mean(value, na.rm = TRUE), .by = c("model", "scenario", "region",
-                                                      "unit","period","BAL", "SBS")) %>%
-    distinct() %>%
-    select(c("model","scenario","region","unit", "period","value", "SBS", "BAL")) %>%
-    distinct() %>%
-    drop_na() %>%
-    as.quitte() %>%
-    as.magpie()
+  df <- as.data.frame(getItems(weightsForreportPrice,3)) %>%
+    rename("variable" = "getItems(weightsForreportPrice, 3)")
+  
+  vars_vec <- df$variable
+  
+  # Filter the weighting structure to retain only top-level sectors that:
+  # (1) appear at hierarchy level 3 (exactly two "|" separators),
+  # (2) have at least four child categories,
+  # and extract their sector names (e.g. "Final Energy|Industry|Iron and Steel"
+  # -> "Iron and Steel").
+  #
+  # Then clean the weight-item dimension by:
+  # (1) setting all entries outside hierarchy level 3 to NA,
+  # (2) keeping only sectors identified above,
+  # (3) replacing full hierarchy strings with the extracted sector names.
+  #
+  # The resulting item dimension contains only valid aggregation sectors used
+  # as weights in the subsequent SBS-level price aggregation.
+  
+  df_filtered <- df %>%
+    filter(str_count(variable, fixed("|")) == 2) %>%
+    rowwise() %>%
+    mutate(
+      n_children = sum(str_starts(vars_vec, fixed(paste0(variable, "|"))))
+    ) %>%
+    ungroup() %>%
+    filter(n_children >= 4)
+  
+  df_filtered <- df_filtered %>%
+    mutate(variable = sub("^[^|]+\\|[^|]+\\|", "", variable))
+  
+  items <- getItems(weightsForreportPrice, 3)
+  
+  items_new <- ifelse(
+    str_count(items, fixed("|")) == 2,
+    items,
+    NA_character_
+  )
+  
+  keep_names <- df_filtered$variable
+  
+  items_new <- sapply(items_new, function(x) {
+    if (is.na(x)) return(NA_character_)
+    
+    name <- sub("^[^|]+\\|[^|]+\\|", "", x)
+    
+    if (name %in% keep_names) name else NA_character_
+  })
+  
+  names(items_new) <- NULL
+  
+  getItems(weightsForreportPrice, 3) <- items_new
+  
+  weightsForreportPrice <- weightsForreportPrice[,,!is.na(getItems(weightsForreportPrice, 3))]
+  
+  weightsForreportPrice <- weightsForreportPrice[,,df_filtered[["variable"]]]
+  
+  pricesAg <- toolAggregate(pricesNoAgr[,,DSBS_SBS_full$.te], weight = weightsForreportPrice,
+                     dim = 3.1, rel = DSBS_SBS_full, from = ".te", to = "SBS",
+                     zeroWeight = "allow")
   
   # complete names
-  getItems(sum_open_prom, 3.1) <- paste0("Price|Final Energy|", getItems(sum_open_prom, 3.1))
+  getItems(pricesAg, 3.1) <- paste0("Price|Final Energy|", getItems(pricesAg, 3.1))
+  getItems(pricesAg, 3.2) <- EFSTable$.te[match(getItems(pricesAg, 3.2), EFSTable$EF)]
   
   # Replace sep in dimensions and prepend the sector
-  name <- gsub("\\.", "|", getItems(sum_open_prom, dim = 3)) # e.g., IS.HCL --> IS|HCL
-  key <- str_extract(name, "^[^|]+")
-  mapped <- lookup[key]
+  name <- gsub("\\.", "|", getItems(pricesAg, dim = 3)) # e.g., IS.HCL --> IS|HCL
+  getItems(pricesAg, 3) <- name
   
-  name <- if_else(
-    !is.na(mapped),
-    str_replace(name, "^[^|]+", paste0(mapped, "|\\0")),
-    name
-  ) # prepend SBS (e.g., IS|HCL -> Industry|IS|HCL)
-  
-  getItems(sum_open_prom, 3) <- name
-  
-  sum_open_prom <- add_dimension(sum_open_prom, dim = 3.2, add = "unit", nm = units)
-  prices <- mbind(prices, sum_open_prom)
+  pricesAg <- add_dimension(pricesAg, dim = 3.2, add = "unit", nm = units)
+  prices <- mbind(prices, pricesAg)
 
   return(prices)
 }
