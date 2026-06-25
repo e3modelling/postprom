@@ -13,12 +13,12 @@
 #' }
 #'
 #' @importFrom gdx readGDX
-#' @importFrom magclass getItems add_dimension mbind as.magpie getYears collapseDim
+#' @importFrom magclass getItems getNames add_dimension mbind as.magpie getYears collapseDim
 #' @importFrom madrat toolAggregate
 #' @importFrom quitte as.quitte
-#' @importFrom dplyr select filter mutate left_join full_join bind_rows rename if_else rowwise ungroup %>%
-#' @importFrom tidyr drop_na
-#' @importFrom stringr str_extract str_replace str_count str_starts fixed
+#' @importFrom dplyr select filter mutate left_join full_join bind_rows rename if_else %>%
+#' @importFrom tidyr drop_na crossing
+#' @importFrom stringr str_extract str_replace str_count fixed
 #' @export
 reportPrice <- function(path, regions, years, weightsForreportPrice) {
   DSBS <- rgdx.set(path, "DSBS", te = FALSE)
