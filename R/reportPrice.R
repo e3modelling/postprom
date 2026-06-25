@@ -165,6 +165,6 @@ reportPrice <- function(path, regions, years, weightsForreportPrice) {
   
   # Add unit dimension and combine aggregated prices with detailed prices
   pricesAg <- add_dimension(pricesAg, dim = 3.2, add = "unit", nm = units)
-  x <- mbind(prices, pricesAg)
+  prices <- mbind(prices, pricesAg)
   return(prices)
 }
