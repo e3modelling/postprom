@@ -77,89 +77,94 @@ reportPrice <- function(path, regions, years, weightsForreportPrice) {
   
   prices <- add_dimension(prices, dim = 3.2, add = "unit", nm = units)
   
+  # Aggregate prices from SBS codes to readable .te sector names
   pricesNoAgr <- toolAggregate(pricesNoAgr, dim = 3.1, rel = DSBSTable, from = "SBS", to = ".te")
   
+  # Rename fuel/energy carrier codes to readable EFS names
+  getItems(pricesNoAgr, 3.2) <- EFSTable$.te[match(getItems(pricesNoAgr, 3.2), EFSTable$EF)]
+  
+  # Build complete DSBS-to-SBS mapping table
   DSBS_SBS_full <- bind_rows(
-    DSBS_Industry, DSBS_Transport,
-    DSBS_NonEnergy, DSBS_CDR, DSBS_COMM
+    DSBS_Industry, DSBS_Transport, DSBS_NonEnergy, DSBS_CDR, DSBS_COMM
   ) %>%
     rename(DSBS = 1) %>%
     full_join(DSBSTable, by = c("DSBS" = "SBS")) %>%
     filter(!is.na(SBS))
   
+  # Collapse unit subdimension in the weights
   weightsForreportPrice <- collapseDim(weightsForreportPrice, 3.2)
   
-  df <- as.data.frame(getItems(weightsForreportPrice,3)) %>%
-    rename("variable" = "getItems(weightsForreportPrice, 3)")
-  
-  vars_vec <- df$variable
-  
-  # Filter the weighting structure to retain only top-level sectors that:
-  # (1) appear at hierarchy level 3 (exactly two "|" separators),
-  # (2) have at least four child categories,
-  # and extract their sector names (e.g. "Final Energy|Industry|Iron and Steel"
-  # -> "Iron and Steel").
-  #
-  # Then clean the weight-item dimension by:
-  # (1) setting all entries outside hierarchy level 3 to NA,
-  # (2) keeping only sectors identified above,
-  # (3) replacing full hierarchy strings with the extracted sector names.
-  #
-  # The resulting item dimension contains only valid aggregation sectors used
-  # as weights in the subsequent SBS-level price aggregation.
-  
-  df_filtered <- df %>%
-    filter(str_count(variable, fixed("|")) == 2) %>%
-    rowwise() %>%
-    mutate(
-      n_children = sum(str_starts(vars_vec, fixed(paste0(variable, "|"))))
-    ) %>%
-    ungroup() %>%
-    filter(n_children >= 4)
-  
-  df_filtered <- df_filtered %>%
-    mutate(variable = sub("^[^|]+\\|[^|]+\\|", "", variable))
-  
+  # Clean weight item names: remove leading hierarchy before the second "|"
   items <- getItems(weightsForreportPrice, 3)
+  items <- sub("^[^|]+\\|[^|]+\\|", "", items)
   
-  items_new <- ifelse(
-    str_count(items, fixed("|")) == 2,
+  # Keep only items that still have at least one hierarchy separator
+  items <- ifelse(
+    stringr::str_count(items, fixed("|")) >= 1,
     items,
     NA_character_
   )
   
-  keep_names <- df_filtered$variable
+  # Apply cleaned names and remove invalid NA items
+  getItems(weightsForreportPrice, 3) <- items
+  weightsForreportPrice <- weightsForreportPrice[, , !is.na(getItems(weightsForreportPrice, 3))]
   
-  items_new <- sapply(items_new, function(x) {
-    if (is.na(x)) return(NA_character_)
-    
-    name <- sub("^[^|]+\\|[^|]+\\|", "", x)
-    
-    if (name %in% keep_names) name else NA_character_
-  })
+  # Select only price items needed for aggregation
+  foraggr <- pricesNoAgr[, , DSBS_SBS_full$.te]
   
-  names(items_new) <- NULL
+  # Replace "." separators with "|" to match weight naming convention
+  name <- gsub("\\.", "|", getItems(foraggr, dim = 3))
+  getItems(foraggr, 3) <- name
   
-  getItems(weightsForreportPrice, 3) <- items_new
+  # Identify matching and non-matching items between prices and weights
+  weitemsdiff <- setdiff(getItems(foraggr, 3), getItems(weightsForreportPrice, 3))
   
-  weightsForreportPrice <- weightsForreportPrice[,,!is.na(getItems(weightsForreportPrice, 3))]
+  # Fix Data Centers naming mismatch in price items
+  l <- getNames(foraggr) == weitemsdiff
+  getNames(foraggr)[l] <- paste0(sub(
+    "^Data centers and Networks\\|",
+    "Data centers and Networks|Data Centers|",
+    weitemsdiff
+  ))
   
-  weightsForreportPrice <- weightsForreportPrice[,,df_filtered[["variable"]]]
+  weitems <- intersect(getItems(foraggr, 3), getItems(weightsForreportPrice, 3))
   
-  pricesAg <- toolAggregate(pricesNoAgr[,,DSBS_SBS_full$.te], weight = weightsForreportPrice,
-                     dim = 3.1, rel = DSBS_SBS_full, from = ".te", to = "SBS",
-                     zeroWeight = "allow")
+  # Build sector-energy-carrier mapping for weighted aggregation
+  sectors <- DSBS_SBS_full %>%
+    select(DSBS, SBS, .te)
   
-  # complete names
+  efs <- data.frame(EFS = EFSTable[[".te"]])
+  
+  weightMap <- crossing(sectors, efs) %>%
+    mutate(.te = paste(.te, EFS, sep = "|")) %>%
+    mutate(SBS = paste(SBS, EFS, sep = "|"))
+  
+  # Apply same Data Centers naming fix in the mapping table
+  weightMap$.te <- sub(
+    "^Data centers and Networks\\|",
+    "Data centers and Networks|Data Centers|",
+    weightMap$.te
+  )
+  
+  # Keep only weights that match available price items
+  weightsForPrice <- weightsForreportPrice[, , weitems]
+  
+  # Aggregate prices to SBS level using matching weights
+  pricesAg <- toolAggregate(
+    foraggr,
+    weight = weightsForPrice,
+    dim = 3,
+    rel = weightMap,
+    from = ".te",
+    to = "SBS",
+    zeroWeight = "allow"
+  )
+  
+  # Add full reporting name prefix
   getItems(pricesAg, 3.1) <- paste0("Price|Final Energy|", getItems(pricesAg, 3.1))
-  getItems(pricesAg, 3.2) <- EFSTable$.te[match(getItems(pricesAg, 3.2), EFSTable$EF)]
   
-  # Replace sep in dimensions and prepend the sector
-  name <- gsub("\\.", "|", getItems(pricesAg, dim = 3)) # e.g., IS.HCL --> IS|HCL
-  getItems(pricesAg, 3) <- name
-  
+  # Add unit dimension and combine aggregated prices with detailed prices
   pricesAg <- add_dimension(pricesAg, dim = 3.2, add = "unit", nm = units)
-  prices <- mbind(prices, pricesAg)
-
+  x <- mbind(prices, pricesAg)
   return(prices)
 }
