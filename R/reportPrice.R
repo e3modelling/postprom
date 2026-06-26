@@ -152,12 +152,11 @@ reportPrice <- function(path, regions, years, weightsForreportPrice) {
   # Aggregate prices to SBS level using matching weights
   pricesAg <- toolAggregate(
     foraggr,
-    weight = weightsForPrice,
+    weight = weightsForPrice + 10^-30,
     dim = 3,
     rel = weightMap,
     from = ".te",
-    to = "SBS",
-    zeroWeight = "allow"
+    to = "SBS"
   )
   
   # Add full reporting name prefix
