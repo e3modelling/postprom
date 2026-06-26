@@ -24,7 +24,7 @@ reportPrice <- function(path, regions, years, weightsForreportPrice) {
   DSBS <- rgdx.set(path, "DSBS", te = FALSE)
   DSBSTable <- rgdx.set(path, "DSBS", te = TRUE)
   EFTable <- rgdx.set(path, "EF", te = TRUE)
-  
+  EFSTable <- rgdx.set(path, "EFS", te = TRUE)
   #---------- Create a DSBS TO SBS mapping (e.g., Iron & Steel -> Industry)
   DSBS_Industry <- readGDX(path, "INDSE") %>%
     as.data.frame() %>%
