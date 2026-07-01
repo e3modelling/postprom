@@ -41,12 +41,45 @@ reportEfficiency <- function(reports, path, regions, years, blabla_regions) {
   PrimaryEnergyIntensity <- add_dimension(PrimaryEnergyIntensity, dim = 3.2, add = "unit", nm = "Mtoe/billion US$2015")
   
   # ============ CO2 intensity of electricity generation (Emissions / Electricity production)============
-  CO2IntensityElectricity <- reports[,,c("Emissions|CO2|Energy|Supply|Electricity.Mt CO2/yr", "Secondary Energy|Electricity.TWh")]
-  CO2IntensityElectricity <- collapseDim(CO2IntensityElectricity, dim = 3.2)
-  CO2IntensityPower <- CO2IntensityElectricity[,,"Emissions|CO2|Energy|Supply|Electricity"] / CO2IntensityElectricity[,,"Secondary Energy|Electricity"]
-  getItems(CO2IntensityPower, 3) <- "Emission Intensity|CO2|Secondary Energy|Electricity"
-  names(dimnames(CO2IntensityPower))[3] <- "CO2IntensityPower"
-  CO2IntensityPower <- add_dimension(CO2IntensityPower, dim = 3.2, add = "unit", nm = "Mt CO2/TWh")
+  sec_level2 <- items[grepl("^Secondary Energy\\|", items) &
+      stringr::str_count(sub("\\.[^.]+$", "", items), "\\|") == 1]
+  sec_names <- sub("^Secondary Energy\\|", "", sub("\\.[^.]+$", "", sec_level2))
+  
+  emi_supply_level5_same <- emi_supply_level5[
+    sub("^Emissions\\|CO2\\|Energy\\|Supply\\|", "",
+        sub("\\.[^.]+$", "", emi_supply_level5)) %in% sec_names]
+  
+  emi_supply_level5_same <- emi_supply_level5_same[
+    match(
+      sec_names,
+      sub("^Emissions\\|CO2\\|Energy\\|Supply\\|", "",
+          sub("\\.[^.]+$", "", emi_supply_level5_same)))]
+  
+  
+  CO2Intensity <- reports[,,c(emi_supply_level5_same, sec_level2)]
+  CO2Intensity <- collapseDim(CO2Intensity, dim = 3.2)
+  emi_supply_level5_same <- sub("\\.[^.]+$", "", emi_supply_level5_same)
+  sec_level2 <- sub("\\.[^.]+$", "", sec_level2)
+  CO2Intensity <- CO2Intensity[, , emi_supply_level5_same] / CO2Intensity[, , sec_level2]
+  
+  items_y <- getItems(CO2Intensity, 3)
+  
+  emi_cat <- sub("^Emissions\\|CO2\\|Energy\\|Supply\\|([^.]*)\\..*$", "\\1", items_y)
+  sec_cat <- sub("^.*\\.Secondary Energy\\|", "", items_y)
+  
+  same_items <- items_y[emi_cat == sec_cat]
+  
+  CO2Intensityindicators <- CO2Intensity[, , same_items]
+  
+  cats <- sub("^.*\\.Secondary Energy\\|", "", getItems(CO2Intensityindicators, 3))
+  
+  getItems(CO2Intensityindicators, 3) <- paste0(
+    "CO2 Intensity|Secondary Energy|",
+    cats
+  )
+  
+  names(dimnames(CO2Intensityindicators))[3] <- "CO2Intensityindicators"
+  CO2Intensityindicators <- add_dimension(CO2Intensityindicators, dim = 3.2, add = "unit", nm = "Mt CO2/TWh")
   # ============ CO2 intensity of INDUSTRY (Emissions/Useful Energy)============
   CO2DemandIndustry <- reports[,,"Emissions|CO2|Energy|Demand|Industry.Mt CO2/yr"]
   CO2DemandIndustry <- collapseDim(CO2DemandIndustry, dim = 3.2)
@@ -105,7 +138,7 @@ reportEfficiency <- function(reports, path, regions, years, blabla_regions) {
     EnergyIntensity,
     PrimaryEnergyEfficiency,
     PrimaryEnergyIntensity,
-    CO2IntensityPower,
+    CO2Intensityindicators,
     CO2IntensityofIndustry,
     EnergyIntensityofIndustry
   )
