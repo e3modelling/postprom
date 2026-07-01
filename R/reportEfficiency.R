@@ -45,6 +45,10 @@ reportEfficiency <- function(reports, path, regions, years, blabla_regions) {
       stringr::str_count(sub("\\.[^.]+$", "", items), "\\|") == 1]
   sec_names <- sub("^Secondary Energy\\|", "", sub("\\.[^.]+$", "", sec_level2))
   
+  emi_supply_level5 <- items[
+    grepl("^Emissions\\|CO2\\|Energy\\|Supply\\|", items) &
+      stringr::str_count(sub("\\.[^.]+$", "", items), "\\|") == 4]
+  
   emi_supply_level5_same <- emi_supply_level5[
     sub("^Emissions\\|CO2\\|Energy\\|Supply\\|", "",
         sub("\\.[^.]+$", "", emi_supply_level5)) %in% sec_names]
