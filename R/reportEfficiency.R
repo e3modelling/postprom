@@ -17,6 +17,64 @@ reportEfficiency <- function(reports, path, regions, years, blabla_regions) {
   
   items <- getItems(reports,3)
   
+  # ============ Energy demand/ activity====================
+  
+  IFullACTV <- calcOutput("IFullACTV", aggregate = TRUE, regionmapping = "regionmappingOPDEV5.csv")
+  IFullACTV <- IFullACTV[blabla_regions, years, ]
+  
+  IFullACTV <- collapseDim(IFullACTV, dim = 3.2)
+  
+  mappingACTV <- tribble(
+    ~variable, ~code,
+    "Final Energy|Industry|Iron and Steel", "IS",
+    "Final Energy|Industry|Non Ferrous Metals", "NF",
+    "Final Energy|Industry|Chemicals", "CH",
+    "Final Energy|Industry|Non Metallic Minerals", "BM",
+    "Final Energy|Industry|Paper and Pulp", "PP",
+    "Final Energy|Industry|Food Drink and Tobacco", "FD",
+    "Final Energy|Industry|Engineering", "EN",
+    "Final Energy|Industry|Textiles", "TX",
+    "Final Energy|Industry|Ore Extraction", "OE",
+    "Final Energy|Industry|Other Industrial sectors", "OI",
+    "Final Energy|Commercial|Services.Mtoe", "SE",
+    "Final Energy|Agriculture, Fishing, Forestry", "AG",
+    "Final Energy|Residential", "HOU",
+    "Final Energy|Transportation|Passenger Transport - Cars", "PC",
+    "Final Energy|Transportation|Passenger Transport - Busses", "PB",
+    "Final Energy|Transportation|Passenger Transport - Rail", "PT",
+    "Final Energy|Transportation|Passenger Transport - Inland Navigation", "PN",
+    "Final Energy|Transportation|Passenger Transport - Aviation", "PA",
+    "Final Energy|Transportation|Goods Transport - Trucks", "GU",
+    "Final Energy|Transportation|Goods Transport - Rail", "GT",
+    "Final Energy|Transportation|Goods Transport - Inland Navigation", "GN",
+    "Final Energy|Bunkers", "BU",
+    "Final Energy|Non-Energy Use|Petrochemicals Industry", "PCH",
+    "Final Energy|Non-Energy Use|Other Non Energy Uses", "NEN")
+  
+  FEACTV <- NULL
+  
+  for (i in seq_len(nrow(mappingACTV))) {
+    
+    tmp <- reports[, , mappingACTV$variable[i]] /
+      IFullACTV[, , mappingACTV$code[i]]
+    
+    FEACTV <- mbind(FEACTV, tmp)
+  }
+  
+  FEACTV <- collapseDim(FEACTV, dim = 3.3)
+  FEACTV <- collapseDim(FEACTV, dim = 3.2)
+  
+  getItems(FEACTV, dim = 3) <- sub(
+    "^Final Energy\\|",
+    "",
+    getItems(FEACTV, dim = 3)
+  )
+  
+  getItems(FEACTV, dim = 3) <- paste0("Energy Intensity|",getItems(FEACTV, dim = 3))
+  
+  FEACTV <- add_dimension(FEACTV, dim = 3.2, add = "unit", nm = "Mtoe/ACTV")
+  FEACTV[is.na(FEACTV)] <- 0
+  
   # ============ Energy Efficiency (GDP/TFC),====================
   Energy <- reports[,,c("GDP|PPP.billion US$2015/yr", "Final Energy.Mtoe", "Primary Energy.Mtoe")]
   Energy <- collapseDim(Energy, dim = 3.2)
