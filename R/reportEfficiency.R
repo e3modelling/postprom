@@ -24,6 +24,26 @@ reportEfficiency <- function(reports, path, regions, years, blabla_regions) {
   
   IFullACTV <- collapseDim(IFullACTV, dim = 3.2)
   
+  if ("World" %in% regions) {
+    # Calculate the sum, World
+    add_region_GLO_IFullACTV <- dimSums(IFullACTV, 1, na.rm = TRUE)
+    getItems(add_region_GLO_IFullACTV, 1) <- "World"
+    IFullACTV <- mbind(IFullACTV, add_region_GLO_IFullACTV)
+  }
+  
+  if ("EU" %in% regions) {
+    # --- Calculate EU-27 Aggregation ---
+    regionMapping <- toolGetMapping(name = "EU28.csv", type = "regional", where = "mrprom")
+    regionsEu27 <- regionMapping$ISO3.Code[regionMapping$ISO3.Code != "GBR"]
+    regionsEu27 <- regionsEu27[regionsEu27 %in% blabla_regions] # Ensure only regions present in the data are included
+    
+    if (length(regionsEu27) != 0) {
+      add_region_EU_IFullACTV <- dimSums(IFullACTV[regionsEu27,,], 1, na.rm = TRUE)
+      getItems(add_region_EU_IFullACTV, 1) <- "EU"
+      IFullACTV <- mbind(IFullACTV, add_region_EU_IFullACTV)
+    }
+  }
+  
   mappingACTV <- tribble(
     ~variable, ~code,
     "Final Energy|Industry|Iron and Steel", "IS",
@@ -202,7 +222,8 @@ reportEfficiency <- function(reports, path, regions, years, blabla_regions) {
     PrimaryEnergyIntensity,
     CO2Intensityindicators,
     CO2IntensityofIndustry,
-    EnergyIntensityofIndustry
+    EnergyIntensityofIndustry,
+    FEACTV
   )
   
   return(magpie_object)
