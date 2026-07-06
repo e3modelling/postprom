@@ -96,7 +96,8 @@ reportEfficiency <- function(reports, path, regions, years, blabla_regions) {
   FEACTV[is.na(FEACTV)] <- 0
   
   # ============ Energy Efficiency (GDP/TFC),====================
-  Energy <- reports[,,c("GDP|PPP.billion US$2015/yr", "Final Energy.Mtoe", "Primary Energy.Mtoe")]
+  Energy <- reports[,,c("GDP|PPP.billion US$2015/yr", "Final Energy.Mtoe",
+                        "Emissions|CO2.Mt CO2/yr", "Primary Energy.Mtoe")]
   Energy <- collapseDim(Energy, dim = 3.2)
   EnergyEfficiency <- Energy[,,"GDP|PPP"] / Energy[,,"Final Energy"]
   getItems(EnergyEfficiency, 3) <- "Efficiency|Final Energy"
@@ -107,6 +108,11 @@ reportEfficiency <- function(reports, path, regions, years, blabla_regions) {
   getItems(EnergyIntensity, 3) <- "Intensity|Final Energy"
   names(dimnames(EnergyIntensity))[3] <- "EnergyIntensity"
   EnergyIntensity <- add_dimension(EnergyIntensity, dim = 3.2, add = "unit", nm = "Mtoe/billion US$2015")
+  # ============ Emissions intensity (CO2/GDP) =============================
+  EmissionsIntensity  <- Energy[,,"Emissions|CO2"] / Energy[,,"GDP|PPP"]
+  getItems(EmissionsIntensity, 3) <- "Carbon Intensity"
+  names(dimnames(EmissionsIntensity))[3] <- "EnergyIntensityCO2"
+  EmissionsIntensity <- add_dimension(EmissionsIntensity, dim = 3.2, add = "unit", nm = "Mt CO2/billion US$2015")
   # ============ Primary Energy Efficiency (GDP/TES),====================
   PrimaryEnergyEfficiency <- Energy[,,"GDP|PPP"] / Energy[,,"Primary Energy"]
   getItems(PrimaryEnergyEfficiency, 3) <- "Efficiency|Primary Energy"
@@ -285,7 +291,8 @@ reportEfficiency <- function(reports, path, regions, years, blabla_regions) {
     CO2IntensityofIndustry,
     EnergyIntensityofIndustry,
     FEACTV,
-    ActivTrnsp
+    ActivTrnsp,
+    EmissionsIntensity
   )
   
   return(magpie_object)
