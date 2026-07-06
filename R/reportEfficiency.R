@@ -214,7 +214,68 @@ reportEfficiency <- function(reports, path, regions, years, blabla_regions) {
   getItems(EnergyIntensityofIndustry, 3) <- "Energy Intensity|Industry"
   names(dimnames(EnergyIntensityofIndustry))[3] <- "EnergyIntensityofIndustry"
   EnergyIntensityofIndustry <- add_dimension(EnergyIntensityofIndustry, dim = 3.2, add = "unit", nm = "1")
-  # ==================== Combine all indicators into a single magpie object ============================
+
+  # ============Energy intensity of Transportation============
+  variablesACTVTransport <- readGDX(
+    path,
+    c(
+      "v01ActivPassTrnsp", "V01ActivGoodsTransp"
+    ),
+    field = "l"
+  )
+  v01ActivPassTrnsp <- variablesACTVTransport$V01ActivGoodsTransp[blabla_regions,,]
+  V01ActivGoodsTransp <- variablesACTVTransport$V01ActivGoodsTransp[blabla_regions,,]
+  if ("World" %in% regions) {
+    # Calculate the sum, World
+    add_region_GLO_v01ActivPassTrnsp <- dimSums(v01ActivPassTrnsp, 1, na.rm = TRUE)
+    getItems(add_region_GLO_v01ActivPassTrnsp, 1) <- "World"
+    v01ActivPassTrnsp <- mbind(v01ActivPassTrnsp, add_region_GLO_v01ActivPassTrnsp)
+    add_region_GLO_V01ActivGoodsTransp <- dimSums(V01ActivGoodsTransp, 1, na.rm = TRUE)
+    getItems(add_region_GLO_V01ActivGoodsTransp, 1) <- "World"
+    V01ActivGoodsTransp <- mbind(V01ActivGoodsTransp, add_region_GLO_V01ActivGoodsTransp)
+  }
+  
+  if ("EU" %in% regions) {
+    # --- Calculate EU-27 Aggregation ---
+    regionMapping <- toolGetMapping(name = "EU28.csv", type = "regional", where = "mrprom")
+    regionsEu27 <- regionMapping$ISO3.Code[regionMapping$ISO3.Code != "GBR"]
+    regionsEu27 <- regionsEu27[regionsEu27 %in% blabla_regions] # Ensure only regions present in the data are included
+    
+    if (length(regionsEu27) != 0) {
+      add_region_EU_v01ActivPassTrnsp <- dimSums(v01ActivPassTrnsp[regionsEu27,,], 1, na.rm = TRUE)
+      getItems(add_region_EU_v01ActivPassTrnsp, 1) <- "EU"
+      v01ActivPassTrnsp <- mbind(v01ActivPassTrnsp, add_region_EU_v01ActivPassTrnsp)
+      add_region_EU_V01ActivGoodsTransp <- dimSums(V01ActivGoodsTransp[regionsEu27,,], 1, na.rm = TRUE)
+      getItems(add_region_EU_V01ActivGoodsTransp, 1) <- "EU"
+      V01ActivGoodsTransp <- mbind(V01ActivGoodsTransp, add_region_EU_V01ActivGoodsTransp)
+    }
+  }
+  
+  # -------------------------- Transport Passenger -------
+  TRANP <- reports[, , c("Final Energy|Transportation|Passenger Transport - Cars",
+                              "Final Energy|Transportation|Passenger Transport - Busses",
+                              "Final Energy|Transportation|Passenger Transport - Rail",
+                              "Final Energy|Transportation|Passenger Transport - Inland Navigation",
+                              "Final Energy|Transportation|Passenger Transport - Aviation")]
+  TRANP <- dimSums(TRANP, 3)
+  getItems(TRANP, 3.1) <- "Final Energy|Transportation|Passenger"
+  # -------------------------- Transport Freight -------
+  TRANG <- reports[, , c("Final Energy|Transportation|Goods Transport - Trucks",
+                              "Final Energy|Transportation|Goods Transport - Rail",
+                              "Final Energy|Transportation|Goods Transport - Inland Navigation")]
+  TRANG <- dimSums(TRANG, 3)
+  getItems(TRANG, 3.1) <- "Final Energy|Transportation|Freight"
+  
+  ActivPassTrnsp <- dimSums(v01ActivPassTrnsp,3) / TRANP
+  ActivGoodsTransp <- dimSums(V01ActivGoodsTransp,3) / TRANG
+  
+  getItems(ActivPassTrnsp, 3.1) <- "Energy Intensity|Transportation|Passenger"
+  getItems(ActivPassTrnsp, 3.2) <- "Mtoe/ACTV"
+  getItems(ActivGoodsTransp, 3.1) <- "Energy Intensity|Transportation|Freight"
+  getItems(ActivGoodsTransp, 3.2) <- "Mtoe/Gtkm"
+  
+  ActivTrnsp <- mbind(ActivPassTrnsp, ActivGoodsTransp)
+    # ==================== Combine all indicators into a single magpie object ============================
   magpie_object <- mbind(
     EnergyEfficiency,
     EnergyIntensity,
@@ -223,7 +284,8 @@ reportEfficiency <- function(reports, path, regions, years, blabla_regions) {
     CO2Intensityindicators,
     CO2IntensityofIndustry,
     EnergyIntensityofIndustry,
-    FEACTV
+    FEACTV,
+    ActivTrnsp
   )
   
   return(magpie_object)
