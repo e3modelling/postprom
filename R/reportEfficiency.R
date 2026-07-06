@@ -162,7 +162,7 @@ reportEfficiency <- function(reports, path, regions, years, blabla_regions) {
   cats <- sub("^.*\\.Secondary Energy\\|", "", getItems(CO2Intensityindicators, 3))
   
   getItems(CO2Intensityindicators, 3) <- paste0(
-    "CO2 Intensity|Secondary Energy|",
+    "Carbon Intensity|Secondary Energy|",
     cats
   )
   
@@ -208,7 +208,7 @@ reportEfficiency <- function(reports, path, regions, years, blabla_regions) {
   }
   
   CO2IntensityofIndustry <- CO2DemandIndustry / UsefulEnergyIndustry
-  getItems(CO2IntensityofIndustry, 3) <- "Emission Intensity|CO2|Energy|Demand|Industry"
+  getItems(CO2IntensityofIndustry, 3) <- "Carbon Intensity|Energy|Demand|Industry"
   names(dimnames(CO2IntensityofIndustry))[3] <- "CO2IntensityofIndustry"
   CO2IntensityofIndustry <- add_dimension(CO2IntensityofIndustry, dim = 3.2, add = "unit", nm = "Mt CO2/Mtoe")
   
