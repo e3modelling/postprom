@@ -123,7 +123,29 @@ reportEfficiency <- function(reports, path, regions, years, blabla_regions) {
   getItems(PrimaryEnergyIntensity, 3) <- "Intensity|Primary Energy"
   names(dimnames(PrimaryEnergyIntensity))[3] <- "PrimaryEnergyIntensity"
   PrimaryEnergyIntensity <- add_dimension(PrimaryEnergyIntensity, dim = 3.2, add = "unit", nm = "Mtoe/billion US$2015")
-  
+  # ============ RES share in power generation missing (RES/TOTAL) =============================
+  RESSec  <-  reports[,,c("Secondary Energy|Electricity|Hydro","Secondary Energy|Electricity|Wind",
+                          "Secondary Energy|Electricity|Solar",
+                          "Secondary Energy|Electricity|Geothermal and other renewable sources")]
+  SecTotal <- reports[,,"Secondary Energy|Electricity"]
+  SecTotal <- collapseDim(SecTotal, 3)
+  RESSec <- dimSums(RESSec, 3)
+  RESSecShare <- RESSec / SecTotal
+  getItems(RESSec, 3.1) <- "Secondary Energy|Electricity|Renewables"
+  getItems(RESSec, 3.2) <- "TWh"
+  getItems(RESSecShare, 3.1) <- "Secondary Energy|Electricity|Renewables Share"
+  getItems(RESSecShare, 3.2) <- "1"
+  RES <- mbind(RESSec, RESSecShare)
+  names(dimnames(RES))[3] <- "SecondaryElectricityRenewables"
+  # ============ Electricity share in final energy demand =============================
+  FEELEC  <-  reports[,,"Final Energy|Electricity"]
+  FEELEC <- collapseDim(FEELEC, 3)
+  FE  <-  reports[,,"Final Energy"]
+  FE <- collapseDim(FE, 3)
+  ElectricityshareFE <- FEELEC / FE
+  getItems(ElectricityshareFE, 3.1) <- "Final Energy|Electricity Share"
+  getItems(ElectricityshareFE, 3.2) <- "1"
+  names(dimnames(ElectricityshareFE))[3] <- "ElectricityshareFE"
   # ============ CO2 intensity of electricity generation (Emissions / Electricity production)============
   sec_level2 <- items[grepl("^Secondary Energy\\|", items) &
       stringr::str_count(sub("\\.[^.]+$", "", items), "\\|") == 1]
@@ -292,7 +314,9 @@ reportEfficiency <- function(reports, path, regions, years, blabla_regions) {
     EnergyIntensityofIndustry,
     FEACTV,
     ActivTrnsp,
-    EmissionsIntensity
+    EmissionsIntensity,
+    RES,
+    ElectricityshareFE
   )
   
   return(magpie_object)
