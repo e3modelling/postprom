@@ -110,7 +110,7 @@ reportEfficiency <- function(reports, path, regions, years, blabla_regions) {
   EnergyIntensity <- add_dimension(EnergyIntensity, dim = 3.2, add = "unit", nm = "Mtoe/billion US$2015")
   # ============ Emissions intensity (CO2/GDP) =============================
   EmissionsIntensity  <- Energy[,,"Emissions|CO2"] / Energy[,,"GDP|PPP"]
-  getItems(EmissionsIntensity, 3) <- "Carbon Intensity"
+  getItems(EmissionsIntensity, 3) <- "Carbon Intensity|GDP"
   names(dimnames(EmissionsIntensity))[3] <- "EnergyIntensityCO2"
   EmissionsIntensity <- add_dimension(EmissionsIntensity, dim = 3.2, add = "unit", nm = "Mt CO2/billion US$2015")
   # ============ Primary Energy Efficiency (GDP/TES),====================
@@ -132,6 +132,45 @@ reportEfficiency <- function(reports, path, regions, years, blabla_regions) {
   getItems(RESSecShare, 3.1) <- "Secondary Energy|Electricity|Renewables Share"
   getItems(RESSecShare, 3.2) <- "1"
   names(dimnames(RESSecShare))[3] <- "SecondaryElectricityRenewables"
+  # ============ CO2 intensity of energy demand by sector============
+  emi_demand_level5_same <- c("Emissions|CO2|Energy|Demand|Industry.Mt CO2/yr",
+                              "Emissions|CO2|Energy|Demand|Commercial.Mt CO2/yr",
+                              "Emissions|CO2|Energy|Demand|Agriculture, Fishing, Forestry.Mt CO2/yr",
+                              "Emissions|CO2|Energy|Demand|Residential.Mt CO2/yr",
+                              "Emissions|CO2|Energy|Demand|Transportation.Mt CO2/yr",
+                              "Emissions|CO2|Energy|Demand|Bunkers.Mt CO2/yr")
+  
+  FE_demand_level2 <-  c("Final Energy|Industry.Mtoe",
+                              "Final Energy|Commercial.Mtoe",
+                              "Final Energy|Agriculture, Fishing, Forestry.Mtoe",
+                              "Final Energy|Residential.Mtoe",
+                              "Final Energy|Transportation.Mtoe",
+                              "Final Energy|Bunkers.Mtoe")
+  
+  CO2FEIntensity <- reports[,,c(emi_demand_level5_same, FE_demand_level2)]
+  CO2FEIntensity <- collapseDim(CO2FEIntensity, dim = 3.2)
+  emi_demand_level5_same <- sub("\\.[^.]+$", "", emi_demand_level5_same)
+  FE_demand_level2 <- sub("\\.[^.]+$", "", FE_demand_level2)
+  CO2FEIntensity <- CO2FEIntensity[, , emi_demand_level5_same] / CO2FEIntensity[, , FE_demand_level2]
+  
+  items_z <- getItems(CO2FEIntensity, 3)
+  
+  emi_catDemand <- sub("^Emissions\\|CO2\\|Energy\\|Demand\\|([^.]*)\\..*$", "\\1", items_z)
+  FE_cat <- sub("^.*\\.Final Energy\\|", "", items_z)
+  
+  same_items_FE <- items_z[emi_catDemand == FE_cat]
+  
+  CO2FEIntensityindicators <- CO2FEIntensity[, , same_items_FE]
+  
+  catsFE <- sub("^.*\\.Final Energy\\|", "", getItems(CO2FEIntensityindicators, 3))
+  
+  getItems(CO2FEIntensityindicators, 3) <- paste0(
+    "Carbon Intensity|Final Energy|",
+    catsFE
+  )
+  
+  names(dimnames(CO2FEIntensityindicators))[3] <- "CO2FEIntensityindicators"
+  CO2FEIntensityindicators <- add_dimension(CO2FEIntensityindicators, dim = 3.2, add = "unit", nm = "Mt CO2/Mtoe")
   # ============ Electricity share in final energy demand =============================
   FEELEC  <-  reports[,,"Final Energy|Electricity"]
   FEELEC <- collapseDim(FEELEC, 3)
@@ -303,7 +342,8 @@ reportEfficiency <- function(reports, path, regions, years, blabla_regions) {
     ActivTrnsp,
     EmissionsIntensity,
     RESSecShare,
-    ElectricityshareFE
+    ElectricityshareFE,
+    CO2FEIntensityindicators
   )
   
   return(magpie_object)
