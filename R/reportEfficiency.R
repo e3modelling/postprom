@@ -124,19 +124,14 @@ reportEfficiency <- function(reports, path, regions, years, blabla_regions) {
   names(dimnames(PrimaryEnergyIntensity))[3] <- "PrimaryEnergyIntensity"
   PrimaryEnergyIntensity <- add_dimension(PrimaryEnergyIntensity, dim = 3.2, add = "unit", nm = "Mtoe/billion US$2015")
   # ============ RES share in power generation missing (RES/TOTAL) =============================
-  RESSec  <-  reports[,,c("Secondary Energy|Electricity|Hydro","Secondary Energy|Electricity|Wind",
-                          "Secondary Energy|Electricity|Solar",
-                          "Secondary Energy|Electricity|Geothermal and other renewable sources")]
+  RESSec  <-  reports[,,"Secondary Energy|Electricity|Renewables"]
+  RESSec <- collapseDim(RESSec, 3)
   SecTotal <- reports[,,"Secondary Energy|Electricity"]
   SecTotal <- collapseDim(SecTotal, 3)
-  RESSec <- dimSums(RESSec, 3)
   RESSecShare <- RESSec / SecTotal
-  getItems(RESSec, 3.1) <- "Secondary Energy|Electricity|Renewables"
-  getItems(RESSec, 3.2) <- "TWh"
   getItems(RESSecShare, 3.1) <- "Secondary Energy|Electricity|Renewables Share"
   getItems(RESSecShare, 3.2) <- "1"
-  RES <- mbind(RESSec, RESSecShare)
-  names(dimnames(RES))[3] <- "SecondaryElectricityRenewables"
+  names(dimnames(RESSecShare))[3] <- "SecondaryElectricityRenewables"
   # ============ Electricity share in final energy demand =============================
   FEELEC  <-  reports[,,"Final Energy|Electricity"]
   FEELEC <- collapseDim(FEELEC, 3)
@@ -147,24 +142,16 @@ reportEfficiency <- function(reports, path, regions, years, blabla_regions) {
   getItems(ElectricityshareFE, 3.2) <- "1"
   names(dimnames(ElectricityshareFE))[3] <- "ElectricityshareFE"
   # ============ CO2 intensity of electricity generation (Emissions / Electricity production)============
-  sec_level2 <- items[grepl("^Secondary Energy\\|", items) &
-      stringr::str_count(sub("\\.[^.]+$", "", items), "\\|") == 1]
-  sec_names <- sub("^Secondary Energy\\|", "", sub("\\.[^.]+$", "", sec_level2))
+  emi_supply_level5_same <- c("Emissions|CO2|Energy|Supply|Electricity.Mt CO2/yr",
+                                "Emissions|CO2|Energy|Supply|Hydrogen.Mt CO2/yr",
+                                "Emissions|CO2|Energy|Supply|Heat.Mt CO2/yr",
+                                "Emissions|CO2|Energy|Supply|Liquids.Mt CO2/yr",
+                                "Emissions|CO2|Energy|Supply|Gases.Mt CO2/yr",
+                                "Emissions|CO2|Energy|Supply|Solids.Mt CO2/yr")
   
-  emi_supply_level5 <- items[
-    grepl("^Emissions\\|CO2\\|Energy\\|Supply\\|", items) &
-      stringr::str_count(sub("\\.[^.]+$", "", items), "\\|") == 4]
-  
-  emi_supply_level5_same <- emi_supply_level5[
-    sub("^Emissions\\|CO2\\|Energy\\|Supply\\|", "",
-        sub("\\.[^.]+$", "", emi_supply_level5)) %in% sec_names]
-  
-  emi_supply_level5_same <- emi_supply_level5_same[
-    match(
-      sec_names,
-      sub("^Emissions\\|CO2\\|Energy\\|Supply\\|", "",
-          sub("\\.[^.]+$", "", emi_supply_level5_same)))]
-  
+  sec_level2 <- c("Secondary Energy|Electricity.TWh","Secondary Energy|Hydrogen.TWh",
+                  "Secondary Energy|Heat.TWh","Secondary Energy|Liquids.TWh",
+                  "Secondary Energy|Gases.TWh","Secondary Energy|Solids.TWh")  
   
   CO2Intensity <- reports[,,c(emi_supply_level5_same, sec_level2)]
   CO2Intensity <- collapseDim(CO2Intensity, dim = 3.2)
@@ -315,7 +302,7 @@ reportEfficiency <- function(reports, path, regions, years, blabla_regions) {
     FEACTV,
     ActivTrnsp,
     EmissionsIntensity,
-    RES,
+    RESSecShare,
     ElectricityshareFE
   )
   

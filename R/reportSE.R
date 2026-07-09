@@ -98,8 +98,16 @@ reportSE <- function(path, regions, years) {
     getItems(v, 3) <- paste0("Secondary Energy|", sectCarrier[[s]])
     prodCarriers <- mbind(prodCarriers, v)
   }
-
-  magpie_object <- mbind(magpie_object, elcDemand, prodCarriers)
+  
+  # ============ RES =======================================================
+  RESSec  <-  magpie_object[,,c("Secondary Energy|Electricity|Hydro","Secondary Energy|Electricity|Wind",
+                          "Secondary Energy|Electricity|Solar",
+                          "Secondary Energy|Electricity|Geothermal and other renewable sources")]
+  RESSec <- dimSums(RESSec, 3)
+  getItems(RESSec, 3.1) <- "Secondary Energy|Electricity|Renewables"
+  # =======================================================
+    
+  magpie_object <- mbind(magpie_object, elcDemand, prodCarriers, RESSec)
   magpie_object <- add_dimension(magpie_object, dim = 3.2, add = "unit", nm = units)
   return(magpie_object)
 }
