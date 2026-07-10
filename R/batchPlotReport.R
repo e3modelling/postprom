@@ -152,7 +152,7 @@ reportAreaPNG <- function(report,
         )
       
       dataPlotPNGFilter <- dataPlotPNGFilter %>%
-        filter(!(Group %in% c(11, 12)))
+        filter(!(Group %in% c(11, 12))) %>% filter(!(Name == "Secondary Energy|Electricity|Demand"))
       
       plotstyle <- plotstyle %>%
         rename(Name = X) %>%
