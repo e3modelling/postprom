@@ -28,7 +28,7 @@ batchPlotReport <- function(report, metadata, save_pdf) {
   grouped <- plot_mappings %>% group_by(Name)
   
   regionsPNG <- c("World", "EU", "IND", "CHA", "USA")
-  yearsPNG <- c(2023, seq(2025, 2050, by = 5))
+  yearsPNG <- c(2023, seq(2025, max(getYears(report, as.integer = TRUE)), by = 5))
   
   plotstyle <- read.csv(
     system.file(package = "postprom", file.path("extdata", "plotstyle.csv"))
