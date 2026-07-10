@@ -277,8 +277,8 @@ reportEfficiency <- function(reports, path, regions, years, blabla_regions) {
     ),
     field = "l"
   )
-  v01ActivPassTrnsp <- variablesACTVTransport$V01ActivGoodsTransp[blabla_regions,,]
-  V01ActivGoodsTransp <- variablesACTVTransport$V01ActivGoodsTransp[blabla_regions,,]
+  v01ActivPassTrnsp <- variablesACTVTransport$V01ActivGoodsTransp[blabla_regions,years,]
+  V01ActivGoodsTransp <- variablesACTVTransport$V01ActivGoodsTransp[blabla_regions,years,]
   if ("World" %in% regions) {
     # Calculate the sum, World
     add_region_GLO_v01ActivPassTrnsp <- dimSums(v01ActivPassTrnsp, 1, na.rm = TRUE)
