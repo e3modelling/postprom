@@ -40,8 +40,6 @@ batchPlotReport <- function(report, metadata, save_pdf) {
     ~ plotGroups(.x$Variables, .y, report)
   ) %>% setNames(group_keys(grouped)$Name)
 
-  message(paste0("Saving pdf in ", sub("\\.tex$", ".pdf", save_pdf)))
-
   # Save the plots list to a temporary file
   plot_rds_path <- tempfile(fileext = ".rds")
   saveRDS(plots_list, file = plot_rds_path)
@@ -67,6 +65,8 @@ batchPlotReport <- function(report, metadata, save_pdf) {
     output_dir = output_PNG
   )
 
+  message(paste0("Saving pdf in ", sub("\\.tex$", ".pdf", save_pdf)))
+  
   knit2pdf(
     input = template_path,
     output = file.path(save_pdf),
@@ -128,6 +128,7 @@ reportAreaPNG <- function(report,
   
   if (all(regionsPNG %in% getRegions(report))) {
     if (all(yearsPNG %in% as.numeric(sub("^y", "", getYears(report))))) {
+      message("Saving png files")
       dataPlotPNG <- grouped[
         !grepl(
           "(VAL|Validation|Budget1p5C|Budget2C)$",
