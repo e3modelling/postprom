@@ -12,7 +12,7 @@
 #' @importFrom purrr map2
 #' @importFrom knitr knit2pdf opts_knit
 #' @export
-batchPlotReport <- function(report, metadata, save_pdf) {
+batchPlotReport <- function(report, metadata, save_pdf, PngFiles) {
   if (!tinytex::is_tinytex()) {
     message("⚠️ TinyTeX (LaTeX engine) is not installed. Skipping PDF creation.")
     message("To enable PDF output, install TinyTeX with: tinytex::install_tinytex()")
@@ -56,14 +56,12 @@ batchPlotReport <- function(report, metadata, save_pdf) {
   output_PNG <- file.path(output_path, "PNG_area_plots")
   dir.create(output_PNG, recursive = TRUE, showWarnings = FALSE)
   
-  reportAreaPNG(
-    report = report,
-    grouped = grouped,
-    plotstyle = plotstyle,
-    regionsPNG = regionsPNG,
-    yearsPNG = yearsPNG,
-    output_dir = output_PNG
-  )
+  if (PngFiles == TRUE) reportAreaPNG(report = report,
+                                      grouped = grouped,
+                                      plotstyle = plotstyle,
+                                      regionsPNG = regionsPNG,
+                                      yearsPNG = yearsPNG,
+                                      output_dir = output_PNG)
 
   message(paste0("Saving pdf in ", sub("\\.tex$", ".pdf", save_pdf)))
   
