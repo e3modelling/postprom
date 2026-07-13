@@ -54,7 +54,6 @@ batchPlotReport <- function(report, metadata, save_pdf, PngFiles) {
   opts_knit$set(base.dir = output_path)
   
   output_PNG <- file.path(output_path, "PNG_area_plots")
-  dir.create(output_PNG, recursive = TRUE, showWarnings = FALSE)
   
   if (PngFiles == TRUE) reportAreaPNG(report = report,
                                       grouped = grouped,
@@ -126,6 +125,7 @@ reportAreaPNG <- function(report,
   
   if (all(regionsPNG %in% getRegions(report))) {
     if (all(yearsPNG %in% as.numeric(sub("^y", "", getYears(report))))) {
+      dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
       message("Saving png files")
       dataPlotPNG <- grouped[
         !grepl(
