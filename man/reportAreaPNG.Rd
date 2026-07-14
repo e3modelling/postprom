@@ -4,20 +4,14 @@
 \alias{reportAreaPNG}
 \title{Create PNG area plots for the report}
 \usage{
-reportAreaPNG(report, grouped, plotstyle, regionsPNG, yearsPNG, output_dir)
+reportAreaPNG(report, grouped, output_dir)
 }
 \arguments{
 \item{report}{MAgPIE report object.}
 
 \item{grouped}{Data frame containing variable grouping information.}
 
-\item{plotstyle}{Data frame containing colors for each variable.}
-
-\item{regionsPNG}{Character vector of regions to plot.}
-
-\item{yearsPNG}{Numeric vector of years to plot.}
-
-\item{output_dir}{Output directory for the PNG files.}
+\item{output_dir}{Character string specifying the parent output directory.}
 }
 \value{
 Invisibly returns NULL.
