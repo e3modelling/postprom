@@ -43,8 +43,7 @@ Depends:
     mrprom
 Imports: gdx, gdxrrw, madrat, magclass, stringr, quitte, rlang, plotly, flexdashboard,
          tidyr, dplyr, purrr, ggplot2, rmarkdown, knitr, mip,
-         piamValidation, rmarkdown, pandoc, grDevices, grid, gridExtra, writexl,
-         scales
+         piamValidation, rmarkdown, pandoc, grDevices, grid, gridExtra, writexl
 Suggests:
     testthat (>= 3.0.0),
     tinytex,

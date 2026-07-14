@@ -108,7 +108,7 @@ reportAreaPNG <- function(report,
     if (all(yearsPNG %in% as.numeric(sub("^y", "", getYears(report))))) {
       output_dir <- file.path(output_dir, "PNG_area_plots")
       dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
-      message("Saving png files")
+      message("Saving png files in ", output_dir)
       dataPlotPNG <- grouped[
         !grepl(
           "(VAL|Validation|Budget1p5C|Budget2C)$",
