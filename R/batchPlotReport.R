@@ -113,7 +113,7 @@ plotGroups <- function(vars, name, report, ...) {
 #' @importFrom ggplot2 ggplot aes geom_area facet_wrap labs scale_fill_manual
 #' @importFrom ggplot2 scale_x_continuous scale_y_continuous theme_bw theme
 #' @importFrom ggplot2 element_text element_rect element_blank guides guide_legend
-#' @importFrom ggplot2 expansion ggsave
+#' @importFrom ggplot2 expansion ggsave geom_hline scale_linetype_manual
 #' @importFrom scales pretty_breaks label_number
 #' @importFrom grid unit
 reportAreaPNG <- function(report,
@@ -164,6 +164,16 @@ reportAreaPNG <- function(report,
       magpiePNG <- magpiePNG[regionsPNG, yearsPNG, ]
       
       qmagpiePNG <- as.quitte(magpiePNG)
+      Budget <- as.quitte(report[,, c("Emissions|CO2|Budget1p5C.Gt CO2/yr",
+                                      "Emissions|CO2|Budget2C.Gt CO2/yr")])
+      
+      # Keep only the two non-NA World budget values
+      budget_lines <- Budget %>%
+        filter(
+          region == "World",
+          !is.na(value)
+        ) %>%
+        distinct(DSBSpEFS, value)
       
       # Original region codes and their displayed names
       region_order <- c(
@@ -325,6 +335,32 @@ reportAreaPNG <- function(report,
               byrow = TRUE
             )
           )
+        # Add the two dashed budget lines only to
+        # the Emissions|CO2|Cumulated plot
+        if (any(as.character(data_group$DSBSpEFS) == "Emissions|CO2|Cumulated")) {
+          
+          world_budget_lines <- budget_lines %>%
+            mutate(region = "World")
+          
+          p <- p +
+            geom_hline(
+              data = world_budget_lines,
+              aes(
+                yintercept = value,
+                linetype = DSBSpEFS
+              ),
+              colour = "black",
+              linewidth = 0.8,
+              inherit.aes = FALSE
+            ) +
+            scale_linetype_manual(
+              values = c(
+                "Emissions|CO2|Budget1p5C" = "dashed",
+                "Emissions|CO2|Budget2C"   = "dashed"
+              ),
+              name = NULL
+            )
+        }
         
         file_name <- paste0(
           sprintf("%02d", current_group),
