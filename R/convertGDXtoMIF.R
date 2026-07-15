@@ -139,18 +139,18 @@ convertGDXtoMIF_single <- function(.path, path_mif, append, regions = NULL,
   weightsForreportPrice <- reports
   reports <- mbind(reports, reportEmissions(path_gdx, regions, years))
   reports <- mbind(reports, reportSE(path_gdx, regions, years))
-  reports <- mbind(reports, reportPE(path_gdx, regions, years))
+  #reports <- mbind(reports, reportPE(path_gdx, regions, years))
   reports <- mbind(reports, reportGDP(path_gdx, regions, years))
   reports <- mbind(reports, reportPOP(path_gdx, regions, years))
   reports <- mbind(reports, reportPriceCarbon(path_gdx, regions, years))
-  reports <- mbind(reports, reportPrice(path_gdx, regions, years, weightsForreportPrice))
+  # reports <- mbind(reports, reportPrice(path_gdx, regions, years, weightsForreportPrice))
   reports <- mbind(reports, reportCapacityElectricity(path_gdx, regions, years))
   reports <- mbind(reports, reportACTV(path_gdx, regions, years))
   reports <- mbind(reports, reportCapacityAdditions(path_gdx, regions, years))
   reports <- mbind(reports, reportCostsPGtechnologies(path_gdx, regions, years))
   reports <- mbind(reports, reportEnergySystemCosts(path_gdx, regions, years))
   reports <- mbind(reports, reportVehicles(path_gdx, regions, years))
-  reports <- mbind(reports, reportGrossInlandConsumption(path_gdx, regions, years))
+  # reports <- mbind(reports, reportGrossInlandConsumption(path_gdx, regions, years))
   reports <- mbind(reports, reportEquipmentCapacityShare(path_gdx, regions, years))
 
 
@@ -165,7 +165,7 @@ convertGDXtoMIF_single <- function(.path, path_mif, append, regions = NULL,
     budget1p5 = 400, budget2c = 1150, probLabel = "67%"
   ))
   # reports <- mbind(reports, reportGrowthRates(reports))
-  reports <- mbind(reports, reportEfficiency(reports, path_gdx, getRegions(reports), years, regions))
+  # reports <- mbind(reports, reportEfficiency(reports, path_gdx, getRegions(reports), years, regions))
   
   if (emissions == TRUE) generateEmissionsFile(.path, reports, years, scenario_name)
 
