@@ -10,13 +10,16 @@ reportTrade(path, regions, years)
 \item{path}{The file path to the GDX data file.}
 
 \item{regions}{A character vector of region names to filter data.}
+
+\item{years}{Years to report.}
 }
 \value{
 A magpie object containing processed and aggregated trade data with proper units.
 }
 \description{
 This function processes gross imports, gross exports and net exports of all fuels
-from a GDX file and aggregates them to every fuel category of the BALEFtoEF mapping.
+from a GDX file, in the model's native units, and classifies them into a Primary
+Energy / Secondary Energy structure (with a Fossil aggregate).
 }
 \examples{
 \dontrun{
