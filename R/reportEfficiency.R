@@ -97,7 +97,10 @@ reportEfficiency <- function(reports, path, regions, years, blabla_regions) {
   
   # ============ Energy Efficiency (GDP/TFC),====================
   Energy <- reports[,,c("GDP|PPP.billion US$2015/yr", "Final Energy.Mtoe",
-                        "Emissions|CO2.Mt CO2/yr", "Primary Energy.Mtoe")]
+                        "Emissions|CO2.Mt CO2/yr", "Primary Energy.Mtoe",
+                        "Trade|Import|Primary Energy.Mtoe", "Trade|Export|Primary Energy.Mtoe",
+                        "Trade|Import|Secondary Energy.Mtoe", "Trade|Export|Secondary Energy.Mtoe",
+                        "Final Energy|Bunkers.Mtoe")]
   Energy <- collapseDim(Energy, dim = 3.2)
   EnergyEfficiency <- Energy[,,"GDP|PPP"] / Energy[,,"Final Energy"]
   getItems(EnergyEfficiency, 3) <- "Efficiency|Final Energy"
@@ -123,7 +126,15 @@ reportEfficiency <- function(reports, path, regions, years, blabla_regions) {
   getItems(PrimaryEnergyIntensity, 3) <- "Intensity|Primary Energy"
   names(dimnames(PrimaryEnergyIntensity))[3] <- "PrimaryEnergyIntensity"
   PrimaryEnergyIntensity <- add_dimension(PrimaryEnergyIntensity, dim = 3.2, add = "unit", nm = "Mtoe/billion US$2015")
-  # ============ RES share in power generation missing (RES/TOTAL) =============================
+  # ============ Energy intensity (TES/GDP) =============================
+  imports <- Energy[,,"Trade|Import|Primary Energy"] + Energy[,,"Trade|Import|Secondary Energy"]
+  exports <- Energy[,,"Trade|Export|Primary Energy"] + Energy[,,"Trade|Export|Secondary Energy"]
+  TES <- Energy[,,"Primary Energy"] + imports - exports - Energy[,,"Final Energy|Bunkers"]
+  TESEnergyIntensity  <- TES / Energy[,,"GDP|PPP"]
+  getItems(TESEnergyIntensity, 3) <- "Energy Intensity"
+  names(dimnames(TESEnergyIntensity))[3] <- "TESEnergyIntensity"
+  TESEnergyIntensity <- add_dimension(TESEnergyIntensity, dim = 3.2, add = "unit", nm = "Mtoe/billion US$2015")
+   # ============ RES share in power generation missing (RES/TOTAL) =============================
   RESSec  <-  reports[,,"Secondary Energy|Electricity|Renewables"]
   RESSec <- collapseDim(RESSec, 3)
   SecTotal <- reports[,,"Secondary Energy|Electricity"]
@@ -343,7 +354,8 @@ reportEfficiency <- function(reports, path, regions, years, blabla_regions) {
     EmissionsIntensity,
     RESSecShare,
     ElectricityshareFE,
-    CO2FEIntensityindicators
+    CO2FEIntensityindicators,
+    TESEnergyIntensity
   )
   
   return(magpie_object)
