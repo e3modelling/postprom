@@ -104,6 +104,7 @@ reportEmissions <- function(path, regions, years) {
   #   exo     = external default sources (legacy compatibility)
   iEmissions_magpie <- file.path(dirname(path), "iEmissions_magpie.mif")
   landEmiMode <- readGDX(path, "sLandEmiMode", react = "silent")
+  landEmiMode <- "exo"
   landEmiMode <- if (!is.null(landEmiMode) && length(landEmiMode))
     as.character(landEmiMode)[1]
   else if (file.exists(iEmissions_magpie)) "softmif" else "exo"  # fallback for pre-tag gdx
@@ -131,10 +132,7 @@ reportEmissions <- function(path, regions, years) {
     # exo: external default sources (legacy) — choose between SoCDR and PRISMA
     afoluSource <- "PRISMA"  # "SoCDR" or "PRISMA"
     if (afoluSource == "PRISMA") {
-      AFOLU_CDR <- mbind(
-        getGLOBIOMEU(path, grossCO2Demand)[, years, ],
-        getREMIND_MAgPIE_PRISMA(path, grossCO2Demand)[, years, ]
-      )[regions, , ]
+      AFOLU_CDR <- getREMIND_MAgPIE_PRISMA(path, grossCO2Demand)[, years, ][regions, , ]
     } else {
       AFOLU_CDR <- mbind(
         getGLOBIOMEU(path, grossCO2Demand)[, years, ],
@@ -412,7 +410,7 @@ getCo2EqFactor <- function(varName) {
   # remain AR4 — AFOLU carries no F-gas, so update these too only if full-AR6
   # F-gas accounting is required elsewhere.
   gwpMap <- c(
-    "CH4" = 27,
+    "CH4" = 29.6,
     "N2O" = 273,
     "SF6" = 22800,
     "HFC125" = 3500,
@@ -897,10 +895,9 @@ getREMIND_MAgPIE_PRISMA <- function(path, magpie_object) {
 
   EU28[["ISO3.Code"]] <- "EU28"
 
-  GBR <- toolAggregate(REMIND_MAgPIE_PRISMA["EU28", , ], weight = weight_EMI_CO2[EU28[["Region.Code"]], , ], rel = EU28, from = "ISO3.Code", to = "Region.Code")
-  GBR <- GBR["GBR", , ]
+  EU28 <- toolAggregate(REMIND_MAgPIE_PRISMA["EU28", , ], weight = weight_EMI_CO2[EU28[["Region.Code"]], , ], rel = EU28, from = "ISO3.Code", to = "Region.Code")
 
-  AFOLU_CDR <- mbind(REMIND_MAgPIE_PRISMA, GBR)
+  AFOLU_CDR <- mbind(REMIND_MAgPIE_PRISMA, EU28)
 
   # take absolute value
   AFOLU_CDR[, , "Carbon Removal|Land Use"] <-
