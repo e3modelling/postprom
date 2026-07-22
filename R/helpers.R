@@ -209,7 +209,7 @@ convertUnitsToExpected <- function(magpieObj, unitTable, usd2015to2010,
     # Capital cost per capacity: USD_2015/kW -> USD_2010/kW
     if (fromU0 == "USD_2015/kW" && toU0 == "USD_2010/kW")
       return(usd2015to2010)
-
+      
     # Carbon price: USD_2015/t CO2 -> USD_2010/t CO2
     if (fromU0 == "USD_2015/t CO2" && toU0 == "USD_2010/t CO2")
       return(usd2015to2010)

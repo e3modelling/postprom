@@ -27,25 +27,16 @@ reportTrade <- function(path, regions, years) {
   )
   units <- sub(".*\\((.*)\\).*", "\\1", variables$VmImpNetEneBrnch@description)
 
-  # Primary / Secondary classification. A STATIC per-carrier mapping: primary vs secondary
-  # is a property of the energy carrier, not of the country. i03RatioPrimaryFuels is
-  # deliberately NOT used - it is the domestic production mix, PrimProd/(PrimProd+OutTransf),
-  # and carries no information about the composition of the traded stream (it reads 0 for any
-  # pure importer, e.g. it would call 100% of Germany's hard-coal imports secondary).
-  #
-  # The node names match the common definitions (Coal, Oil, Gas, Fossil, Biomass / Liquids,
-  # Gases, Electricity, Heat, Hydrogen), so the project mapping is a thin rename. BALEFtoEF is
-  # intentionally not reused here: its categories overlap primary and secondary (Liquids
-  # includes crude, Fossil includes refined products). Fossil and the Primary/Secondary Energy
-  # totals overlap their children by design. Non-traded primaries (nuclear, hydro, wind, solar,
-  # geothermal) are omitted - they are 0 in the model's trade variables.
+  # Primary / Secondary classification.
+  # The node names match the common definitions 
+  # (Coal, Oil, Gas, Fossil, Biomass / Liquids,Gases, Electricity, Heat, Hydrogen). 
+  #Non-traded primaries (nuclear, hydro, wind, solar, geothermal) are omitted.
   EFtoPrimarySecondary <- read.csv(
     system.file("mappings", "EFtoPrimarySecondary.csv", package = "postprom")
   ) %>%
     filter(EF %in% getItems(variables$VmImpNetEneBrnch, 3))
 
-  # Imports and exports are gross flows; net imports are negated, so that Net Export is
-  # positive for a net exporter.
+  # Imports and exports are gross flows. Net Export is positive for a net exporter.
   flows <- list(
     "Import" = variables$V03Imp,
     "Export" = variables$V03Exp,

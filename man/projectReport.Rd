@@ -32,8 +32,11 @@ MAgPIE object input.}
 
 \item{output_basename}{Base name for the written `.mif` and `.xlsx` files.}
 
-\item{project_template}{Project template filename or path. If `NULL`, the
-project report is skipped.}
+\item{project_template}{Project template filename or path. Its base name
+also determines which variable mapping is loaded (e.g.
+`"committed-template.csv"` uses `prom-committed-template.csv`, falling back
+to the default mapping when that file is absent). If `NULL`, the project
+report is skipped.}
 }
 \value{
 Invisibly returns a list with output paths and the prepared tables.
@@ -42,6 +45,13 @@ Invisibly returns a list with output paths and the prepared tables.
 Renames OPEN-PROM variables to match a project template, checks and converts
 units, keeps five-year periods, removes EU aggregate regions, and writes one
 concatenated project report for all supplied scenarios.
+}
+\details{
+The OPEN-PROM-to-template variable mapping is selected from the project name:
+for `project_template = "committed-template.csv"` the mapping
+`prom-committed-template.csv` (in `inst/extdata/project`) is used. When no
+project-specific mapping is found, the default `prom-project-template.csv` is
+used instead.
 }
 \examples{
 \dontrun{

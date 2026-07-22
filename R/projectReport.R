@@ -4,6 +4,12 @@
 #' units, keeps five-year periods, removes EU aggregate regions, and writes one
 #' concatenated project report for all supplied scenarios.
 #'
+#' The OPEN-PROM-to-template variable mapping is selected from the project name:
+#' for `project_template = "committed-template.csv"` the mapping
+#' `prom-committed-template.csv` (in `inst/extdata/project`) is used. When no
+#' project-specific mapping is found, the default `prom-project-template.csv` is
+#' used instead.
+#'
 #' @param .path A run path used to locate the project template and write the
 #'   output files.
 #' @param openPromVariables A MAgPIE object, a named list of MAgPIE objects, a
@@ -15,8 +21,11 @@
 #'   MAgPIE object input.
 #' @param model Model name to use when it cannot be detected from nested input.
 #' @param output_basename Base name for the written `.mif` and `.xlsx` files.
-#' @param project_template Project template filename or path. If `NULL`, the
-#'   project report is skipped.
+#' @param project_template Project template filename or path. Its base name
+#'   also determines which variable mapping is loaded (e.g.
+#'   `"committed-template.csv"` uses `prom-committed-template.csv`, falling back
+#'   to the default mapping when that file is absent). If `NULL`, the project
+#'   report is skipped.
 #' @return Invisibly returns a list with output paths and the prepared tables.
 #'
 #' @examples
@@ -61,7 +70,7 @@ projectReport <- function(.path, openPromVariables = NULL, openPromFile = NULL,
   templatePath <- findProjectTemplatePath(.path, project_template)
 
   project <- read.csv(templatePath)
-  map <- toolGetMapping(name = "prom-project-template.csv", where = "postprom")
+  map <- getProjectMapping(project_template)
   reports <- normalizeProjectReportInput(openPromVariables, scenario_name, model)
 
   outputMif <- file.path(.path, paste0(output_basename, ".mif"))
@@ -171,6 +180,33 @@ findProjectTemplatePath <- function(.path, project_template = "project-template.
     "Error: Could not find project template '", project_template, "'. Checked: ",
     paste(normalizePath(candidates, mustWork = FALSE), collapse = "; ")
   )
+}
+
+getProjectMapping <- function(project_template,
+                              default = "prom-project-template.csv") {
+  if (is.null(project_template) || !nzchar(project_template)) {
+    return(toolGetMapping(name = default, type = "project", where = "postprom"))
+  }
+
+  # Derive the project name from the template, e.g. "prisma.csv" -> "prisma"
+  projectName <- tools::file_path_sans_ext(basename(project_template))
+  mappingName <- paste0("prom-", projectName, ".csv")
+
+  # Use the project-specific mapping if it exists, otherwise fall back.
+  mappingPath <- system.file(
+    "extdata", "project", mappingName, package = "postprom"
+  )
+  if (nzchar(mappingPath)) {
+    return(toolGetMapping(
+      name = mappingName, type = "project", where = "postprom"
+    ))
+  }
+
+  message(
+    "Project mapping '", mappingName, "' not found; ",
+    "falling back to default '", default, "'."
+  )
+  return(toolGetMapping(name = default, type = "project", where = "postprom"))
 }
 
 prepareProjectReportScenario <- function(dataMagpie, project, map) {

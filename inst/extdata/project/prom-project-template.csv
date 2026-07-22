@@ -1,0 +1,50 @@
+project_template,OPEN_PROM
+Capacity Additions|Electricity|Biomass,Capacity Additions|Electricity|Biofuels
+Capacity Additions|Electricity|Biomass|w/ CCS,Capacity Additions|Electricity|Biofuels|w/ CCS
+Capacity Additions|Electricity|Biomass|w/o CCS,Capacity Additions|Electricity|Biofuels|w/o CCS
+Capacity Additions|Electricity|Non-Biomass Renewables,Capacity Additions|Electricity|Geothermal and other renewable sources
+Capacity|Electricity|Biomass,Capacity|Electricity|Biofuels
+Capacity|Electricity|Biomass|w/ CCS,Capacity|Electricity|Biofuels|w/ CCS
+Capacity|Electricity|Biomass|w/o CCS,Capacity|Electricity|Biofuels|w/o CCS
+Capacity|Electricity|Non-Biomass Renewables,Capacity|Electricity|Geothermal and other renewable sources
+Carbon Capture|Energy|Supply|Electricity|Biomass,Carbon Capture|Energy|Supply|Electricity|Biofuels
+Carbon Capture|Energy|Demand|Industry|Chemicals,Carbon Capture|Energy|Demand|Chemicals
+Carbon Capture|Energy|Demand|Industry|Iron and Steel,Carbon Capture|Energy|Demand|Iron and Steel
+Carbon Capture|Energy|Demand|Industry|Non-Metallic Minerals,Carbon Capture|Energy|Demand|Non-Metallic Minerals
+Final Energy|Commercial|ICT,Final Energy|Commercial|Data centers and Networks
+Final Energy|Commercial|ICT|Data Centers,Final Energy|Commercial|Data centers and Networks|Data Centers
+Final Energy|Commercial|ICT|Infrastructure,Final Energy|Commercial|Data centers and Networks|Infrastructure
+Final Energy|Commercial|ICT|Data Centers|Electricity,Final Energy|Commercial|Data centers and Networks|Data Centers|Electricity
+Final Energy|Commercial|ICT|Infrastructure|Electricity,Final Energy|Commercial|Data centers and Networks|Infrastructure|Electricity
+Secondary Energy|Electricity|Biomass,Secondary Energy|Electricity|Biofuels
+Secondary Energy|Electricity|Biomass|w/ CCS,Secondary Energy|Electricity|Biofuels|w/ CCS
+Secondary Energy|Electricity|Biomass|w/o CCS,Secondary Energy|Electricity|Biofuels|w/o CCS
+Secondary Energy|Electricity|Non-Biomass Renewables,Secondary Energy|Electricity|Geothermal and other renewable sources
+Secondary Energy|Heat|Biomass,Secondary Energy|Heat|Biofuels
+Secondary Energy|Heat|Biomass|w/ CCS,Secondary Energy|Heat|Biofuels|w/ CCS
+Secondary Energy|Heat|Biomass|w/o CCS,Secondary Energy|Heat|Biofuels|w/o CCS
+Secondary Energy|Heat|Non-Biomass Renewables,Secondary Energy|Heat|Geothermal and other renewable sources
+Secondary Energy|Hydrogen|Biomass,Secondary Energy|Hydrogen|Biofuels
+Secondary Energy|Hydrogen|Biomass|w/ CCS,Secondary Energy|Hydrogen|Biofuels|w/ CCS
+Secondary Energy|Hydrogen|Biomass|w/o CCS,Secondary Energy|Hydrogen|Biofuels|w/o CCS
+Secondary Energy|Hydrogen|Non-Biomass Renewables,Secondary Energy|Hydrogen|Geothermal and other renewable sources
+Primary Energy|Biomass,Primary Energy|Biofuels
+Primary Energy|Geothermal,Primary Energy|Geothermal and other renewable sources
+Primary Energy|Other,Primary Energy|Other fuels
+Final Energy|Gases,Final Energy|Gas
+Final Energy|Geothermal,Final Energy|Geothermal and other renewable sources
+Final Energy|Other,Final Energy|Other fuels
+Final Energy|Liquids,Final Energy|Fossil Liquids
+Final Energy|Liquids,Final Energy|Biodiesel
+Final Energy|Liquids,Final Energy|Biogasoline
+Final Energy|Liquids,Final Energy|Biokerosene
+Final Energy|Solids,Final Energy|Biomass and Waste
+Final Energy|Agriculture,"Final Energy|Agriculture, Fishing, Forestry"
+Trade|Primary Energy|Coal [Volume],Trade|Net Export|Primary Energy|Coal
+Trade|Primary Energy|Gas [Volume],Trade|Net Export|Primary Energy|Gas
+Trade|Primary Energy|Oil [Volume],Trade|Net Export|Primary Energy|Oil
+Trade|Primary Energy|Fossil [Volume],Trade|Net Export|Primary Energy|Fossil
+Trade|Primary Energy|Biomass [Volume],Trade|Net Export|Primary Energy|Biomass
+Trade|Secondary Energy|Electricity [Volume],Trade|Net Export|Secondary Energy|Electricity
+Trade|Secondary Energy|Hydrogen [Volume],Trade|Net Export|Secondary Energy|Hydrogen
+Trade|Secondary Energy|Liquids [Volume],Trade|Net Export|Secondary Energy|Liquids
