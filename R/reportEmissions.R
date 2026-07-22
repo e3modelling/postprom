@@ -128,11 +128,19 @@ reportEmissions <- function(path, regions, years) {
     AFOLUCh4N2o <- internalAfolu$ch4N2o
     extraAFOLU <- internalAfolu$extra
   } else {
-    # exo: external default sources (legacy)
-    AFOLU_CDR <- mbind(
-      getGLOBIOMEU(path, grossCO2Demand)[, years, ],
-      getREMIND_MAgPIE_SoCDR(path, grossCO2Demand)[, years, ]
-    )[regions, , ]
+    # exo: external default sources (legacy) — choose between SoCDR and PRISMA
+    afoluSource <- "PRISMA"  # "SoCDR" or "PRISMA"
+    if (afoluSource == "PRISMA") {
+      AFOLU_CDR <- mbind(
+        getGLOBIOMEU(path, grossCO2Demand)[, years, ],
+        getREMIND_MAgPIE_PRISMA(path, grossCO2Demand)[, years, ]
+      )[regions, , ]
+    } else {
+      AFOLU_CDR <- mbind(
+        getGLOBIOMEU(path, grossCO2Demand)[, years, ],
+        getREMIND_MAgPIE_SoCDR(path, grossCO2Demand)[, years, ]
+      )[regions, , ]
+    }
     AFOLUCO2 <- AFOLU_CDR[, , "Emissions|CO2|AFOLU"]
     CDRCO2 <- AFOLU_CDR[, , "Carbon Removal|Land Use"]
   }
@@ -846,6 +854,53 @@ getREMIND_MAgPIE_SoCDR <- function(path, magpie_object) {
   GBR <- GBR["GBR", , ]
 
   AFOLU_CDR <- mbind(REMIND_MAgPIE_SoCDR, GBR)
+
+  # take absolute value
+  AFOLU_CDR[, , "Carbon Removal|Land Use"] <-
+    abs(AFOLU_CDR[, , "Carbon Removal|Land Use"])
+
+  return(AFOLU_CDR)
+}
+
+# getREMIND_MAgPIE_PRISMA function to generate AFOLU and Land_CDR from REMIND_MAgPIE_PRISMA
+getREMIND_MAgPIE_PRISMA <- function(path, magpie_object) {
+  fscenario <- readGDX(path, "fscenario")
+
+  # Add REMIND_MAgPIE_PRISMA run
+  REMIND_MAgPIE_PRISMA <- readSource("REMIND_MAgPIE_PRISMA")
+
+  # Filter REMIND_MAgPIE_PRISMA by scenario — same fscenario codes as SoCDR
+  if (fscenario %in% c(0, 1)) {
+    REMIND_MAgPIE_PRISMA <- REMIND_MAgPIE_PRISMA[, , "SSP2_Meet_Aspirations"]
+  } else if (fscenario == 2) {
+    REMIND_MAgPIE_PRISMA <- REMIND_MAgPIE_PRISMA[, , "SSP2_Asymmetric_Roll_Back"]
+  } else if (fscenario == 3) {
+    REMIND_MAgPIE_PRISMA <- REMIND_MAgPIE_PRISMA[, , "SSP2_Late_Reawakening"]
+  }
+
+  # interpolate years
+  REMIND_MAgPIE_PRISMA <- as.quitte(REMIND_MAgPIE_PRISMA) %>%
+    select(-c(scenario, model, unit)) %>%
+    interpolate_missing_periods(period = getYears(magpie_object, as.integer = T), expand.values = TRUE) %>%
+    as.quitte() %>%
+    as.magpie()
+
+  weight_EMI_CO2 <- readSource("PIK", convert = TRUE)
+  weight_EMI_CO2 <- weight_EMI_CO2[, 2020, "Energy.MtCO2.CO2"]
+  weight_EMI_CO2[is.na(weight_EMI_CO2)] <- 0
+
+  EU28 <- toolGetMapping(
+    name = "EU28.csv",
+    type = "regional",
+    where = "mrprom"
+  )
+
+  EU28[["ISO3.Code"]] <- "EU28"
+
+  GBR <- toolAggregate(REMIND_MAgPIE_PRISMA["EU28", , ], weight = weight_EMI_CO2[EU28[["Region.Code"]], , ], rel = EU28, from = "ISO3.Code", to = "Region.Code")
+  GBR <- GBR["GBR", , ]
+
+  AFOLU_CDR <- mbind(REMIND_MAgPIE_PRISMA, GBR)
 
   # take absolute value
   AFOLU_CDR[, , "Carbon Removal|Land Use"] <-
