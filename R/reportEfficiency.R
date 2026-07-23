@@ -324,12 +324,14 @@ reportEfficiency <- function(reports, path, regions, years, blabla_regions) {
                               "Final Energy|Transportation|Passenger Transport - Aviation")]
   TRANP <- dimSums(TRANP, 3)
   getItems(TRANP, 3.1) <- "Final Energy|Transportation|Passenger"
+  getItems(TRANP, 3.2) <- "Mtoe"
   # -------------------------- Transport Freight -------
   TRANG <- reports[, , c("Final Energy|Transportation|Goods Transport - Trucks",
                               "Final Energy|Transportation|Goods Transport - Rail",
                               "Final Energy|Transportation|Goods Transport - Inland Navigation")]
   TRANG <- dimSums(TRANG, 3)
   getItems(TRANG, 3.1) <- "Final Energy|Transportation|Freight"
+  getItems(TRANG, 3.2) <- "Mtoe"
   
   ActivPassTrnsp <- TRANP / dimSums(v01ActivPassTrnsp,3)
   ActivGoodsTransp <-  TRANG / dimSums(V01ActivGoodsTransp,3)
@@ -339,7 +341,7 @@ reportEfficiency <- function(reports, path, regions, years, blabla_regions) {
   getItems(ActivGoodsTransp, 3.1) <- "Energy Intensity|Transportation|Freight"
   getItems(ActivGoodsTransp, 3.2) <- "Mtoe/Gtkm"
   
-  ActivTrnsp <- mbind(ActivPassTrnsp, ActivGoodsTransp)
+  ActivTrnsp <- mbind(ActivPassTrnsp, ActivGoodsTransp, TRANG, TRANP)
     # ==================== Combine all indicators into a single magpie object ============================
   magpie_object <- mbind(
     EnergyEfficiency,
