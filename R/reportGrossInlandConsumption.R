@@ -25,6 +25,7 @@ reportGrossInlandConsumption <- function(path, regions, years) {
       "Other fuels", "Solar", "Wind", "Geothermal and other renewable sources",
       "Hydrogen", "Hydro"
     ))
+  
   MtoeToEJ <- 0.041868
   V03ConsGrssInl <- readGDX(path, "V03ConsGrssInl", field = "l")[regions, years, ] * MtoeToEJ
 
