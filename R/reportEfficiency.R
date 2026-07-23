@@ -331,8 +331,8 @@ reportEfficiency <- function(reports, path, regions, years, blabla_regions) {
   TRANG <- dimSums(TRANG, 3)
   getItems(TRANG, 3.1) <- "Final Energy|Transportation|Freight"
   
-  ActivPassTrnsp <- dimSums(v01ActivPassTrnsp,3) / TRANP
-  ActivGoodsTransp <- dimSums(V01ActivGoodsTransp,3) / TRANG
+  ActivPassTrnsp <- TRANP / dimSums(v01ActivPassTrnsp,3)
+  ActivGoodsTransp <-  TRANG / dimSums(V01ActivGoodsTransp,3)
   
   getItems(ActivPassTrnsp, 3.1) <- "Energy Intensity|Transportation|Passenger"
   getItems(ActivPassTrnsp, 3.2) <- "Mtoe/ACTV"
