@@ -2,18 +2,18 @@
 #' Energy intensity (TFC/GDP)
 #'
 #' @param reports Magpie object created from postprom.
-#' @return A magpie object containing Efficiency.
+#' @return A magpie object containing Indicators
 #'
 #' @examples
 #' \dontrun{
-#' result <- reportEfficiency(reports)
+#' result <- reportIndicators(reports)
 #' }
 #'
 #' @importFrom magclass getItems dimSums add_dimension mbind collapseDim
 #' @importFrom quitte as.quitte
 #' @importFrom dplyr filter left_join mutate select group_by %>% arrange ungroup rename
 #' @export
-reportEfficiency <- function(reports, path, regions, years, blabla_regions) {
+reportIndicators <- function(reports, path, regions, years, blabla_regions) {
   
   items <- getItems(reports,3)
   
