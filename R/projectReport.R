@@ -242,7 +242,7 @@ prepareProjectReportScenario <- function(dataMagpie, project, map) {
 
   filteredMagpie <- dataMagpie[, , keepNames]
 
-  usd2015to2010 <- 0.9253
+  usd2015to2010 <- 1 / 1.087  # 1.087 is from calcIEnvPolicies.R (line 61) in mrprom, used to convert 2010 to 2015 USD. Here we need the inverse to convert 2015 to 2010 USD.
   finalResults <- convertUnitsToExpected(
     magpieObj = filteredMagpie,
     unitTable = checkUnits,
