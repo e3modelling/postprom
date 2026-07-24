@@ -280,7 +280,7 @@ reportIndicators <- function(reports, path, regions, years, blabla_regions) {
     ),
     field = "l"
   )
-  v01ActivPassTrnsp <- variablesACTVTransport$V01ActivGoodsTransp[blabla_regions,years,]
+  v01ActivPassTrnsp <- variablesACTVTransport$V01ActivPassTrnsp[blabla_regions,years,]
   V01ActivGoodsTransp <- variablesACTVTransport$V01ActivGoodsTransp[blabla_regions,years,]
   if ("World" %in% regions) {
     # Calculate the sum, World
@@ -386,6 +386,8 @@ reportIndicators <- function(reports, path, regions, years, blabla_regions) {
     CO2FEIntensityindicators,
     TESEnergyIntensity
   )
+  
+  magpie_object[is.na(magpie_object)] <- 0
   
   return(magpie_object)
 }
