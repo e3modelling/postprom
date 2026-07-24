@@ -355,7 +355,7 @@ reportIndicators <- function(reports, path, regions, years, blabla_regions) {
     getItems(ActivTrnsp, dim = 3.1)
   )
   
-  getItems(ActivTrnsp, dim = 3.1) <- paste0("Energy Intensity|",getItems(Activitybind, dim = 3))
+  getItems(ActivTrnsp, dim = 3.1) <- paste0("Energy Intensity|",getItems(ActivTrnsp, dim = 3))
   
   ActivTrnsp <- mbind(ActivTrnsp)
     # ==================== Combine all indicators into a single magpie object ============================
