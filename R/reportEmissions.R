@@ -332,6 +332,9 @@ reportEmissions <- function(path, regions, years) {
   }
   # AFOLU-sector Kyoto Gases (Mt CO2-equiv/yr), synthesized from the gas trees.
   if (!is.null(kyotoAfolu)) {
+    
+    names(dimnames(kyotoAfolu))[3] <- "kyotoAfolu"
+    
     kyotoAfolu <- add_dimension(kyotoAfolu, dim = 3.2, add = "unit",
                                 nm = "Mt CO2-equiv/yr")
     magpie_object <- mbind(magpie_object, kyotoAfolu)
