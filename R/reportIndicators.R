@@ -387,7 +387,7 @@ reportIndicators <- function(reports, path, regions, years, blabla_regions) {
     TESEnergyIntensity
   )
   
-  magpie_object[is.na(magpie_object)] <- 0
+  magpie_object[is.na(magpie_object) | is.infinite(magpie_object)] <- 0
   
   return(magpie_object)
 }
