@@ -59,14 +59,6 @@ reportIndicators <- function(reports, path, regions, years, blabla_regions) {
     "Final Energy|Commercial|Services.Mtoe", "SE",
     "Final Energy|Agriculture, Fishing, Forestry", "AG",
     "Final Energy|Residential", "HOU",
-    "Final Energy|Transportation|Passenger Transport - Cars", "PC",
-    "Final Energy|Transportation|Passenger Transport - Busses", "PB",
-    "Final Energy|Transportation|Passenger Transport - Rail", "PT",
-    "Final Energy|Transportation|Passenger Transport - Inland Navigation", "PN",
-    "Final Energy|Transportation|Passenger Transport - Aviation", "PA",
-    "Final Energy|Transportation|Goods Transport - Trucks", "GU",
-    "Final Energy|Transportation|Goods Transport - Rail", "GT",
-    "Final Energy|Transportation|Goods Transport - Inland Navigation", "GN",
     "Final Energy|Bunkers", "BU",
     "Final Energy|Non-Energy Use|Petrochemicals Industry", "PCH",
     "Final Energy|Non-Energy Use|Other Non Energy Uses", "NEN")
@@ -317,30 +309,56 @@ reportIndicators <- function(reports, path, regions, years, blabla_regions) {
   }
   
   # -------------------------- Transport Passenger -------
+  mappingTransport <- tribble(
+    ~variable, ~code,
+  "Final Energy|Transportation|Passenger Transport - Cars", "PC",
+  "Final Energy|Transportation|Passenger Transport - Busses", "PB",
+  "Final Energy|Transportation|Passenger Transport - Rail", "PT",
+  "Final Energy|Transportation|Passenger Transport - Inland Navigation", "PN",
+  "Final Energy|Transportation|Passenger Transport - Aviation", "PA",
+  "Final Energy|Transportation|Goods Transport - Trucks", "GU",
+  "Final Energy|Transportation|Goods Transport - Rail", "GT",
+  "Final Energy|Transportation|Goods Transport - Inland Navigation", "GN")
+  
   TRANP <- reports[, , c("Final Energy|Transportation|Passenger Transport - Cars",
                               "Final Energy|Transportation|Passenger Transport - Busses",
                               "Final Energy|Transportation|Passenger Transport - Rail",
                               "Final Energy|Transportation|Passenger Transport - Inland Navigation",
                               "Final Energy|Transportation|Passenger Transport - Aviation")]
-  TRANP <- dimSums(TRANP, 3)
-  getItems(TRANP, 3.1) <- "Final Energy|Transportation|Passenger"
+  TRANP <- collapseDim(TRANP, 3.2)
+  
+  v01ActivPassTrnsp <- toolAggregate(v01ActivPassTrnsp, weight = NULL, dim = 3,
+                     rel = mappingTransport,from = "code",to = "variable")
+  v01ActivPassTrnsp <- v01ActivPassTrnsp[,,getItems(TRANP, 3)]
   # -------------------------- Transport Freight -------
   TRANG <- reports[, , c("Final Energy|Transportation|Goods Transport - Trucks",
                               "Final Energy|Transportation|Goods Transport - Rail",
                               "Final Energy|Transportation|Goods Transport - Inland Navigation")]
-  TRANG <- dimSums(TRANG, 3)
-  getItems(TRANG, 3.1) <- "Final Energy|Transportation|Freight"
+  TRANG <- collapseDim(TRANG, 3.2)
   
+  V01ActivGoodsTransp <- toolAggregate(V01ActivGoodsTransp, weight = NULL, dim = 3,
+                                     rel = mappingTransport,from = "code",to = "variable")
+  V01ActivGoodsTransp <- V01ActivGoodsTransp[,,getItems(TRANG, 3)]
+  # -------------------------- 
   
-  ActivPassTrnsp <- TRANP / dimSums(v01ActivPassTrnsp,3)
-  ActivGoodsTransp <-  TRANG / dimSums(V01ActivGoodsTransp,3)
+  ActivPassTrnsp <- TRANP / v01ActivPassTrnsp
+  ActivGoodsTransp <-  TRANG / V01ActivGoodsTransp
   
-  getItems(ActivPassTrnsp, 3.1) <- "Energy Intensity|Transportation|Passenger"
-  getItems(ActivPassTrnsp, 3.2) <- "Mtoe/ACTV"
-  getItems(ActivGoodsTransp, 3.1) <- "Energy Intensity|Transportation|Freight"
-  getItems(ActivGoodsTransp, 3.2) <- "Mtoe/Gtkm"
-  getItems(TRANP, 3.2) <- "Mtoe"
-  getItems(TRANG, 3.2) <- "Mtoe"
+  ActivPassTrnsp <- add_dimension(ActivPassTrnsp, dim = 3.2, add = "unit", nm = "Mtoe/ACTV")
+  ActivGoodsTransp <- add_dimension(ActivGoodsTransp, dim = 3.2, add = "unit", nm = "Mtoe/Gtkm")
+  
+  Activitybind <- mbind(ActivPassTrnsp, ActivGoodsTransp)
+  
+  getItems(Activitybind, dim = 3.1) <- sub(
+    "^Final Energy\\|",
+    "",
+    getItems(Activitybind, dim = 3.1)
+  )
+  
+  getItems(Activitybind, dim = 3.1) <- paste0("Energy Intensity|",getItems(Activitybind, dim = 3))
+  
+  TRANP <- add_dimension(TRANP, dim = 3.2, add = "unit", nm = "Mtoe")
+  TRANG <- add_dimension(TRANG, dim = 3.2, add = "unit", nm = "Mtoe")
   
   ActivTrnsp <- mbind(ActivPassTrnsp, ActivGoodsTransp, TRANG, TRANP)
     # ==================== Combine all indicators into a single magpie object ============================
