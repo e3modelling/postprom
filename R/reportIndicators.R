@@ -325,7 +325,11 @@ reportIndicators <- function(reports, path, regions, years, blabla_regions) {
                               "Final Energy|Transportation|Passenger Transport - Rail",
                               "Final Energy|Transportation|Passenger Transport - Inland Navigation",
                               "Final Energy|Transportation|Passenger Transport - Aviation")]
+  
   TRANP <- collapseDim(TRANP, 3.2)
+  
+  PassengerFE <- dimSums(TRANP, 3)
+  getItems(PassengerFE, 3.1) <- "Final Energy|Transportation|Passenger"
   
   v01ActivPassTrnsp <- toolAggregate(v01ActivPassTrnsp, weight = NULL, dim = 3,
                      rel = mappingTransport,from = "code",to = "variable")
@@ -335,6 +339,9 @@ reportIndicators <- function(reports, path, regions, years, blabla_regions) {
                               "Final Energy|Transportation|Goods Transport - Rail",
                               "Final Energy|Transportation|Goods Transport - Inland Navigation")]
   TRANG <- collapseDim(TRANG, 3.2)
+  
+  FreightFE <- dimSums(TRANG, 3)
+  getItems(FreightFE, 3.1) <- "Final Energy|Transportation|Freight"
   
   V01ActivGoodsTransp <- toolAggregate(V01ActivGoodsTransp, weight = NULL, dim = 3,
                                      rel = mappingTransport,from = "code",to = "variable")
@@ -357,7 +364,11 @@ reportIndicators <- function(reports, path, regions, years, blabla_regions) {
   
   getItems(ActivTrnsp, dim = 3.1) <- paste0("Energy Intensity|",getItems(ActivTrnsp, dim = 3.1))
   
-  ActivTrnsp <- mbind(ActivTrnsp)
+  getItems(PassengerFE, 3.2) <- "Mtoe"
+  getItems(FreightFE, 3.2) <- "Mtoe"
+  
+  ActivTrnsp <- mbind(ActivTrnsp, PassengerFE, FreightFE)
+  
     # ==================== Combine all indicators into a single magpie object ============================
   magpie_object <- mbind(
     EnergyEfficiency,
