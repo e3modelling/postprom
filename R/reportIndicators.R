@@ -347,20 +347,17 @@ reportIndicators <- function(reports, path, regions, years, blabla_regions) {
   ActivPassTrnsp <- add_dimension(ActivPassTrnsp, dim = 3.2, add = "unit", nm = "Mtoe/ACTV")
   ActivGoodsTransp <- add_dimension(ActivGoodsTransp, dim = 3.2, add = "unit", nm = "Mtoe/Gtkm")
   
-  Activitybind <- mbind(ActivPassTrnsp, ActivGoodsTransp)
+  ActivTrnsp <- mbind(ActivPassTrnsp, ActivGoodsTransp)
   
-  getItems(Activitybind, dim = 3.1) <- sub(
+  getItems(ActivTrnsp, dim = 3.1) <- sub(
     "^Final Energy\\|",
     "",
-    getItems(Activitybind, dim = 3.1)
+    getItems(ActivTrnsp, dim = 3.1)
   )
   
-  getItems(Activitybind, dim = 3.1) <- paste0("Energy Intensity|",getItems(Activitybind, dim = 3))
+  getItems(ActivTrnsp, dim = 3.1) <- paste0("Energy Intensity|",getItems(Activitybind, dim = 3))
   
-  TRANP <- add_dimension(TRANP, dim = 3.2, add = "unit", nm = "Mtoe")
-  TRANG <- add_dimension(TRANG, dim = 3.2, add = "unit", nm = "Mtoe")
-  
-  ActivTrnsp <- mbind(ActivPassTrnsp, ActivGoodsTransp, TRANG, TRANP)
+  ActivTrnsp <- mbind(ActivTrnsp)
     # ==================== Combine all indicators into a single magpie object ============================
   magpie_object <- mbind(
     EnergyEfficiency,
