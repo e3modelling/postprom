@@ -395,7 +395,7 @@ calcKyoto <- function(cat) {
 
   # C. Sum and Rename
   result <- valCo2 + valNonCo2
-  result <- stats::setNames(result, paste0("Emissions|Kyoto Gases|", cat))
+  result <- magclass::setNames(result, paste0("Emissions|Kyoto Gases|", cat))
   return(result)
 }
 # Get CO2 Equivalent Factor
