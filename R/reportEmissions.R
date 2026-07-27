@@ -79,7 +79,7 @@ reportEmissions <- function(path, regions, years) {
     left_join(DSBSTable, by = c("DSBS" = "SBS")) %>%
     select(-DSBS) %>%
     rename(DSBS = .te)
-  lookup <- stats::setNamessetNames(DSBS_SBS$SBS, DSBS_SBS$DSBS)
+  lookup <- stats::setNames(DSBS_SBS$SBS, DSBS_SBS$DSBS)
   # ------------- Demand -------------------------
   name <- DSBSTable$.te[match(getItems(grossCO2Demand, 3.1), DSBSTable$SBS)]
   key <- str_extract(name, "^[^|]+")
