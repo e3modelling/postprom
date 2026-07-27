@@ -79,7 +79,7 @@ reportEmissions <- function(path, regions, years) {
     left_join(DSBSTable, by = c("DSBS" = "SBS")) %>%
     select(-DSBS) %>%
     rename(DSBS = .te)
-  lookup <- setNames(DSBS_SBS$SBS, DSBS_SBS$DSBS)
+  lookup <- stats::setNames(DSBS_SBS$SBS, DSBS_SBS$DSBS)
   # ------------- Demand -------------------------
   name <- DSBSTable$.te[match(getItems(grossCO2Demand, 3.1), DSBSTable$SBS)]
   key <- str_extract(name, "^[^|]+")
@@ -395,7 +395,7 @@ calcKyoto <- function(cat) {
 
   # C. Sum and Rename
   result <- valCo2 + valNonCo2
-  result <- setNames(result, paste0("Emissions|Kyoto Gases|", cat))
+  result <- magclass::setNames(result, paste0("Emissions|Kyoto Gases|", cat))
   return(result)
 }
 # Get CO2 Equivalent Factor
@@ -482,7 +482,7 @@ buildKyotoAfolu <- function(afolu) {
         acc <- if (is.null(acc)) contrib else acc + contrib
       }
     }
-    out <- mbind(out, setNames(acc, kv))
+    out <- mbind(out, magclass::setNames(acc, kv))
   }
   out
 }

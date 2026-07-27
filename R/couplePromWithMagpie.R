@@ -15,11 +15,12 @@
 #'   * `coupleMagpieToProm()`  : backward (MAgPIE mif     -> csv + mif)
 #'
 #' Scope:
-#'   * Forward bioenergy demand: weighted blend of three OPEN-PROM 2nd-gen
+#'   * Forward bioenergy demand: weighted blend of four OPEN-PROM 2nd-gen
 #'     bioenergy carriers from `V03ProdPrimary` (Mtoe/yr):
 #'         0.4 × BMSWAS   ("Biomass and Waste"  — raw 2G feedstock)
 #'       + 0.6 × BGSL     ("Biogasoline"        — processed 2G liquid biofuel)
 #'       + 0.6 × BKRS     ("Biokerosene"        — processed 2G liquid biofuel)
+#'       + 0.6 × BGAS     ("Biogas"             — processed 2G gaseous biofuel)
 #'     The weights approximate each carrier's effective 2G-biomass content
 #'     entering the MAgPIE coupling channel (raw feedstock contributes a
 #'     smaller share since not all of it routes through 2G; processed
@@ -74,6 +75,11 @@
 #'     Output: `iEmissions_magpie.mif` (IAMC standard, `|+|` markers
 #'     preserved for IAMC-tooling compatibility, `|++|` variants excluded
 #'     to avoid double-count).
+#'   * Spatial price contract: OPEN-PROM solves the 28 EU members separately,
+#'     but the coupling market boundary is MAgPIE's H12 `EUR`. Their effective
+#'     quantities are summed before MAgPIE is called, and the single returned
+#'     `EUR` marginal price is copied unchanged to every EU member. The
+#'     backward interface does not construct country-specific EU price curves.
 #'
 #' @importFrom gdx readGDX
 #' @importFrom magclass as.magpie read.report write.report getRegions getYears
@@ -133,9 +139,9 @@ couplePromToMagpie <- function(gdxPath,
 
   # CO2 price: read TRADE-context exogenous CO2 value (US$2015/t CO2).
   co2 <- co2[, , "TRADE"]                    # 39 x 91 x 1
-  # Bioenergy demand: weighted blend of 3 V03ProdPrimary fuel slices in Mtoe/yr.
+  # Bioenergy demand: weighted blend of 4 V03ProdPrimary fuel slices in Mtoe/yr.
   # See header docstring (Scope > Forward bioenergy demand) for the rationale
-  # of the 0.4 / 0.6 / 0.6 weights and what BMSWAS / BGSL / BKRS represent.
+  # of the 0.4 / 0.6 / 0.6 / 0.6 weights and what the four carriers represent.
   bio <- bio[, , "BMSWAS"] * 0.4 +
          bio[, , "BGSL"]   * 0.6 +
          bio[, , "BKRS"]   * 0.6 +             # 39 x 91 x 1
@@ -197,7 +203,8 @@ couplePromToMagpie <- function(gdxPath,
   eu   <- intersect(.EU28, regs)
   nonEuH12 <- setdiff(regs, eu)
 
-  # EU-28 sum -> EUR
+  # EU-28 sum -> EUR. The 28 national OPEN-PROM solves therefore contribute
+  # to one H12 market quantity rather than 28 separate MAgPIE price signals.
   eur <- m[eu, , ]
   eur <- magclass::dimSums(eur, dim = 1)
   magclass::getItems(eur, dim = 1) <- "EUR"
@@ -524,8 +531,8 @@ coupleMagpieToProm <- function(reportMifPath,
   h12For <- h12For[ok]
 
   # Prices (intensive, $/toe): broadcast EUR -> 28 EU members.
-  # A regional commodity price applies uniformly within a region; broadcasting
-  # is conceptually correct for intensive variables.
+  # Individual OPEN-PROM country solves do not create individual MAgPIE price
+  # signals: all EU members receive the same H12 EUR marginal price.
   priceResCy <- .broadcastToResCy(price, resCy, h12For)
 
   # Emissions (extensive, Mt/yr): split EUR into 28 EU country values.
