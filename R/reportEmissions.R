@@ -869,7 +869,7 @@ getREMIND_MAgPIE_PRISMA <- function(path, magpie_object) {
 
   # Filter REMIND_MAgPIE_PRISMA by scenario — same fscenario codes as SoCDR
   if (fscenario %in% c(0, 1)) {
-    REMIND_MAgPIE_PRISMA <- REMIND_MAgPIE_PRISMA[, , "SSP2_Meet_Aspirations"]
+    REMIND_MAgPIE_PRISMA <- REMIND_MAgPIE_PRISMA[, , "SSP2 - Current Policies - Medium ICT"]
   } else if (fscenario == 2) {
     REMIND_MAgPIE_PRISMA <- REMIND_MAgPIE_PRISMA[, , "SSP2_Asymmetric_Roll_Back"]
   } else if (fscenario == 3) {
