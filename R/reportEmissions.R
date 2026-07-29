@@ -495,6 +495,16 @@ prepareMagpieAfolu <- function(iEmissions_magpie) {
   # the IAMC `iamc_variable` targets (both unit-free).
   getItems(afolu, 3.1) <- trimws(gsub("\\s*\\(.*\\)$", "", getItems(afolu, dim = 3)))
 
+  # The formal OPEN-PROM Land CO2 scope is MAgPIE's signed land-use-change
+  # total. Raw Land also contains Indirect, while fire emissions are a separate
+  # MAgPIE subtree; neither belongs to this reporting variable. Keep the source
+  # LUC total only for validating the mapped child tree below.
+  lucSourceName <- "Emissions|CO2|Land|+|Land-use Change"
+  if (!lucSourceName %in% getItems(afolu, 3.1)) {
+    stop("MAgPIE emissions input is missing formal Land CO2 source: ", lucSourceName)
+  }
+  lucSource <- as.numeric(afolu[, , lucSourceName])
+
   # ---- (1) Carbon Removal|Land Use ----------------------------------------
   # Must run BEFORE the IAMC remap: the CDR mapping keys on the fine MAgPIE LUC
   # leaves (Regrowth / Indirect / Soil Withdrawals ...) that the remap dissolves
@@ -527,8 +537,10 @@ prepareMagpieAfolu <- function(iEmissions_magpie) {
   # Merge MAgPIE leaves -> IAMC names (pure '|', no '+') via the `iamc_variable`
   # column of magpie-afolu-emission-variables.csv. Rows with a blank target
   # (NO3-, CO2 agricultural-waste-burning, and every parent row) are dropped;
-  # many-to-one rows are summed (over-fine MAgPIE leaves roll up to the coarser
-  # IAMC node — e.g. all LUC leaves + Indirect -> Land Use and Land-Use Change).
+  # many-to-one rows are summed. Formal Land CO2 uses only LUC leaves: peatland
+  # and timber-storage leaves map to the sibling Wetlands and Harvested Wood
+  # Products nodes; the remaining LUC leaves map to Land Use and Land-Use
+  # Change. Indirect and CO2 fires have blank targets and are not reported.
   emiCsv <- read.csv(
     system.file("extdata", "magpie-afolu-emission-variables.csv", package = "postprom"),
     stringsAsFactors = FALSE
@@ -547,6 +559,25 @@ prepareMagpieAfolu <- function(iEmissions_magpie) {
   # totals (Emissions|<gas>) are left to the caller's own aggregation.
   afolu <- helperAggregateLevel(leaves, level = 3, recursive = TRUE)
 
+  formalLandName <- "Emissions|CO2|AFOLU|Land"
+  if (!formalLandName %in% getItems(afolu, 3.1)) {
+    stop("MAgPIE mapping did not construct formal Land CO2: ", formalLandName)
+  }
+  lucMapped <- as.numeric(afolu[, , formalLandName])
+  lucResidual <- lucMapped - lucSource
+  if (!length(lucResidual) || any(!is.finite(lucResidual))) {
+    stop("MAgPIE formal Land CO2 validation contains missing or non-finite values")
+  }
+  # iEmissions_magpie.mif stores four decimal places. Independent rounding of
+  # the 33 LUC leaves and their parent can create a sub-0.002 Mt CO2/yr residual.
+  lucTolerance <- 2e-3
+  if (max(abs(lucResidual)) > lucTolerance) {
+    stop(
+      "Mapped MAgPIE Land CO2 does not match Land-use Change; max residual=",
+      format(max(abs(lucResidual)), digits = 8), " Mt CO2/yr"
+    )
+  }
+
   # N2O is already kt here: coupleMagpieToProm now converts MAgPIE-native Mt -> kt
   # at the boundary when it writes iEmissions_magpie.mif, so no conversion is done
   # here (all OPEN-PROM N2O is kt: GLOBIOM lookup, EMTYPE, GAMS, the Kyoto factor
@@ -559,7 +590,8 @@ prepareMagpieAfolu <- function(iEmissions_magpie) {
   # double-count parents + children. All finer nodes ride in `extra`, which is
   # mbind-ed verbatim (no further aggregation), so the IAMC sub-trees are kept.
   nm <- getItems(afolu, 3.1)
-  # CO2 tops fed into the CO2 sum (Fires now lives under AFOLU|Land):
+  # CO2 tops fed into the CO2 sum. Formal Land contains LUC only; CO2 fires and
+  # Indirect are retained in iEmissions_magpie.mif but omitted from reporting.
   co2Tops    <- intersect(c("Emissions|CO2|AFOLU|Land",
                             "Emissions|CO2|AFOLU|Agriculture"), nm)
   # CH4/N2O AFOLU level-3 tops; replace the nonCO2 AFOLU block in the caller:
@@ -731,15 +763,18 @@ getMAGPIE <- function(path, magpie_object) {
 
 # getGLOBIOMEU function to generate AFOLU and Land_CDR from GLOBIOMEU
 # getInternalAfolu: read the land-use-emulator emissions computed in GAMS postsolve
-# (imAfoluLandEmis = land CO2, imAfoluAgriEmis = agriculture CH4/N2O) and assemble the
+# (imAfoluLandEmis = signed land CO2, imAfoluAgriEmis = agriculture CH4/N2O)
+# and assemble the
 # full IAMC AFOLU sub-tree the caller writes: both AFOLU|Land and AFOLU|Agriculture
 # nodes, each with all three gases, plus the AFOLU gas tops (= Land + Agriculture).
 # In the emulator's split CO2 lives entirely under Land and CH4/N2O entirely under
 # Agriculture, so the cross cells (CO2|Agriculture, CH4/N2O|Land) are 0 by design,
 # which makes that modelling choice explicit in the report.
-# Units chain-consistent: CO2/CH4 Mt/yr, N2O kt/yr. Carbon Removal = 0 (the emulator
-# CO2 is a net flux; sinks are in the regression intercept). Backend-agnostic
-# (globiom/magpie write the same gdx variables).
+# Units chain-consistent: CO2/CH4 Mt/yr, N2O kt/yr. Carbon Removal = 0 because
+# the emulator reports a signed land-CO2 response without decomposing gross
+# emissions and removals. The MAgPIE response uses direct land-use-change CO2;
+# GLOBIOM retains its existing source scope. Both backends write the same GDX
+# variables.
 getInternalAfolu <- function(path, regions, years) {
   land <- readGDX(path, "imAfoluLandEmis")[regions, years, ]   # CO2 populated, CH4/N2O = 0
   agri <- readGDX(path, "imAfoluAgriEmis")[regions, years, ]   # CH4/N2O populated, CO2 = 0
