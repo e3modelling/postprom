@@ -4,16 +4,33 @@
 \alias{batchPlotReport}
 \title{Generate and save a batch plot report as a PDF}
 \usage{
-batchPlotReport(report, metadata, save_pdf, PngFiles)
+batchPlotReport(
+  report,
+  metadata,
+  save_pdf,
+  PngFiles,
+  include_validation = TRUE,
+  validation_checks = defaultValidationChecks()
+)
 }
 \arguments{
 \item{report}{A data object containing report information.}
 
+\item{metadata}{Scenario metadata shown in the generated PDF.}
+
 \item{save_pdf}{A character string specifying the file path where the
 generated PDF report should be saved.}
+
+\item{PngFiles}{Logical; whether to save the area plots as PNG files.}
+
+\item{include_validation}{Logical; include indicator validation in the PDF.}
+
+\item{validation_checks}{Validation checks passed to
+\code{\link{validateResults}}.}
 }
 \value{
-None. The function saves a PDF report and prints a message.
+Invisibly returns the validation result, or `NULL` when validation
+  is disabled. The function saves a PDF report and prints a message.
 }
 \description{
 This function reads a predefined CSV mapping of plots, groups them,

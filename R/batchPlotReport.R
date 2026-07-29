@@ -5,14 +5,22 @@
 #' group. The plots are then saved as a PDF using an R Markdown template.
 #'
 #' @param report A data object containing report information.
+#' @param metadata Scenario metadata shown in the generated PDF.
 #' @param save_pdf A character string specifying the file path where the
 #'   generated PDF report should be saved.
-#' @return None. The function saves a PDF report and prints a message.
+#' @param PngFiles Logical; whether to save the area plots as PNG files.
+#' @param include_validation Logical; include indicator validation in the PDF.
+#' @param validation_checks Validation checks passed to
+#'   \code{\link{validateResults}}.
+#' @return Invisibly returns the validation result, or `NULL` when validation
+#'   is disabled. The function saves a PDF report and prints a message.
 #' @importFrom dplyr group_by group_keys group_split %>%
 #' @importFrom purrr map2
 #' @importFrom knitr knit2pdf opts_knit
 #' @export
-batchPlotReport <- function(report, metadata, save_pdf, PngFiles) {
+batchPlotReport <- function(report, metadata, save_pdf, PngFiles,
+                            include_validation = TRUE,
+                            validation_checks = defaultValidationChecks()) {
   if (!tinytex::is_tinytex()) {
     message("⚠️ TinyTeX (LaTeX engine) is not installed. Skipping PDF creation.")
     message("To enable PDF output, install TinyTeX with: tinytex::install_tinytex()")
@@ -33,13 +41,25 @@ batchPlotReport <- function(report, metadata, save_pdf, PngFiles) {
     ~ plotGroups(.x$Variables, .y, report)
   ) %>% setNames(group_keys(grouped)$Name)
 
+  validation_result <- if (isTRUE(include_validation)) {
+    validationScenario <- basename(dirname(save_pdf))
+    validateResults(
+      stats::setNames(list(report), validationScenario),
+      validation_checks
+    )
+  } else {
+    NULL
+  }
+
   # Save the plots list to a temporary file
   plot_rds_path <- tempfile(fileext = ".rds")
   saveRDS(plots_list, file = plot_rds_path)
+  on.exit(unlink(plot_rds_path), add = TRUE)
   render_env <- new.env()
   render_env$plot_rds_path <- plot_rds_path
   render_env$pdf_title <- gsub("_", "-", basename(dirname(save_pdf)))
   render_env$fScenario <- metadata
+  render_env$validation_result <- validation_result
 
   template_path <- system.file("templates/pdf.Rnw", package = "postprom")
   output_path <- dirname(save_pdf)
@@ -58,6 +78,8 @@ batchPlotReport <- function(report, metadata, save_pdf, PngFiles) {
     envir = render_env,
     quiet = TRUE
   )
+
+  invisible(validation_result)
 }
 # Helpers -------------------------------------------------------------
 #' Plot a group of related variables

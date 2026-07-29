@@ -3,6 +3,8 @@
 \usepackage{hyperref}
 \usepackage{graphicx}
 \usepackage{float}
+\usepackage{booktabs}
+\usepackage{longtable}
 
 \title{OPEN-PROM: Plot report}
 \author{\textrm{\Sexpr{pdf_title}}}
@@ -26,6 +28,129 @@ plot_list <- readRDS(plot_rds_path)
 @
 
 \newpage
+
+<<validation, echo=FALSE, results='asis', warning=FALSE, message=FALSE>>=
+if (!is.null(validation_result)) {
+  format_number <- function(x) {
+    ifelse(is.na(x), "", formatC(x, digits = 4, format = "g"))
+  }
+
+  cat("\\section{Indicator Validation}\n\n")
+  cat(
+    "The checks in this section use indicators already calculated by ",
+    "\\texttt{reportIndicators()}; indicator formulas are not recalculated ",
+    "during validation.\n\n",
+    sep = ""
+  )
+
+  summary_table <- validation_result$summary
+  names(summary_table) <- c("Scenario", "Pass", "Warn", "Fail", "Skip")
+  cat("\\subsection{Summary}\n\n")
+  cat(
+    knitr::kable(
+      summary_table,
+      format = "latex",
+      booktabs = TRUE,
+      row.names = FALSE,
+      escape = TRUE
+    ),
+    sep = "\n"
+  )
+  cat("\n\n")
+
+  benchmark_table <- validation_result$findings[
+    validation_result$findings$check_type %in% c("level", "cagr") &
+      validation_result$findings$status != "skip",
+    ,
+    drop = FALSE
+  ]
+  if (nrow(benchmark_table)) {
+    benchmark_table$period <- ifelse(
+      benchmark_table$start_year == benchmark_table$end_year,
+      benchmark_table$end_year,
+      paste0(benchmark_table$start_year, "--", benchmark_table$end_year)
+    )
+    benchmark_table$observed <- format_number(benchmark_table$observed)
+    benchmark_table$reference <- format_number(benchmark_table$reference)
+    benchmark_table$deviation <- ifelse(
+      is.na(benchmark_table$deviation),
+      "",
+      paste0(
+        formatC(
+          100 * benchmark_table$deviation,
+          digits = 1,
+          format = "f"
+        ),
+        "%"
+      )
+    )
+    benchmark_table$status <- toupper(benchmark_table$status)
+    benchmark_table <- benchmark_table[, c(
+      "indicator", "region", "period",
+      "observed", "reference", "unit", "deviation", "status", "source"
+    )]
+    names(benchmark_table) <- c(
+      "Indicator", "Region", "Period", "Observed", "Reference", "Unit",
+      "Deviation", "Status", "Source"
+    )
+    cat("\\subsection{Evaluated benchmarks}\n\n")
+    cat("\\scriptsize\n")
+    cat(
+      knitr::kable(
+        benchmark_table,
+        format = "latex",
+        booktabs = TRUE,
+        longtable = TRUE,
+        row.names = FALSE,
+        escape = TRUE
+      ),
+      sep = "\n"
+    )
+    cat("\n\\normalsize\n\n")
+  }
+
+  exception_table <- validation_result$findings[
+    validation_result$findings$status != "pass",
+    ,
+    drop = FALSE
+  ]
+  cat("\\subsection{Exceptions}\n\n")
+  if (!nrow(exception_table)) {
+    cat("No validation exceptions were found.\n\n")
+  } else {
+    exception_table$period <- ifelse(
+      is.na(exception_table$start_year),
+      "",
+      ifelse(
+        exception_table$start_year == exception_table$end_year,
+        exception_table$end_year,
+        paste0(exception_table$start_year, "--", exception_table$end_year)
+      )
+    )
+    exception_table$status <- toupper(exception_table$status)
+    exception_table <- exception_table[, c(
+      "indicator", "region", "period", "status", "message", "source"
+    )]
+    names(exception_table) <- c(
+      "Indicator", "Region", "Period", "Status", "Message", "Source"
+    )
+    cat("\\scriptsize\n")
+    cat(
+      knitr::kable(
+        exception_table,
+        format = "latex",
+        booktabs = TRUE,
+        longtable = TRUE,
+        row.names = FALSE,
+        escape = TRUE
+      ),
+      sep = "\n"
+    )
+    cat("\n\\normalsize\n\n")
+  }
+  cat("\\newpage\n")
+}
+@
 
 <<generate_plots, echo=FALSE, results='asis', fig.width=10, fig.height=12, fig.pos='H'>>=
 ### Function to extract regions from a single plot (facet strips)
