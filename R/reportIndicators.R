@@ -22,6 +22,8 @@ reportIndicators <- function(reports, path, regions, years, blabla_regions) {
   IFullACTV <- calcOutput("IFullACTV", aggregate = TRUE, regionmapping = "regionmappingOPDEV5.csv")
   IFullACTV <- IFullACTV[blabla_regions, years, ]
   
+  unitsPassenger <- getItems(IFullACTV,3)
+  
   IFullACTV <- collapseDim(IFullACTV, dim = 3.2)
   
   if ("World" %in% regions) {
@@ -351,7 +353,13 @@ reportIndicators <- function(reports, path, regions, years, blabla_regions) {
   ActivPassTrnsp <- TRANP / v01ActivPassTrnsp
   ActivGoodsTransp <-  TRANG / V01ActivGoodsTransp
   
-  ActivPassTrnsp <- add_dimension(ActivPassTrnsp, dim = 3.2, add = "unit", nm = "Mtoe/ACTV")
+  unitsActivPassTrnsp <- paste0("Mtoe/",sub("^[^.]+\\.","",unitsPassenger[
+        match(c("PC", "PB", "PT", "PN", "PA"),sub("\\..*", "", unitsPassenger))]))
+  
+  ActivPassTrnsp <- mbind(
+    lapply(seq_along(unitsActivPassTrnsp), function(i) {
+      add_dimension(ActivPassTrnsp[, , i],dim = 3.2,add = "unit",nm = unitsActivPassTrnsp[i])}))
+  
   ActivGoodsTransp <- add_dimension(ActivGoodsTransp, dim = 3.2, add = "unit", nm = "Mtoe/Gtkm")
   
   ActivTrnsp <- mbind(ActivPassTrnsp, ActivGoodsTransp)
