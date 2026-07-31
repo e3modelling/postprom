@@ -104,7 +104,6 @@ reportEmissions <- function(path, regions, years) {
   #   exo     = external default sources (legacy compatibility)
   iEmissions_magpie <- file.path(dirname(path), "iEmissions_magpie.mif")
   landEmiMode <- readGDX(path, "sLandEmiMode", react = "silent")
-  landEmiMode <- "exo"
   landEmiMode <- if (!is.null(landEmiMode) && length(landEmiMode))
     as.character(landEmiMode)[1]
   else if (file.exists(iEmissions_magpie)) "softmif" else "exo"  # fallback for pre-tag gdx
