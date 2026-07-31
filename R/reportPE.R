@@ -27,6 +27,7 @@ reportPE <- function(path, regions, years) {
       "Hydrogen", "Hydro"
     )) %>%
     rename(EFS =EF)
+  
   #MtoeToEJ <- 0.041868 units to be Mtoe
   V03ConsGrssInl <- readGDX(path, "V03ConsGrssInl", field = "l")[regions, years, ]
 

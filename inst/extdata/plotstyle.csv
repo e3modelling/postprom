@@ -18,6 +18,11 @@ Capacity|Electricity|CHP,CHP,#87e6a4,bar
 Secondary Energy|Electricity|VAL,IEA,red,dLine
 Secondary Energy|Electricity|Validation,IEA|Projections,green,solidLine
 Secondary Energy|Electricity|PGAWND,PGAWND,#8800ff,bar
+Secondary Energy|Electricity|Solar,Solar,#ffcc00,bar
+Secondary Energy|Electricity|Oil,Oil,#663a00,bar
+Secondary Energy|Electricity|Wind,Wind,#337fff,bar
+Secondary Energy|Electricity|Nuclear,Nuclear,#ff33ff,bar
+Secondary Energy|Electricity|Geothermal and other renewable sources,Geothermal,#e51900,bar
 Secondary Energy|Electricity|PGAWNO,PGAWNO,#334cff,bar
 Secondary Energy|Electricity|PGCSP,PGCSP,#ffb400,bar
 Secondary Energy|Electricity|PGSOL,PGSOL,#ffe600,bar
