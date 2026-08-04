@@ -10,7 +10,11 @@ batchPlotReport(
   save_pdf,
   PngFiles,
   include_validation = TRUE,
-  validation_checks = defaultValidationChecks()
+  validation_checks = defaultValidationChecks(),
+  policy_checks = defaultPolicyValidationChecks(),
+  indicators_checks = defaultIndicatorsChecks(),
+  long_term_checks = defaultLongTermValidationChecks(),
+  validation_output = file.path(dirname(save_pdf), "Validation.pdf")
 )
 }
 \arguments{
@@ -23,14 +27,27 @@ generated PDF report should be saved.}
 
 \item{PngFiles}{Logical; whether to save the area plots as PNG files.}
 
-\item{include_validation}{Logical; include indicator validation in the PDF.}
+\item{include_validation}{Logical; create a separate
+\code{Validation.pdf}.}
 
-\item{validation_checks}{Validation checks passed to
+\item{validation_checks}{Historical-number checks passed to
+\code{\link{validationPdfReport}}.}
+
+\item{policy_checks}{Country policy checks passed to
+\code{\link{validationPdfReport}}.}
+
+\item{indicators_checks}{Indicator checks passed to
 \code{\link{validateResults}}.}
+
+\item{long_term_checks}{Long-term current-policy checks passed to
+\code{\link{validationPdfReport}}.}
+
+\item{validation_output}{Target path for the separate validation PDF.}
 }
 \value{
-Invisibly returns the validation result, or `NULL` when validation
-  is disabled. The function saves a PDF report and prints a message.
+Invisibly returns the result from \code{\link{validationPdfReport}},
+  or \code{NULL} when validation is disabled. The function also saves the plot
+  report PDF.
 }
 \description{
 This function reads a predefined CSV mapping of plots, groups them,

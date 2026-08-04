@@ -1,12 +1,12 @@
-#' Default indicator validation checks
+#' Default indicator checks
 #'
 #' Loads the lightweight bounds and published benchmark checks shipped with
 #' postprom. The returned data frame can be filtered, edited, or extended and
-#' passed to \code{\link{validateResults}}.
+#' passed to \code{\link{validateResults}} as \code{indicators_checks}.
 #'
 #' @return A data frame describing validation checks.
 #' @export
-defaultValidationChecks <- function() {
+defaultIndicatorsChecks <- function() {
   path <- system.file(
     "extdata", "result-validation-checks.csv",
     package = "postprom"
@@ -28,7 +28,7 @@ defaultValidationChecks <- function() {
   checks
 }
 
-#' Validate reported Postprom indicators
+#' Evaluate reported Postprom indicators
 #'
 #' Applies physical bounds and published benchmark checks to indicators already
 #' calculated by `reportIndicators()`. This function never recalculates an
@@ -37,12 +37,13 @@ defaultValidationChecks <- function() {
 #' @param results A completed MAgPIE report, or a uniquely named list of
 #'   completed MAgPIE reports.
 #' @param checks A validation-check data frame, normally returned by
-#'   \code{\link{defaultValidationChecks}}.
+#'   \code{\link{defaultIndicatorsChecks}}.
 #'
-#' @return An object of class `postprom_validation` with `findings`, `summary`,
-#'   and the extracted `indicator_values`.
-#' @export
-validateResults <- function(results, checks = defaultValidationChecks()) {
+#' @return An internal indicator result containing findings, a summary, and
+#'   extracted indicator values.
+#' @keywords internal
+#' @noRd
+validateIndicatorResults <- function(results, checks = defaultIndicatorsChecks()) {
   reports <- normalizeValidationReports(results)
   checks <- validateCheckTable(checks)
   registry <- validationIndicatorRegistry()
@@ -99,27 +100,8 @@ validateResults <- function(results, checks = defaultValidationChecks()) {
       summary = summaryTable,
       indicator_values = valueTable
     ),
-    class = "postprom_validation"
+    class = "postprom_indicator_validation"
   )
-}
-
-#' @export
-print.postprom_validation <- function(x, ...) {
-  cat("Postprom indicator validation\n")
-  print(x$summary, row.names = FALSE)
-  exceptions <- x$findings[x$findings$status != "pass", , drop = FALSE]
-  if (!nrow(exceptions)) {
-    cat("No validation exceptions found.\n")
-  } else {
-    cat(nrow(exceptions), "validation exception(s). Showing up to 10:\n")
-    columns <- c(
-      "scenario", "check_id", "indicator", "region", "start_year",
-      "end_year", "status", "message"
-    )
-    print(utils::head(exceptions[, columns, drop = FALSE], 10),
-          row.names = FALSE)
-  }
-  invisible(x)
 }
 
 validationIndicatorRegistry <- function() {
