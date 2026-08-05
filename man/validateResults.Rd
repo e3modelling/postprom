@@ -22,7 +22,7 @@ completed MAgPIE reports.}
 
 \item{indicators_checks}{Checks for reported indicators and their trends.}
 
-\item{long_term_checks}{Long-term current-policy trend checks.}
+\item{long_term_checks}{Long-term target checks.}
 }
 \value{
 A \code{postprom_validation} object containing unified findings,
@@ -30,6 +30,6 @@ A \code{postprom_validation} object containing unified findings,
 }
 \description{
 Runs the four maintained check families: historical validation, country
-policies, reported indicators, and long-term current-policy trends.
+policies, reported indicators, and long-term targets.
 Indicator formulas are consumed from the report and are never recalculated.
 }

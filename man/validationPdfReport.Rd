@@ -30,14 +30,14 @@ validationPdfReport(
 
 \item{indicators_checks}{Checks passed to \code{\link{validateResults}}.}
 
-\item{long_term_checks}{Long-term current-policy trend configuration.}
+\item{long_term_checks}{Long-term target configuration.}
 }
 \value{
 Invisibly returns output paths and all prepared validation sections.
 }
 \description{
 Builds four check sections: historical validation, country policy targets,
-indicators and trends, and long-term current-policy trends. Indicator
+indicators and trends, and long-term targets. Indicator
 formulas are read from the completed report
 and are never recalculated here.
 }

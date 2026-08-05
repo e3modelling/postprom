@@ -2,7 +2,7 @@
 % Please edit documentation in R/validationPdfReport.R
 \name{defaultLongTermValidationChecks}
 \alias{defaultLongTermValidationChecks}
-\title{Long-term current-policy trend checks}
+\title{Long-term trend checks}
 \usage{
 defaultLongTermValidationChecks()
 }
@@ -10,7 +10,7 @@ defaultLongTermValidationChecks()
 A data frame describing long-term trend checks.
 }
 \description{
-Loads long-term trend benchmarks. The packaged table intentionally starts
-empty until the values from the reviewed current-policies document are
-entered.
+Loads long-term trend targets derived from \code{long-term-targets.md}.
+Quantitative rows use exact endpoint years; qualitative targets without
+numeric bounds remain outside the active table.
 }

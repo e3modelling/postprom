@@ -17,7 +17,7 @@
 #'   \code{\link{validationPdfReport}}.
 #' @param indicators_checks Indicator checks passed to
 #'   \code{\link{validateResults}}.
-#' @param long_term_checks Long-term current-policy checks passed to
+#' @param long_term_checks Long-term target checks passed to
 #'   \code{\link{validationPdfReport}}.
 #' @param validation_output Target path for the separate validation PDF.
 #' @return Invisibly returns the result from \code{\link{validationPdfReport}},

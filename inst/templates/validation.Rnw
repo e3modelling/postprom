@@ -1,8 +1,19 @@
 \documentclass{article}
-\usepackage[a4paper, margin=2cm]{geometry}
+\usepackage[a4paper, landscape, margin=1.2cm]{geometry}
 \usepackage{hyperref}
 \usepackage{booktabs}
 \usepackage{longtable}
+\usepackage{array}
+\usepackage{xcolor}
+
+\setlength{\tabcolsep}{2pt}
+\renewcommand{\arraystretch}{1.08}
+\sloppy
+
+\definecolor{statuspass}{HTML}{C8E6C9}
+\definecolor{statuswarn}{HTML}{FFE0B2}
+\definecolor{statusfail}{HTML}{FFCDD2}
+\definecolor{statusna}{HTML}{E0E0E0}
 
 \title{OPEN-PROM: Validation Report}
 \author{}
@@ -24,8 +35,8 @@ format_period <- function(x) {
 prepare_findings <- function(x, relative_deviation = TRUE) {
   if (!nrow(x)) return(x)
   output <- data.frame(
-    Check = x$check_id,
-    Variable = x$variable,
+    Check = gsub("_", "_ ", x$check_id, fixed = TRUE),
+    Variable = gsub("|", "| ", x$variable, fixed = TRUE),
     Region = x$region,
     Period = format_period(x$period),
     Observed = format_number(x$observed),
@@ -47,16 +58,73 @@ prepare_findings <- function(x, relative_deviation = TRUE) {
   output
 }
 
-render_table <- function(x, longtable = TRUE) {
+table_column_widths <- function(x) {
+  if (identical(
+    names(x),
+    c(
+      "Check", "Variable", "Region", "Period", "Observed", "Reference",
+      "Unit", "Deviation", "Status", "Message", "Source"
+    )
+  )) {
+    return(c(
+      0.080, 0.130, 0.045, 0.050, 0.055, 0.055,
+      0.060, 0.055, 0.045, 0.180, 0.085
+    ))
+  }
+  rep(0.84 / ncol(x), ncol(x))
+}
+
+status_badges <- c(
+  PASS = "\\colorbox{statuspass}{\\strut\\textbf{Pass}}",
+  WARN = "\\colorbox{statuswarn}{\\strut\\textbf{Warn}}",
+  FAIL = "\\colorbox{statusfail}{\\strut\\textbf{Fail}}",
+  "N/A" = "\\colorbox{statusna}{\\strut\\textbf{N/A}}",
+  SKIP = "\\colorbox{statusna}{\\strut\\textbf{N/A}}"
+)
+
+prepare_status_badges <- function(x) {
+  if (!"Status" %in% names(x)) return(list(data = x, replacements = character()))
+  normalized <- toupper(trimws(as.character(x$Status)))
+  placeholders <- paste0("POSTPROMSTATUS", seq_along(normalized))
+  replacements <- unname(status_badges[normalized])
+  replacements[is.na(replacements)] <- normalized[is.na(replacements)]
+  names(replacements) <- placeholders
+  x$Status <- placeholders
+  list(data = x, replacements = replacements)
+}
+
+render_table <- function(x, longtable = TRUE, widths = NULL) {
   if (!nrow(x)) return(invisible(NULL))
-  cat("\\scriptsize\n")
-  cat(
-    knitr::kable(
-      x, format = "latex", booktabs = TRUE, longtable = longtable,
-      row.names = FALSE, escape = TRUE
-    ),
-    sep = "\n"
+  if (is.null(widths)) widths <- table_column_widths(x)
+  if (length(widths) != ncol(x)) {
+    stop("One LaTeX column width is required for every table column.")
+  }
+  alignment <- paste0(
+    ">{\\raggedright\\arraybackslash}p{",
+    format(widths, scientific = FALSE, trim = TRUE),
+    "\\linewidth}"
   )
+  font_size <- if (ncol(x) >= 9L) "tiny" else "scriptsize"
+  status_data <- prepare_status_badges(x)
+  latex <- knitr::kable(
+    status_data$data,
+    format = "latex",
+    booktabs = TRUE,
+    longtable = longtable,
+    row.names = FALSE,
+    escape = TRUE,
+    align = alignment
+  )
+  for (placeholder in names(status_data$replacements)) {
+    latex <- gsub(
+      placeholder,
+      status_data$replacements[[placeholder]],
+      latex,
+      fixed = TRUE
+    )
+  }
+  cat(paste0("\\", font_size, "\n"))
+  cat(latex, sep = "\n")
   cat("\n\\normalsize\n\n")
 }
 
@@ -88,9 +156,10 @@ render_table(validation_sections$overview, longtable = FALSE)
 @
 
 \section{Validation checks}
-This section compares reported model values with historical series embedded in
-the report using the \texttt{|VAL} suffix. It uses the existing OPEN-PROM
-historical validation configuration and its pass/warning/failure bands.
+This section compares reported model values with the packaged 2024 benchmark
+ranges derived from \texttt{validation-research-report.md}. Values inside the
+published lower--upper range pass; values outside the range warn up to a 50\%
+relative deviation from the central estimate and fail beyond it.
 
 <<historical, echo=FALSE, results='asis'>>=
 validation <- validation_sections$validation
@@ -155,7 +224,8 @@ if (!nrow(indicator_exceptions)) {
 @
 
 \section{Long term checks}
-This section compares model CAGRs with reviewed current-policy benchmarks.
+This section compares model CAGRs with targets derived from
+\texttt{long-term-targets.md}.
 Exact start and end years are required and no interpolation is performed.
 
 <<long_term, echo=FALSE, results='asis'>>=

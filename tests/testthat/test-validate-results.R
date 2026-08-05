@@ -3,7 +3,7 @@ test_that("validateResults returns auditable structured findings", {
   result <- validateResults(report)
 
   expect_s3_class(result, "postprom_validation")
-  expect_named(result, c("findings", "summary", "indicator_values"))
+  expect_true(all(c("findings", "summary", "indicator_values") %in% names(result)))
   expect_setequal(
     unique(result$indicator_values$indicator_id),
     c(
@@ -17,7 +17,7 @@ test_that("validateResults returns auditable structured findings", {
     )
   )
   expect_true(all(c("pass", "warn", "fail", "skip") %in%
-                    names(result$summary)))
+                    names(result$indicators$summary)))
 })
 
 test_that("validator consumes the reported indicator instead of recalculating it", {
@@ -29,10 +29,10 @@ test_that("validator consumes the reported indicator instead of recalculating it
   )
 
   result <- validateResults(report)
-  finding <- result$findings[
-    result$findings$check_id == "primary_energy_intensity_nonnegative" &
-      result$findings$region == "World" &
-      result$findings$start_year == 2010,
+  finding <- result$indicators$findings[
+    result$indicators$findings$check_id == "primary_energy_intensity_nonnegative" &
+      result$indicators$findings$region == "World" &
+      result$indicators$findings$start_year == 2010,
     ,
     drop = FALSE
   ]
@@ -53,21 +53,22 @@ test_that("shares, missing indicators, and exact benchmark years are diagnosed",
   ]
 
   result <- validateResults(report)
+  findings <- result$indicators$findings
 
   expect_true(any(
-    result$findings$check_id == "electrification_rate_bounds" &
-      result$findings$region == "World" &
-      result$findings$end_year == 2024 &
-      result$findings$status == "fail"
+    findings$check_id == "electrification_rate_bounds" &
+      findings$region == "World" &
+      findings$end_year == 2024 &
+      findings$status == "fail"
   ))
   expect_true(any(
-    result$findings$check_id ==
+    findings$check_id ==
       "availability_fossil_primary_energy_share" &
-      result$findings$status == "fail"
+      findings$status == "fail"
   ))
   expect_true(any(
-    result$findings$check_id == "pe_intensity_world_1990_2010" &
-      result$findings$status == "skip"
+    findings$check_id == "pe_intensity_world_1990_2010" &
+      findings$status == "skip"
   ))
 })
 
@@ -81,25 +82,26 @@ test_that("invalid denominators fail input checks and skip dependent checks", {
   )
 
   result <- validateResults(report)
+  findings <- result$indicators$findings
   expect_true(any(
-    result$findings$check_id == "inputs_primary_energy_intensity" &
-      result$findings$region == "World" &
-      result$findings$start_year == 2010 &
-      result$findings$status == "fail"
+    findings$check_id == "inputs_primary_energy_intensity" &
+      findings$region == "World" &
+      findings$start_year == 2010 &
+      findings$status == "fail"
   ))
   expect_true(any(
-    result$findings$check_id == "primary_energy_intensity_nonnegative" &
-      result$findings$region == "World" &
-      result$findings$start_year == 2010 &
-      result$findings$status == "skip"
+    findings$check_id == "primary_energy_intensity_nonnegative" &
+      findings$region == "World" &
+      findings$start_year == 2010 &
+      findings$status == "skip"
   ))
 })
 
 test_that("negative net carbon intensities pass finite checks", {
   report <- makeCompletedValidationReport(energyEmissions = -10)
   result <- validateResults(report)
-  genericCarbon <- result$findings[
-    result$findings$check_id %in% c(
+  genericCarbon <- result$indicators$findings[
+    result$indicators$findings$check_id %in% c(
       "primary_energy_carbon_intensity_finite",
       "energy_co2_gdp_intensity_finite"
     ),
@@ -113,7 +115,7 @@ test_that("negative net carbon intensities pass finite checks", {
 
 test_that("benchmark bands use absolute negative references", {
   report <- makeCompletedValidationReport()
-  checks <- defaultValidationChecks()
+  checks <- defaultIndicatorsChecks()
   check <- checks[
     checks$check_id == "pe_intensity_world_2010_2019",
     ,
@@ -126,18 +128,18 @@ test_that("benchmark bands use absolute negative references", {
   report <- replaceValidationVariable(
     report, "Intensity|Primary Energy", primary
   )
-  result <- validateResults(report, check)
-  expect_equal(result$findings$status[
-    result$findings$check_id == check$check_id
+  result <- validateResults(report, indicators_checks = check)
+  expect_equal(result$indicators$findings$status[
+    result$indicators$findings$check_id == check$check_id
   ], "pass")
 
   primary["World", 2019, ] <- (1 - 0.024)^9
   report <- replaceValidationVariable(
     report, "Intensity|Primary Energy", primary
   )
-  result <- validateResults(report, check)
-  expect_equal(result$findings$status[
-    result$findings$check_id == check$check_id
+  result <- validateResults(report, indicators_checks = check)
+  expect_equal(result$indicators$findings$status[
+    result$indicators$findings$check_id == check$check_id
   ], "warn")
 })
 
@@ -150,13 +152,14 @@ test_that("wrong units are failures and make configured checks skip", {
   )
 
   result <- validateResults(report)
+  findings <- result$indicators$findings
   expect_true(any(
-    result$findings$check_id ==
+    findings$check_id ==
       "availability_fossil_primary_energy_share" &
-      result$findings$status == "fail"
+      findings$status == "fail"
   ))
   expect_true(any(
-    result$findings$check_id == "fossil_primary_energy_share_bounds" &
-      result$findings$status == "skip"
+    findings$check_id == "fossil_primary_energy_share_bounds" &
+      findings$status == "skip"
   ))
 })

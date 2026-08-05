@@ -39,7 +39,7 @@ generated PDF report should be saved.}
 \item{indicators_checks}{Indicator checks passed to
 \code{\link{validateResults}}.}
 
-\item{long_term_checks}{Long-term current-policy checks passed to
+\item{long_term_checks}{Long-term target checks passed to
 \code{\link{validationPdfReport}}.}
 
 \item{validation_output}{Target path for the separate validation PDF.}

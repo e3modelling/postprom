@@ -1,20 +1,13 @@
 #' Historical numerical validation checks
 #'
-#' Loads the existing piamValidation-style configuration used for historical
-#' comparisons such as emissions, electricity generation, capacity, and final
-#' energy.
+#' Loads 2024 historical benchmark levels derived from
+#' \code{validation-research-report.md}. Reference values are stored in native
+#' Postprom units and can be inspected or extended before validation.
 #'
 #' @return A data frame describing historical numerical checks.
 #' @export
 defaultValidationChecks <- function() {
-  path <- validationConfigPath("validationConfig_OPEN-PROM.csv")
-  utils::read.csv(
-    path,
-    sep = ";",
-    stringsAsFactors = FALSE,
-    check.names = FALSE,
-    na.strings = c("", "NA")
-  )
+  readValidationCsv("validation-checks.csv")
 }
 
 #' Country policy validation checks
@@ -28,22 +21,22 @@ defaultPolicyValidationChecks <- function() {
   readValidationCsv("policy-validation-checks.csv")
 }
 
-#' Long-term current-policy trend checks
+#' Long-term trend checks
 #'
-#' Loads long-term trend benchmarks. The packaged table intentionally starts
-#' empty until the values from the reviewed current-policies document are
-#' entered.
+#' Loads long-term trend targets derived from \code{long-term-targets.md}.
+#' Quantitative rows use exact endpoint years; qualitative targets without
+#' numeric bounds remain outside the active table.
 #'
 #' @return A data frame describing long-term trend checks.
 #' @export
 defaultLongTermValidationChecks <- function() {
-  readValidationCsv("current-policy-trend-checks.csv")
+  readValidationCsv("long-term-targets.csv")
 }
 
 #' Validate Postprom results
 #'
 #' Runs the four maintained check families: historical validation, country
-#' policies, reported indicators, and long-term current-policy trends.
+#' policies, reported indicators, and long-term targets.
 #' Indicator formulas are consumed from the report and are never recalculated.
 #'
 #' @param results A completed MAgPIE report, or a uniquely named list of
@@ -51,7 +44,7 @@ defaultLongTermValidationChecks <- function() {
 #' @param validation_checks Historical model-versus-reference checks.
 #' @param policy_checks Individual-country policy checks.
 #' @param indicators_checks Checks for reported indicators and their trends.
-#' @param long_term_checks Long-term current-policy trend checks.
+#' @param long_term_checks Long-term target checks.
 #'
 #' @return A \code{postprom_validation} object containing unified findings,
 #'   summaries, indicator values, and the four family-specific results.
@@ -125,7 +118,7 @@ print.postprom_validation <- function(x, ...) {
 #' Create a standalone OPEN-PROM validation PDF
 #'
 #' Builds four check sections: historical validation, country policy targets,
-#' indicators and trends, and long-term current-policy trends. Indicator
+#' indicators and trends, and long-term targets. Indicator
 #' formulas are read from the completed report
 #' and are never recalculated here.
 #'
@@ -136,7 +129,7 @@ print.postprom_validation <- function(x, ...) {
 #' @param validation_checks Historical-number validation configuration.
 #' @param policy_checks Country policy target configuration.
 #' @param indicators_checks Checks passed to \code{\link{validateResults}}.
-#' @param long_term_checks Long-term current-policy trend configuration.
+#' @param long_term_checks Long-term target configuration.
 #'
 #' @return Invisibly returns output paths and all prepared validation sections.
 #' @export
@@ -212,20 +205,15 @@ evaluateChecksByScenario <- function(reports, evaluator, checks) {
 
 evaluateHistoricalValidation <- function(report, checks) {
   required <- c(
-    "metric", "variable", "unit", "region", "period",
-    "min_red", "min_yel", "max_yel", "max_red"
+    "check_id", "variable", "unit", "region", "year", "central",
+    "lower", "upper", "source", "notes", "enabled"
   )
   if (!is.data.frame(checks) || !all(required %in% names(checks))) {
     return(validationSectionPlaceholder(
       "historical", "Historical validation configuration is unavailable."
     ))
   }
-  active <- checks[
-    !is.na(checks$metric) & checks$metric == "relative" &
-      !is.na(checks$variable) & nzchar(checks$variable),
-    ,
-    drop = FALSE
-  ]
+  active <- checks[validationEnabled(checks$enabled), , drop = FALSE]
   if (!nrow(active)) {
     return(validationSectionPlaceholder(
       "historical", "No historical numerical checks are configured."
@@ -233,92 +221,66 @@ evaluateHistoricalValidation <- function(report, checks) {
   }
 
   tidy <- tidyValidationReport(report)
-  output <- list()
-  outputIndex <- 0L
+  output <- vector("list", nrow(active))
   for (i in seq_len(nrow(active))) {
     check <- active[i, , drop = FALSE]
-    variable <- check$variable[[1]]
-    referenceVariable <- paste0(variable, "|VAL")
-    modelRows <- tidy[tidy$variable == variable, , drop = FALSE]
-    referenceRows <- tidy[
-      tidy$variable == referenceVariable, , drop = FALSE
+    rows <- tidy[
+      tidy$variable == check$variable[[1]] &
+        tidy$region == check$region[[1]] &
+        tidy$year == check$year[[1]],
+      ,
+      drop = FALSE
     ]
-    checkId <- paste0("historical_", make.names(variable))
-    source <- historicalCheckSource(check)
+    exactRows <- rows[rows$unit == check$unit[[1]], , drop = FALSE]
+    validReference <- all(is.finite(c(
+      check$central[[1]], check$lower[[1]], check$upper[[1]]
+    ))) && check$lower[[1]] <= check$upper[[1]]
 
-    if (!nrow(modelRows) || !nrow(referenceRows)) {
-      outputIndex <- outputIndex + 1L
-      output[[outputIndex]] <- newValidationSectionFinding(
-        "historical", checkId, variable, "All", check$period[[1]],
-        NA, NA, NA, check$unit[[1]], "skip",
+    if (nrow(exactRows) != 1L || !validReference ||
+        !is.finite(exactRows$value[[1]])) {
+      foundUnits <- unique(rows$unit)
+      message <- if (nrow(rows) && !nrow(exactRows)) {
         paste0(
-          "Model variable or historical reference '", referenceVariable,
-          "' is not present in the report."
-        ),
-        source
-      )
-      next
-    }
-
-    regions <- trimws(strsplit(check$region[[1]], ",", fixed = TRUE)[[1]])
-    years <- validationPeriodYears(check$period[[1]])
-    modelRows <- modelRows[
-      modelRows$region %in% regions & modelRows$year %in% years,
-      ,
-      drop = FALSE
-    ]
-    referenceRows <- referenceRows[
-      referenceRows$region %in% regions & referenceRows$year %in% years,
-      ,
-      drop = FALSE
-    ]
-    joined <- merge(
-      modelRows, referenceRows,
-      by = c("region", "year"), suffixes = c("_model", "_reference")
-    )
-    if (!nrow(joined)) {
-      outputIndex <- outputIndex + 1L
-      output[[outputIndex]] <- newValidationSectionFinding(
-        "historical", checkId, variable, "All", check$period[[1]],
-        NA, NA, NA, check$unit[[1]], "skip",
-        "No common configured region-year values are available.", source
-      )
-      next
-    }
-
-    thresholds <- data.frame(
-      fail_min = parseValidationPercent(check$min_red[[1]]),
-      pass_min = parseValidationPercent(check$min_yel[[1]]),
-      pass_max = parseValidationPercent(check$max_yel[[1]]),
-      fail_max = parseValidationPercent(check$max_red[[1]])
-    )
-    for (j in seq_len(nrow(joined))) {
-      valid <- is.finite(joined$value_model[j]) &&
-        is.finite(joined$value_reference[j]) &&
-        joined$value_reference[j] != 0 &&
-        identical(joined$unit_model[j], check$unit[[1]]) &&
-        identical(joined$unit_reference[j], check$unit[[1]])
-      if (valid) {
-        deviation <- (joined$value_model[j] - joined$value_reference[j]) /
-          abs(joined$value_reference[j])
-        status <- classifyValidationScore(deviation, thresholds)
-        message <- paste0(
-          "Relative deviation is ",
-          formatC(100 * deviation, digits = 1, format = "f"), "%."
+          "Expected unit '", check$unit[[1]], "'; found '",
+          paste(foundUnits, collapse = ", "), "'."
         )
       } else {
-        deviation <- NA_real_
-        status <- "skip"
-        message <- "Values are non-finite, zero-reference, or use incompatible units."
+        "The exact variable, region, year, or finite benchmark is unavailable."
       }
-      outputIndex <- outputIndex + 1L
-      output[[outputIndex]] <- newValidationSectionFinding(
-        "historical", checkId, variable, joined$region[j],
-        as.character(joined$year[j]), joined$value_model[j],
-        joined$value_reference[j], deviation, check$unit[[1]], status,
-        message, source
+      output[[i]] <- newValidationSectionFinding(
+        "historical", check$check_id[[1]], check$variable[[1]],
+        check$region[[1]], as.character(check$year[[1]]), NA,
+        check$central[[1]], NA, check$unit[[1]], "skip", message,
+        check$source[[1]]
       )
+      next
     }
+
+    observed <- exactRows$value[[1]]
+    central <- check$central[[1]]
+    deviation <- if (central == 0) NA_real_ else
+      (observed - central) / abs(central)
+    withinRange <- observed >= check$lower[[1]] &&
+      observed <= check$upper[[1]]
+    status <- if (withinRange) {
+      "pass"
+    } else if (is.finite(deviation) && abs(deviation) <= 0.5) {
+      "warn"
+    } else {
+      "fail"
+    }
+    message <- paste0(
+      "Observed value is ", formatC(observed, digits = 6, format = "g"),
+      "; benchmark range is [",
+      formatC(check$lower[[1]], digits = 6, format = "g"), ", ",
+      formatC(check$upper[[1]], digits = 6, format = "g"), "]."
+    )
+    output[[i]] <- newValidationSectionFinding(
+      "historical", check$check_id[[1]], check$variable[[1]],
+      check$region[[1]], as.character(check$year[[1]]), observed,
+      central, deviation, check$unit[[1]], status, message,
+      check$source[[1]]
+    )
   }
   bindValidationRows(output, emptyValidationSectionFindings())
 }
@@ -402,59 +364,77 @@ evaluateLongTermValidation <- function(report, checks) {
   if (!nrow(active)) {
     return(validationSectionPlaceholder(
       "long_term",
-      "No reviewed long-term current-policy trends are configured yet. Add rows from Panagiotis's document to current-policy-trend-checks.csv."
+      "No reviewed long-term targets are configured in long-term-targets.csv."
     ))
   }
 
   tidy <- tidyValidationReport(report)
-  output <- vector("list", nrow(active))
+  output <- list()
+  outputIndex <- 0L
   for (i in seq_len(nrow(active))) {
     check <- active[i, , drop = FALSE]
-    rows <- tidy[
-      tidy$region == check$region[[1]] &
-        tidy$variable == check$variable[[1]] &
-        tidy$unit == check$unit[[1]] &
-        tidy$year %in% c(check$start_year[[1]], check$end_year[[1]]),
-      ,
-      drop = FALSE
-    ]
-    period <- paste0(check$start_year[[1]], "--", check$end_year[[1]])
-    if (nrow(rows) != 2L || any(!is.finite(rows$value)) ||
-        any(rows$value <= 0) || check$end_year[[1]] <= check$start_year[[1]]) {
-      output[[i]] <- newValidationSectionFinding(
+    availableRegions <- unique(tidy$region[
+      tidy$variable == check$variable[[1]] &
+        tidy$unit == check$unit[[1]]
+    ])
+    selector <- check$region[[1]]
+    if (identical(selector, "*")) {
+      regions <- sort(availableRegions)
+    } else if (identical(selector, "countries")) {
+      regions <- sort(availableRegions[grepl("^[A-Z]{3}$", availableRegions)])
+    } else {
+      regions <- selector
+    }
+    if (!length(regions)) regions <- selector
+
+    for (region in regions) {
+      outputIndex <- outputIndex + 1L
+      rows <- tidy[
+        tidy$region == region &
+          tidy$variable == check$variable[[1]] &
+          tidy$unit == check$unit[[1]] &
+          tidy$year %in% c(check$start_year[[1]], check$end_year[[1]]),
+        ,
+        drop = FALSE
+      ]
+      period <- paste0(check$start_year[[1]], "--", check$end_year[[1]])
+      if (nrow(rows) != 2L || any(!is.finite(rows$value)) ||
+          any(rows$value <= 0) || check$end_year[[1]] <= check$start_year[[1]]) {
+        output[[outputIndex]] <- newValidationSectionFinding(
+          "long_term", check$check_id[[1]], check$variable[[1]],
+          region, period, NA, check$reference_cagr[[1]], NA,
+          "1/yr", "skip",
+          "CAGR requires both exact years and positive finite endpoint values.",
+          check$source[[1]]
+        )
+        next
+      }
+      startValue <- rows$value[match(check$start_year[[1]], rows$year)]
+      endValue <- rows$value[match(check$end_year[[1]], rows$year)]
+      observed <- (endValue / startValue)^(
+        1 / (check$end_year[[1]] - check$start_year[[1]])
+      ) - 1
+      reference <- check$reference_cagr[[1]]
+      if (!is.finite(reference) || reference == 0) {
+        deviation <- NA_real_
+        status <- "skip"
+      } else {
+        deviation <- (observed - reference) / abs(reference)
+        status <- classifyValidationScore(deviation, check)
+      }
+      output[[outputIndex]] <- newValidationSectionFinding(
         "long_term", check$check_id[[1]], check$variable[[1]],
-        check$region[[1]], period, NA, check$reference_cagr[[1]], NA,
-        "1/yr", "skip",
-        "CAGR requires both exact years and positive finite endpoint values.",
+        region, period, observed, reference, deviation,
+        "1/yr", status,
+        paste0(
+          "Annualized trend deviation is ",
+          ifelse(is.na(deviation), "unavailable", paste0(
+            formatC(100 * deviation, digits = 1, format = "f"), "%"
+          )), "."
+        ),
         check$source[[1]]
       )
-      next
     }
-    startValue <- rows$value[match(check$start_year[[1]], rows$year)]
-    endValue <- rows$value[match(check$end_year[[1]], rows$year)]
-    observed <- (endValue / startValue)^(
-      1 / (check$end_year[[1]] - check$start_year[[1]])
-    ) - 1
-    reference <- check$reference_cagr[[1]]
-    if (!is.finite(reference) || reference == 0) {
-      deviation <- NA_real_
-      status <- "skip"
-    } else {
-      deviation <- (observed - reference) / abs(reference)
-      status <- classifyValidationScore(deviation, check)
-    }
-    output[[i]] <- newValidationSectionFinding(
-      "long_term", check$check_id[[1]], check$variable[[1]],
-      check$region[[1]], period, observed, reference, deviation,
-      "1/yr", status,
-      paste0(
-        "Annualized trend deviation is ",
-        ifelse(is.na(deviation), "unavailable", paste0(
-          formatC(100 * deviation, digits = 1, format = "f"), "%"
-        )), "."
-      ),
-      check$source[[1]]
-    )
   }
   bindValidationRows(output, emptyValidationSectionFindings())
 }
@@ -506,31 +486,45 @@ summarizeValidationFamily <- function(findings, family) {
 }
 
 summarizeHistoricalValidation <- function(findings) {
-  evaluated <- findings[findings$status != "skip", , drop = FALSE]
-  if (!nrow(evaluated)) {
+  if (!nrow(findings)) {
     return(data.frame(
       Scenario = character(), Variable = character(), Region = character(),
-      Evaluated = integer(), Pass = integer(), Warn = integer(), Fail = integer(),
+      Status = character(),
       Worst.deviation = character(), stringsAsFactors = FALSE
     ))
   }
   groups <- split(
-    evaluated,
-    paste(evaluated$scenario, evaluated$variable, evaluated$region)
+    findings,
+    paste(findings$scenario, findings$variable, findings$region)
   )
   rows <- lapply(groups, function(group) {
+    status <- if (any(group$status == "fail")) {
+      "Fail"
+    } else if (any(group$status == "warn")) {
+      "Warn"
+    } else if (any(group$status == "pass")) {
+      "Pass"
+    } else {
+      "N/A"
+    }
+    evaluatedDeviation <- abs(group$deviation[
+      group$status != "skip" & is.finite(group$deviation)
+    ])
     data.frame(
       Scenario = group$scenario[1],
       Variable = group$variable[1],
       Region = group$region[1],
-      Evaluated = nrow(group),
-      Pass = sum(group$status == "pass"),
-      Warn = sum(group$status == "warn"),
-      Fail = sum(group$status == "fail"),
-      Worst.deviation = paste0(
-        formatC(100 * max(abs(group$deviation), na.rm = TRUE),
-                digits = 1, format = "f"), "%"
-      ),
+      Status = status,
+      Worst.deviation = if (length(evaluatedDeviation)) {
+        paste0(
+          formatC(
+            100 * max(evaluatedDeviation), digits = 1, format = "f"
+          ),
+          "%"
+        )
+      } else {
+        ""
+      },
       stringsAsFactors = FALSE
     )
   })
@@ -591,38 +585,6 @@ readValidationCsv <- function(file) {
 validationEnabled <- function(x) {
   if (is.logical(x)) return(!is.na(x) & x)
   tolower(as.character(x)) %in% c("true", "t", "1", "yes")
-}
-
-parseValidationPercent <- function(x) {
-  if (is.na(x)) return(NA_real_)
-  as.numeric(sub("%$", "", trimws(as.character(x)))) / 100
-}
-
-validationPeriodYears <- function(period) {
-  values <- as.integer(strsplit(as.character(period), "-", fixed = TRUE)[[1]])
-  if (length(values) == 1L) values else seq(values[1], values[2])
-}
-
-historicalCheckSource <- function(check) {
-  discussion <- if ("source/link to discussion" %in% names(check)) {
-    check[["source/link to discussion"]][[1]]
-  } else {
-    NA_character_
-  }
-  if (!is.na(discussion) && nzchar(discussion)) return(discussion)
-  referenceModel <- if ("ref_model" %in% names(check)) {
-    check$ref_model[[1]]
-  } else {
-    NA_character_
-  }
-  referenceScenario <- if ("ref_scenario" %in% names(check)) {
-    check$ref_scenario[[1]]
-  } else {
-    NA_character_
-  }
-  paste(
-    stats::na.omit(c(referenceModel, referenceScenario)), collapse = " / "
-  )
 }
 
 policyObservedValue <- function(type, targetValue, baselineValue) {

@@ -10,7 +10,7 @@ defaultValidationChecks()
 A data frame describing historical numerical checks.
 }
 \description{
-Loads the existing piamValidation-style configuration used for historical
-comparisons such as emissions, electricity generation, capacity, and final
-energy.
+Loads 2024 historical benchmark levels derived from
+\code{validation-research-report.md}. Reference values are stored in native
+Postprom units and can be inspected or extended before validation.
 }
