@@ -32,7 +32,8 @@ format_period <- function(x) {
   as.character(x)
 }
 
-prepare_findings <- function(x, relative_deviation = TRUE) {
+prepare_findings <- function(x, relative_deviation = TRUE,
+                             include_source = TRUE) {
   if (!nrow(x)) return(x)
   output <- data.frame(
     Check = gsub("_", "_ ", x$check_id, fixed = TRUE),
@@ -55,6 +56,7 @@ prepare_findings <- function(x, relative_deviation = TRUE) {
     Source = x$source,
     stringsAsFactors = FALSE
   )
+  if (!include_source) output$Source <- NULL
   output
 }
 
@@ -71,6 +73,18 @@ table_column_widths <- function(x) {
       0.060, 0.055, 0.045, 0.180, 0.085
     ))
   }
+  if (identical(
+    names(x),
+    c(
+      "Check", "Variable", "Region", "Period", "Observed", "Reference",
+      "Unit", "Deviation", "Status", "Message"
+    )
+  )) {
+    return(c(
+      0.080, 0.155, 0.045, 0.050, 0.055,
+      0.055, 0.060, 0.055, 0.045, 0.240
+    ))
+  }
   rep(0.84 / ncol(x), ncol(x))
 }
 
@@ -85,7 +99,9 @@ status_badges <- c(
 prepare_status_badges <- function(x) {
   if (!"Status" %in% names(x)) return(list(data = x, replacements = character()))
   normalized <- toupper(trimws(as.character(x$Status)))
-  placeholders <- paste0("POSTPROMSTATUS", seq_along(normalized))
+  placeholders <- sprintf(
+    "POSTPROMSTATUS%08dEND", seq_along(normalized)
+  )
   replacements <- unname(status_badges[normalized])
   replacements[is.na(replacements)] <- normalized[is.na(replacements)]
   names(replacements) <- placeholders
@@ -128,12 +144,15 @@ render_table <- function(x, longtable = TRUE, widths = NULL) {
   cat("\n\\normalsize\n\n")
 }
 
-render_placeholder_or_findings <- function(x, relative_deviation = TRUE) {
+render_placeholder_or_findings <- function(x, relative_deviation = TRUE,
+                                           include_source = TRUE) {
   configured <- !(nrow(x) == 1L && grepl("_not_configured$", x$check_id[1]))
   if (!configured) {
     cat(x$message[1], "\n\n")
   } else {
-    render_table(prepare_findings(x, relative_deviation))
+    render_table(prepare_findings(
+      x, relative_deviation, include_source = include_source
+    ))
   }
 }
 @
@@ -177,14 +196,22 @@ if (!nrow(exceptions)) {
 @
 
 \section{Policy checks}
-The first policy-check version evaluates exact individual-country regions. A
-configured target can be an absolute maximum or minimum, or a reduction or
-increase relative to a specified baseline year.
+Policy checks evaluate exact individual-country regions from the Climate Policy
+Modelling Protocol. The source for all checks in this section is Dafnomilis, I.,
+Hooijschuur, E., Schmidt Tagomori, I., van Soest, H., Roelfsema, M.\ \& den
+Elzen, M. (2026), \textit{Climate Policy Modelling Protocol} [Dataset], Zenodo,
+\href{https://doi.org/10.5281/zenodo.20848687}{Zenodo record}.
+Only protocol regions available directly in OPEN-PROM are included; CHN is
+mapped explicitly to CHA. Policy years use the nearest available model year up
+to two years away, with no interpolation. A configured target can be an
+absolute maximum or minimum, or a minimum/maximum reduction or increase
+relative to a specified baseline year.
 
 <<policies, echo=FALSE, results='asis'>>=
 render_placeholder_or_findings(
   validation_sections$policies,
-  relative_deviation = FALSE
+  relative_deviation = FALSE,
+  include_source = FALSE
 )
 @
 

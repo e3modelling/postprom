@@ -97,6 +97,71 @@ test_that("country policy checks evaluate configured country targets", {
   expect_equal(result$policies$status, "pass")
 })
 
+test_that("packaged policy checks preserve regions and protocol provenance", {
+  checks <- defaultPolicyValidationChecks()
+
+  expect_equal(nrow(checks), 126)
+  expect_equal(anyDuplicated(checks$check_id), 0L)
+  expect_true(sum(checks$enabled) > 0)
+  expect_true(sum(!checks$enabled) > 0)
+  expect_true(all(grepl("zenodo.20848687", checks$source, fixed = TRUE)))
+  expect_true(all(checks$country %in% c("CHA", "EU", "IND", "JPN", "USA")))
+  expect_false("CHN" %in% checks$country)
+
+  hfc <- checks[
+    checks$check_id == "policy_9c_chn_gen_fgas_45_min", , drop = FALSE
+  ]
+  expect_equal(hfc$country, "CHA")
+  expect_equal(hfc$target_type, "reduction_from_baseline")
+  expect_equal(hfc$target_value, 0.8)
+  expect_equal(hfc$unit, "1")
+  expect_true(hfc$enabled)
+
+  renewable <- checks[
+    checks$check_id == "policy_3c_ind_ene_ren_30_min", , drop = FALSE
+  ]
+  expect_equal(
+    renewable$variable,
+    "Secondary Energy|Electricity|Renewables Share"
+  )
+  expect_equal(renewable$target_value, 0.2344)
+  expect_equal(renewable$unit, "1")
+
+  noYear <- checks[
+    checks$check_id == "policy_4a_usa_ene_fin_24_min", , drop = FALSE
+  ]
+  expect_false(noYear$enabled)
+  expect_match(noYear$notes, "target year is unavailable")
+})
+
+test_that("relative policy checks use the report's native source unit", {
+  report <- makeCompletedValidationReport(
+    regions = "USA", years = c(2010, 2035)
+  )
+  hfc <- magclass::new.magpie(
+    "USA", c(2010, 2035), "Emissions|HFC", fill = 100
+  )
+  hfc[, 2010, ] <- 100
+  hfc[, 2035, ] <- 10
+  hfc <- magclass::add_dimension(
+    hfc, dim = 3.2, add = "unit", nm = "kt HFC/yr"
+  )
+  report <- magclass::mbind(report, hfc)
+  checks <- defaultPolicyValidationChecks()
+  checks <- checks[
+    checks$check_id == "policy_3a_usa_gen_fgas_36_min", , drop = FALSE
+  ]
+
+  result <- validateResults(report, policy_checks = checks)
+
+  expect_equal(result$policies$observed, 0.9)
+  expect_equal(result$policies$reference, 0.85)
+  expect_equal(result$policies$unit, "1")
+  expect_equal(result$policies$status, "pass")
+  expect_equal(result$policies$period, "2010--2035")
+  expect_match(result$policies$message, "2012 and 2036")
+})
+
 test_that("long-term current-policy checks evaluate exact endpoint CAGRs", {
   report <- makeCompletedValidationReport()
   checks <- data.frame(
@@ -193,6 +258,20 @@ test_that("the dedicated template contains all four validation sections", {
     "\\colorbox{statusfail}{\\strut\\textbf{Fail}}",
     fixed = TRUE
   )
+  expect_false(grepl(
+    "textbf\\{(Pass|Warn|Fail|N/A)\\}\\}\\}[0-9]", tex, perl = TRUE
+  ))
+  policyText <- sub(
+    ".*\\\\section\\{Policy checks\\}", "", tex
+  )
+  policyText <- sub(
+    "\\\\section\\{Indicators check\\}.*", "", policyText
+  )
+  doiMatches <- gregexpr(
+    "10.5281/zenodo.20848687", policyText, fixed = TRUE
+  )[[1]]
+  expect_equal(sum(doiMatches > 0), 1)
+  expect_false(grepl("Message & Source", policyText, fixed = TRUE))
   expect_false(grepl("Evaluated & Pass & Warn & Fail", tex, fixed = TRUE))
 })
 

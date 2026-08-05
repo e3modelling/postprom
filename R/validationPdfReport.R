@@ -12,8 +12,10 @@ defaultValidationChecks <- function() {
 
 #' Country policy validation checks
 #'
-#' Loads country-level policy targets. The packaged table intentionally starts
-#' empty; add reviewed rows before enabling policy checks.
+#' Loads country-level targets converted from the Climate Policy Modelling
+#' Protocol. Only directly reportable OPEN-PROM regions are retained. The
+#' protocol's CHN identifier is mapped explicitly to OPEN-PROM's CHA region;
+#' other unavailable jurisdictions are not assigned to model aggregates.
 #'
 #' @return A data frame describing country policy checks.
 #' @export
@@ -308,25 +310,49 @@ evaluatePolicyValidation <- function(report, checks) {
   output <- vector("list", nrow(active))
   for (i in seq_len(nrow(active))) {
     check <- active[i, , drop = FALSE]
-    rows <- tidy[
+    variableRows <- tidy[
       tidy$region == check$country[[1]] &
-        tidy$variable == check$variable[[1]] &
-        tidy$unit == check$unit[[1]],
+        tidy$variable == check$variable[[1]],
       ,
       drop = FALSE
     ]
-    targetRow <- rows[rows$year == check$target_year[[1]], , drop = FALSE]
-    baselineRow <- rows[rows$year == check$baseline_year[[1]], , drop = FALSE]
     targetType <- check$target_type[[1]]
-    needsBaseline <- targetType %in% c(
-      "reduction_from_baseline", "increase_from_baseline"
+    relativeTypes <- c(
+      "reduction_from_baseline", "maximum_reduction_from_baseline",
+      "increase_from_baseline", "maximum_increase_from_baseline"
     )
-    if (nrow(targetRow) != 1L || (needsBaseline && nrow(baselineRow) != 1L)) {
+    needsBaseline <- targetType %in% relativeTypes
+    if (needsBaseline) {
+      reportUnits <- unique(variableRows$unit)
+      rows <- if (length(reportUnits) == 1L) variableRows else
+        variableRows[FALSE, , drop = FALSE]
+    } else {
+      rows <- variableRows[
+        variableRows$unit == check$unit[[1]], , drop = FALSE
+      ]
+    }
+    targetEndpoint <- nearestPolicyEndpoint(
+      rows, check$target_year[[1]]
+    )
+    baselineEndpoint <- if (needsBaseline) {
+      nearestPolicyEndpoint(rows, check$baseline_year[[1]])
+    } else {
+      list(row = rows[FALSE, , drop = FALSE], year = NA_integer_)
+    }
+    targetRow <- targetEndpoint$row
+    baselineRow <- baselineEndpoint$row
+    if (nrow(targetRow) != 1L || !is.finite(targetRow$value[[1]]) ||
+        (needsBaseline && (nrow(baselineRow) != 1L ||
+         !is.finite(baselineRow$value[[1]]) ||
+         baselineRow$value[[1]] == 0))) {
       output[[i]] <- newValidationSectionFinding(
         "policy", check$check_id[[1]], check$variable[[1]],
         check$country[[1]], as.character(check$target_year[[1]]),
         NA, check$target_value[[1]], NA, check$unit[[1]], "skip",
-        "The required country, variable, unit, or endpoint year is unavailable.",
+        paste0(
+          "The required country, variable, unit, or a model year within ",
+          "two years of the policy endpoint is unavailable."
+        ),
         check$source[[1]]
       )
       next
@@ -339,11 +365,21 @@ evaluatePolicyValidation <- function(report, checks) {
     tolerance <- check$warn_tolerance[[1]]
     status <- classifyPolicyTarget(observed, target, tolerance, targetType)
     outputUnit <- if (needsBaseline) "1" else check$unit[[1]]
+    period <- if (needsBaseline) {
+      paste0(baselineEndpoint$year, "--", targetEndpoint$year)
+    } else {
+      as.character(targetEndpoint$year)
+    }
+    yearMessage <- policyEndpointMessage(
+      targetEndpoint$year, check$target_year[[1]],
+      baselineEndpoint$year, check$baseline_year[[1]], needsBaseline
+    )
     output[[i]] <- newValidationSectionFinding(
       "policy", check$check_id[[1]], check$variable[[1]],
-      check$country[[1]], as.character(check$target_year[[1]]),
+      check$country[[1]], period,
       observed, target, observed - target, outputUnit, status,
-      policyValidationMessage(status, targetType), check$source[[1]]
+      paste0(policyValidationMessage(status, targetType), yearMessage),
+      check$source[[1]]
     )
   }
   bindValidationRows(output, emptyValidationSectionFindings())
@@ -587,13 +623,48 @@ validationEnabled <- function(x) {
   tolower(as.character(x)) %in% c("true", "t", "1", "yes")
 }
 
+nearestPolicyEndpoint <- function(rows, requestedYear, maxGap = 2L) {
+  empty <- list(row = rows[FALSE, , drop = FALSE], year = NA_integer_)
+  if (!nrow(rows) || !is.finite(requestedYear)) return(empty)
+  available <- sort(unique(rows$year[is.finite(rows$year)]))
+  if (!length(available)) return(empty)
+  gaps <- abs(available - requestedYear)
+  if (min(gaps) > maxGap) return(empty)
+  selectedYear <- available[which.min(gaps)]
+  list(
+    row = rows[rows$year == selectedYear, , drop = FALSE],
+    year = as.integer(selectedYear)
+  )
+}
+
+policyEndpointMessage <- function(targetYear, requestedTargetYear,
+                                  baselineYear, requestedBaselineYear,
+                                  needsBaseline) {
+  actual <- if (needsBaseline) c(baselineYear, targetYear) else targetYear
+  requested <- if (needsBaseline) {
+    c(requestedBaselineYear, requestedTargetYear)
+  } else {
+    requestedTargetYear
+  }
+  if (all(actual == requested)) return("")
+  paste0(
+    " Model year(s) ", paste(actual, collapse = " and "),
+    " were used for configured policy year(s) ",
+    paste(requested, collapse = " and "), "; no interpolation was applied."
+  )
+}
+
 policyObservedValue <- function(type, targetValue, baselineValue) {
   switch(
     type,
     maximum = targetValue,
     minimum = targetValue,
     reduction_from_baseline = (baselineValue - targetValue) / abs(baselineValue),
+    maximum_reduction_from_baseline =
+      (baselineValue - targetValue) / abs(baselineValue),
     increase_from_baseline = (targetValue - baselineValue) / abs(baselineValue),
+    maximum_increase_from_baseline =
+      (targetValue - baselineValue) / abs(baselineValue),
     NA_real_
   )
 }
@@ -601,9 +672,14 @@ policyObservedValue <- function(type, targetValue, baselineValue) {
 classifyPolicyTarget <- function(observed, target, tolerance, type) {
   if (!is.finite(observed) || !is.finite(target)) return("skip")
   if (!is.finite(tolerance)) tolerance <- 0
-  if (type == "maximum") {
+  if (type %in% c(
+    "maximum", "maximum_reduction_from_baseline",
+    "maximum_increase_from_baseline"
+  )) {
     if (observed <= target) "pass" else if (observed <= target + tolerance) "warn" else "fail"
-  } else if (type %in% c("minimum", "reduction_from_baseline", "increase_from_baseline")) {
+  } else if (type %in% c(
+    "minimum", "reduction_from_baseline", "increase_from_baseline"
+  )) {
     if (observed >= target) "pass" else if (observed >= target - tolerance) "warn" else "fail"
   } else {
     "skip"

@@ -10,6 +10,8 @@ defaultPolicyValidationChecks()
 A data frame describing country policy checks.
 }
 \description{
-Loads country-level policy targets. The packaged table intentionally starts
-empty; add reviewed rows before enabling policy checks.
+Loads country-level targets converted from the Climate Policy Modelling
+Protocol. Only directly reportable OPEN-PROM regions are retained. The
+protocol's CHN identifier is mapped explicitly to OPEN-PROM's CHA region;
+other unavailable jurisdictions are not assigned to model aggregates.
 }
