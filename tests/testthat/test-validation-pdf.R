@@ -97,6 +97,62 @@ test_that("country policy checks evaluate configured country targets", {
   expect_equal(result$policies$status, "pass")
 })
 
+test_that("policy checks allow a one-percent numerical pass margin", {
+  target <- 0.152542372881356
+  warningTolerance <- 0.1 * target
+
+  expect_equal(
+    postprom:::classifyPolicyTarget(
+      observed = 0.1519765,
+      target = target,
+      tolerance = warningTolerance,
+      type = "reduction_from_baseline"
+    ),
+    "pass"
+  )
+  expect_equal(
+    postprom:::classifyPolicyTarget(
+      observed = 0.145,
+      target = target,
+      tolerance = warningTolerance,
+      type = "reduction_from_baseline"
+    ),
+    "warn"
+  )
+  expect_equal(
+    postprom:::classifyPolicyTarget(
+      observed = 0.13,
+      target = target,
+      tolerance = warningTolerance,
+      type = "reduction_from_baseline"
+    ),
+    "fail"
+  )
+})
+
+test_that("the near-miss Japan commercial policy is reported as passing", {
+  report <- makeCompletedValidationReport(
+    regions = "JPN", years = c(2013, 2030)
+  )
+  commercial <- magclass::new.magpie(
+    "JPN", c(2013, 2030), "Final Energy|Commercial", fill = 100
+  )
+  commercial[, 2030, ] <- 84.80235
+  commercial <- magclass::add_dimension(
+    commercial, dim = 3.2, add = "unit", nm = "Mtoe"
+  )
+  report <- magclass::mbind(report, commercial)
+  checks <- defaultPolicyValidationChecks()
+  checks <- checks[
+    checks$check_id == "policy_11c_jpn_bui_eff_30_min", , drop = FALSE
+  ]
+
+  result <- validateResults(report, policy_checks = checks)
+
+  expect_equal(result$policies$observed, 0.1519765, tolerance = 1e-8)
+  expect_equal(result$policies$status, "pass")
+})
+
 test_that("packaged policy checks preserve regions and protocol provenance", {
   checks <- defaultPolicyValidationChecks()
 
@@ -160,6 +216,125 @@ test_that("relative policy checks use the report's native source unit", {
   expect_equal(result$policies$status, "pass")
   expect_equal(result$policies$period, "2010--2035")
   expect_match(result$policies$message, "2012 and 2036")
+})
+
+test_that("reviewed policy aliases and missing carbon-price years are converted", {
+  checks <- defaultPolicyValidationChecks()
+  getCheck <- function(id) checks[checks$check_id == id, , drop = FALSE]
+
+  expect_equal(
+    getCheck("policy_1a_chn_gen_eff_30_min")$variable,
+    "Carbon Intensity|GDP"
+  )
+  expect_equal(
+    getCheck("policy_17a_eur_gen_fos_50_max")$variable,
+    "Emissions|CO2|Energy|Supply|Solids"
+  )
+  expect_equal(
+    getCheck("policy_14a_eur_alu_ghg_30_min")$variable,
+    "Emissions|Kyoto Gases|AFOLU"
+  )
+  geothermal <- getCheck("policy_3d_jpn_ene_ren_40_min")
+  expect_equal(
+    geothermal$variable,
+    paste0(
+      "Secondary Energy|Electricity|Geothermal and other renewable ",
+      "sources Share"
+    )
+  )
+  expect_equal(geothermal$unit, "1")
+  expect_equal(geothermal$target_value, 0.01)
+
+  chinaPrice <- getCheck("policy_13a_chn_ene_ets_20_min")
+  japanPrice <- getCheck("policy_8a_jpn_tra_fin_02_min")
+  expect_true(chinaPrice$enabled)
+  expect_equal(chinaPrice$target_year, 2025)
+  expect_equal(chinaPrice$unit, "US$2015/tn CO2")
+  expect_true(japanPrice$enabled)
+  expect_equal(japanPrice$target_year, 2025)
+  expect_equal(japanPrice$unit, "US$2015/tn CO2")
+})
+
+test_that("reviewed China EU and Japan policy mappings are evaluated", {
+  regions <- c("CHA", "EU", "JPN")
+  years <- c(2025, 2030, 2040, 2050)
+  report <- makeCompletedValidationReport(regions = regions, years = years)
+
+  carbonPrice <- magclass::new.magpie(
+    regions, years, "Price|Carbon", fill = 20
+  )
+  carbonPrice["JPN", , ] <- 2
+  carbonPrice <- magclass::add_dimension(
+    carbonPrice, dim = 3.2, add = "unit", nm = "US$2015/tn CO2"
+  )
+  afolu <- magclass::new.magpie(
+    regions, years, "Emissions|Kyoto Gases|AFOLU", fill = -300
+  )
+  afolu <- magclass::add_dimension(
+    afolu, dim = 3.2, add = "unit", nm = "Mt CO2-equiv/yr"
+  )
+  report <- magclass::mbind(report, carbonPrice, afolu)
+
+  checkIds <- c(
+    "policy_1a_chn_gen_eff_30_min",
+    "policy_13a_chn_ene_ets_20_min",
+    "policy_17a_eur_gen_fos_50_max",
+    "policy_14a_eur_alu_ghg_30_min",
+    "policy_3a_jpn_ene_ren_40_min",
+    "policy_8a_jpn_tra_fin_02_min",
+    "policy_8a_jpn_tra_fin_02_max"
+  )
+  checks <- defaultPolicyValidationChecks()
+  checks <- checks[checks$check_id %in% checkIds, , drop = FALSE]
+
+  result <- validateResults(report, policy_checks = checks)
+
+  expect_false(
+    "Secondary Energy|Electricity|Solar Share" %in%
+      magclass::getItems(report, 3.1)
+  )
+  expect_setequal(result$policies$check_id, checkIds)
+  expect_false(any(result$policies$status == "skip"))
+  expect_equal(
+    result$policies$variable[
+      result$policies$check_id == "policy_3a_jpn_ene_ren_40_min"
+    ],
+    "Secondary Energy|Electricity|Solar Share"
+  )
+  expect_equal(
+    result$policies$observed[
+      result$policies$check_id == "policy_3a_jpn_ene_ren_40_min"
+    ],
+    0.1
+  )
+})
+
+test_that("cumulative policy checks integrate the annual report series", {
+  report <- makeCompletedValidationReport(
+    regions = "USA", years = c(2010, 2020, 2030, 2040)
+  )
+  variable <- "Emissions|CO2|Energy|Demand|Residential and Commercial"
+  annual <- magclass::new.magpie(
+    "USA", c(2010, 2020, 2030, 2040), variable, fill = 1
+  )
+  annual[, 2010, ] <- 2
+  annual <- magclass::add_dimension(
+    annual, dim = 3.2, add = "unit", nm = "Mt CO2/yr"
+  )
+  report <- magclass::mbind(report, annual)
+  checks <- defaultPolicyValidationChecks()
+  checks <- checks[
+    checks$check_id == "policy_7a_usa_bui_eff_40_alt_min", , drop = FALSE
+  ]
+
+  result <- validateResults(report, policy_checks = checks)
+
+  expect_true(checks$enabled)
+  expect_equal(checks$target_type, "cumulative_minimum")
+  expect_equal(result$policies$observed, 25)
+  expect_equal(result$policies$unit, "Mt CO2")
+  expect_equal(result$policies$period, "2010--2040")
+  expect_equal(result$policies$status, "pass")
 })
 
 test_that("long-term current-policy checks evaluate exact endpoint CAGRs", {

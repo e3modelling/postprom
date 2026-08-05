@@ -33,6 +33,23 @@ makeValidationInput <- function(regions = c("World", "EU"),
       )
     )
   }
+  for (source in c(
+    "Solar", "Wind", "Hydro",
+    "Geothermal and other renewable sources", "Biofuels", "Nuclear"
+  )) {
+    sourceValue <- c(
+      "Solar" = 0.4, "Wind" = 0.8, "Hydro" = 1,
+      "Geothermal and other renewable sources" = 0.2,
+      "Biofuels" = 0.4, "Nuclear" = 1.2
+    )[[source]]
+    report <- magclass::mbind(
+      report,
+      makeVariable(
+        paste0("Secondary Energy|Electricity|", source),
+        "TWh", sourceValue
+      )
+    )
+  }
   report
 }
 

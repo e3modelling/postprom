@@ -307,6 +307,7 @@ evaluatePolicyValidation <- function(report, checks) {
   }
 
   tidy <- tidyValidationReport(report)
+  tidy <- addPolicyElectricitySourceShares(tidy, active)
   output <- vector("list", nrow(active))
   for (i in seq_len(nrow(active))) {
     check <- active[i, , drop = FALSE]
@@ -321,7 +322,10 @@ evaluatePolicyValidation <- function(report, checks) {
       "reduction_from_baseline", "maximum_reduction_from_baseline",
       "increase_from_baseline", "maximum_increase_from_baseline"
     )
+    cumulativeTypes <- c("cumulative_minimum", "cumulative_maximum")
     needsBaseline <- targetType %in% relativeTypes
+    needsCumulative <- targetType %in% cumulativeTypes
+    needsStart <- needsBaseline || needsCumulative
     if (needsBaseline) {
       reportUnits <- unique(variableRows$unit)
       rows <- if (length(reportUnits) == 1L) variableRows else
@@ -334,17 +338,36 @@ evaluatePolicyValidation <- function(report, checks) {
     targetEndpoint <- nearestPolicyEndpoint(
       rows, check$target_year[[1]]
     )
-    baselineEndpoint <- if (needsBaseline) {
+    baselineEndpoint <- if (needsStart) {
       nearestPolicyEndpoint(rows, check$baseline_year[[1]])
     } else {
       list(row = rows[FALSE, , drop = FALSE], year = NA_integer_)
     }
     targetRow <- targetEndpoint$row
     baselineRow <- baselineEndpoint$row
+    cumulativeRows <- if (needsCumulative &&
+                          is.finite(baselineEndpoint$year) &&
+                          is.finite(targetEndpoint$year)) {
+      rows[
+        rows$year >= baselineEndpoint$year &
+          rows$year <= targetEndpoint$year,
+        ,
+        drop = FALSE
+      ]
+    } else {
+      rows[FALSE, , drop = FALSE]
+    }
+    invalidCumulative <- needsCumulative && (
+      nrow(cumulativeRows) < 2L ||
+        any(!is.finite(cumulativeRows$value)) ||
+        anyDuplicated(cumulativeRows$year) ||
+        baselineEndpoint$year >= targetEndpoint$year
+    )
     if (nrow(targetRow) != 1L || !is.finite(targetRow$value[[1]]) ||
-        (needsBaseline && (nrow(baselineRow) != 1L ||
+        (needsStart && (nrow(baselineRow) != 1L ||
          !is.finite(baselineRow$value[[1]]) ||
-         baselineRow$value[[1]] == 0))) {
+         (needsBaseline && baselineRow$value[[1]] == 0))) ||
+        invalidCumulative) {
       output[[i]] <- newValidationSectionFinding(
         "policy", check$check_id[[1]], check$variable[[1]],
         check$country[[1]], as.character(check$target_year[[1]]),
@@ -357,22 +380,32 @@ evaluatePolicyValidation <- function(report, checks) {
       )
       next
     }
-    observed <- policyObservedValue(
-      targetType, targetRow$value[[1]],
-      if (needsBaseline) baselineRow$value[[1]] else NA_real_
-    )
+    observed <- if (needsCumulative) {
+      cumulativePolicyValue(cumulativeRows, baselineRow$value[[1]])
+    } else {
+      policyObservedValue(
+        targetType, targetRow$value[[1]],
+        if (needsBaseline) baselineRow$value[[1]] else NA_real_
+      )
+    }
     target <- check$target_value[[1]]
     tolerance <- check$warn_tolerance[[1]]
     status <- classifyPolicyTarget(observed, target, tolerance, targetType)
-    outputUnit <- if (needsBaseline) "1" else check$unit[[1]]
-    period <- if (needsBaseline) {
+    outputUnit <- if (needsBaseline) {
+      "1"
+    } else if (needsCumulative) {
+      sub("/yr$", "", check$unit[[1]])
+    } else {
+      check$unit[[1]]
+    }
+    period <- if (needsStart) {
       paste0(baselineEndpoint$year, "--", targetEndpoint$year)
     } else {
       as.character(targetEndpoint$year)
     }
     yearMessage <- policyEndpointMessage(
       targetEndpoint$year, check$target_year[[1]],
-      baselineEndpoint$year, check$baseline_year[[1]], needsBaseline
+      baselineEndpoint$year, check$baseline_year[[1]], needsStart
     )
     output[[i]] <- newValidationSectionFinding(
       "policy", check$check_id[[1]], check$variable[[1]],
@@ -383,6 +416,65 @@ evaluatePolicyValidation <- function(report, checks) {
     )
   }
   bindValidationRows(output, emptyValidationSectionFindings())
+}
+
+# Derive technology-specific electricity shares only for policy checks that
+# request them. These values are private to validation and are not appended to
+# the report produced by reportIndicators().
+addPolicyElectricitySourceShares <- function(tidy, checks) {
+  shareToSource <- c(
+    "Secondary Energy|Electricity|Solar Share" =
+      "Secondary Energy|Electricity|Solar",
+    "Secondary Energy|Electricity|Wind Share" =
+      "Secondary Energy|Electricity|Wind",
+    "Secondary Energy|Electricity|Hydro Share" =
+      "Secondary Energy|Electricity|Hydro",
+    "Secondary Energy|Electricity|Geothermal and other renewable sources Share" =
+      "Secondary Energy|Electricity|Geothermal and other renewable sources",
+    "Secondary Energy|Electricity|Biofuels Share" =
+      "Secondary Energy|Electricity|Biofuels",
+    "Secondary Energy|Electricity|Nuclear Share" =
+      "Secondary Energy|Electricity|Nuclear"
+  )
+  japanChecks <- checks[checks$country == "JPN", , drop = FALSE]
+  requested <- intersect(unique(japanChecks$variable), names(shareToSource))
+  if (!length(requested)) return(tidy)
+
+  regions <- "JPN"
+  total <- tidy[
+    tidy$region %in% regions &
+      tidy$variable == "Secondary Energy|Electricity" &
+      tidy$unit == "TWh",
+    c("region", "year", "value"), drop = FALSE
+  ]
+  names(total)[3] <- "total"
+  if (!nrow(total)) return(tidy)
+
+  derived <- lapply(requested, function(shareVariable) {
+    source <- tidy[
+      tidy$region %in% regions &
+        tidy$variable == unname(shareToSource[[shareVariable]]) &
+        tidy$unit == "TWh",
+      c("region", "year", "value"), drop = FALSE
+    ]
+    if (!nrow(source)) return(NULL)
+    names(source)[3] <- "source"
+    values <- merge(source, total, by = c("region", "year"), all = FALSE)
+    if (!nrow(values)) return(NULL)
+    data.frame(
+      region = values$region,
+      year = values$year,
+      variable = shareVariable,
+      unit = "1",
+      value = ifelse(
+        is.finite(values$source) & is.finite(values$total) & values$total != 0,
+        values$source / values$total,
+        NA_real_
+      ),
+      stringsAsFactors = FALSE
+    )
+  })
+  bindValidationRows(c(list(tidy), derived), tidy[FALSE, , drop = FALSE])
 }
 
 evaluateLongTermValidation <- function(report, checks) {
@@ -669,18 +761,44 @@ policyObservedValue <- function(type, targetValue, baselineValue) {
   )
 }
 
+cumulativePolicyValue <- function(rows, baselineValue) {
+  rows <- rows[order(rows$year), , drop = FALSE]
+  widths <- diff(rows$year)
+  avoided <- baselineValue - rows$value
+  sum(widths * (utils::head(avoided, -1L) +
+    utils::tail(avoided, -1L)) / 2)
+}
+
 classifyPolicyTarget <- function(observed, target, tolerance, type) {
   if (!is.finite(observed) || !is.finite(target)) return("skip")
   if (!is.finite(tolerance)) tolerance <- 0
+  tolerance <- abs(tolerance)
+  # Generated policy checks use a 10% warning tolerance. Reserve one tenth of
+  # it (1% of the target) as a numerical/model-year pass margin so negligible
+  # misses caused by reporting precision or nearest-year selection do not warn.
+  passTolerance <- 0.1 * tolerance
   if (type %in% c(
     "maximum", "maximum_reduction_from_baseline",
-    "maximum_increase_from_baseline"
+    "maximum_increase_from_baseline", "cumulative_maximum"
   )) {
-    if (observed <= target) "pass" else if (observed <= target + tolerance) "warn" else "fail"
+    if (observed <= target + passTolerance) {
+      "pass"
+    } else if (observed <= target + tolerance) {
+      "warn"
+    } else {
+      "fail"
+    }
   } else if (type %in% c(
-    "minimum", "reduction_from_baseline", "increase_from_baseline"
+    "minimum", "reduction_from_baseline", "increase_from_baseline",
+    "cumulative_minimum"
   )) {
-    if (observed >= target) "pass" else if (observed >= target - tolerance) "warn" else "fail"
+    if (observed >= target - passTolerance) {
+      "pass"
+    } else if (observed >= target - tolerance) {
+      "warn"
+    } else {
+      "fail"
+    }
   } else {
     "skip"
   }
@@ -690,7 +808,7 @@ policyValidationMessage <- function(status, type) {
   if (status == "skip") return(paste0("Unsupported or unevaluable target type '", type, "'."))
   switch(
     status,
-    pass = "The country reaches the configured policy target.",
+    pass = "The country meets the configured policy target within the pass tolerance.",
     warn = "The country is close to, but does not reach, the configured policy target.",
     fail = "The country does not reach the configured policy target."
   )
