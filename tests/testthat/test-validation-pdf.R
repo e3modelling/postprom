@@ -448,6 +448,16 @@ test_that("the dedicated template contains all four validation sections", {
   expect_equal(sum(doiMatches > 0), 1)
   expect_false(grepl("Message & Source", policyText, fixed = TRUE))
   expect_false(grepl("Evaluated & Pass & Warn & Fail", tex, fixed = TRUE))
+
+  templateText <- paste(readLines(
+    system.file("templates", "validation.Rnw", package = "postprom"),
+    warn = FALSE
+  ), collapse = "\n")
+  expect_match(
+    templateText,
+    'benchmark$status == "pass"',
+    fixed = TRUE
+  )
 })
 
 test_that("the plot PDF template no longer embeds validation", {

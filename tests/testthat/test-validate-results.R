@@ -52,7 +52,11 @@ test_that("shares, missing indicators, and exact benchmark years are diagnosed",
     , , magclass::getItems(report, 3.1) != "Primary Energy|Fossil Share"
   ]
 
-  result <- validateResults(report)
+  checks <- defaultIndicatorsChecks()
+  checks$enabled[
+    checks$check_id == "pe_intensity_world_1990_2010"
+  ] <- TRUE
+  result <- validateResults(report, indicators_checks = checks)
   findings <- result$indicators$findings
 
   expect_true(any(

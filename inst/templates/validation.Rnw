@@ -221,8 +221,7 @@ render_placeholder_or_findings(
 
 \section{Indicators check}
 These checks use the indicators already calculated by
-\texttt{reportIndicators()}. The validation layer evaluates bounds, exact-year
-benchmarks, and annualized trends without recalculating indicator formulas.
+\texttt{reportIndicators()}. 
 
 <<indicators, echo=FALSE, results='asis'>>=
 indicator_result <- validation_sections$indicators
@@ -233,20 +232,22 @@ benchmark <- indicatorFindingsForPdf(indicator_result)
 benchmark <- benchmark[
   benchmark$check_id %in% indicator_result$findings$check_id[
     indicator_result$findings$check_type %in% c("level", "cagr")
-  ] & benchmark$status != "skip",
+  ] & benchmark$status == "pass",
   ,
   drop = FALSE
 ]
+cat("\\subsection{Evaluated benchmarks - Pass}\n\n")
 if (nrow(benchmark)) {
-  cat("\\subsection{Evaluated benchmarks}\n\n")
   render_table(prepare_findings(benchmark))
+} else {
+  cat("No evaluated indicator benchmarks passed.\n\n")
 }
 
 indicator_exceptions <- indicatorFindingsForPdf(indicator_result)
 indicator_exceptions <- indicator_exceptions[
   indicator_exceptions$status != "pass", , drop = FALSE
 ]
-cat("\\subsection{Exceptions and unavailable checks}\n\n")
+cat("\\subsection{Evaluated benchmarks - Warnings, fails and unavailable checks}\n\n")
 if (!nrow(indicator_exceptions)) {
   cat("All evaluated indicator checks passed.\n\n")
 } else {
