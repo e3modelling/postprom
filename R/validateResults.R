@@ -8,11 +8,11 @@
 #' @export
 defaultIndicatorsChecks <- function() {
   path <- system.file(
-    "extdata", "result-validation-checks.csv",
+    "extdata", "indicator-validation-checks.csv",
     package = "postprom"
   )
   if (!nzchar(path)) {
-    path <- file.path("inst", "extdata", "result-validation-checks.csv")
+    path <- file.path("inst", "extdata", "indicator-validation-checks.csv")
   }
   if (!file.exists(path)) {
     stop("Could not find the packaged result-validation checks.")
