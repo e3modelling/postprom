@@ -44,12 +44,20 @@ test_that("packaged historical checks use native units and compatible scopes", {
   expect_true(all(checks$enabled))
   expect_false(any(grepl("GDP", checks$variable, fixed = TRUE)))
   expect_false(any(grepl("Total excl", checks$variable, fixed = TRUE)))
+  expect_false(any(checks$source == "validation-research-report.md"))
 
   primary <- checks[
     checks$check_id == "hist_2024_primary_energy_world", , drop = FALSE
   ]
   expect_equal(primary$unit, "Mtoe")
   expect_equal(primary$central, 620 / 0.041868, tolerance = 1e-6)
+  expect_match(primary$source, "IEA World Energy Balances", fixed = TRUE)
+
+  electricity <- checks[
+    checks$check_id == "hist_2024_secondary_energy_electricity_usa",
+    , drop = FALSE
+  ]
+  expect_match(electricity$source, "US EIA MER", fixed = TRUE)
 
   population <- checks[
     checks$check_id == "hist_2024_population_cha", , drop = FALSE
@@ -57,6 +65,7 @@ test_that("packaged historical checks use native units and compatible scopes", {
   expect_equal(population$region, "CHA")
   expect_equal(population$unit, "billion")
   expect_equal(population$central, 1.408)
+  expect_match(population$source, "UN WPP 2024", fixed = TRUE)
 })
 
 test_that("public PDF APIs use the four check-family names", {
@@ -434,6 +443,8 @@ test_that("the dedicated template contains all four validation sections", {
     indicators_checks = defaultIndicatorsChecks(),
     long_term_checks = defaultLongTermValidationChecks()
   )
+  # Exercise both historical table branches in this rendering test.
+  sections$validation$status[[1]] <- "pass"
   outputFile <- tempfile(fileext = ".tex")
   on.exit(unlink(outputFile), add = TRUE)
   environment <- new.env(parent = globalenv())
@@ -485,6 +496,28 @@ test_that("the dedicated template contains all four validation sections", {
   expect_equal(sum(doiMatches > 0), 1)
   expect_false(grepl("Message & Source", policyText, fixed = TRUE))
   expect_false(grepl("Evaluated & Pass & Warn & Fail", tex, fixed = TRUE))
+
+  historicalText <- sub(
+    ".*\\\\section\\{Validation checks\\}", "", tex
+  )
+  historicalText <- sub(
+    "\\\\section\\{Policy checks\\}.*", "", historicalText
+  )
+  expect_match(
+    historicalText,
+    "\\subsection{Evaluated historical checks - Pass}",
+    fixed = TRUE
+  )
+  expect_match(
+    historicalText,
+    "\\subsection{Evaluated historical checks - Warnings, fails and NAs}",
+    fixed = TRUE
+  )
+  historicalHeaders <- gregexpr(
+    "Message & Source", historicalText, fixed = TRUE
+  )[[1]]
+  expect_equal(sum(historicalHeaders > 0), 2)
+  expect_false(grepl("Summary by variable and region", historicalText, fixed = TRUE))
 
   longTermText <- sub(
     ".*\\\\section\\{Long term checks\\}", "", tex

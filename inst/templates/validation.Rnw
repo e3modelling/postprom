@@ -176,22 +176,27 @@ render_table(validation_sections$overview, longtable = FALSE)
 
 \section{Validation checks}
 This section compares reported model values with the packaged 2024 benchmark
-ranges derived from \texttt{validation-research-report.md}. Values inside the
+ranges derived from \texttt{validation-checks.csv}. Values inside the
 published lower--upper range pass; values outside the range warn up to a 50\%
 relative deviation from the central estimate and fail beyond it.
 
 <<historical, echo=FALSE, results='asis'>>=
 validation <- validation_sections$validation
-if (nrow(validation_sections$validation_summary)) {
-  cat("\\subsection{Summary by variable and region}\n\n")
-  render_table(validation_sections$validation_summary)
+validation_pass <- validation[validation$status == "pass", , drop = FALSE]
+validation_other <- validation[validation$status != "pass", , drop = FALSE]
+
+cat("\\subsection{Evaluated historical checks - Pass}\n\n")
+if (nrow(validation_pass)) {
+  render_placeholder_or_findings(validation_pass)
+} else {
+  cat("No evaluated historical numerical checks passed.\n\n")
 }
-exceptions <- validation[validation$status != "pass", , drop = FALSE]
-cat("\\subsection{Exceptions and unavailable checks}\n\n")
-if (!nrow(exceptions)) {
+
+cat("\\subsection{Evaluated historical checks - Warnings, fails and NAs}\n\n")
+if (!nrow(validation_other)) {
   cat("All evaluated historical numerical checks passed.\n\n")
 } else {
-  render_placeholder_or_findings(exceptions)
+  render_placeholder_or_findings(validation_other)
 }
 @
 
@@ -210,6 +215,7 @@ baseline year. For Japan's technology-specific electricity targets, validation
 derives the required share internally as source generation divided by total
 electricity generation. These temporary shares are not added to the Postprom
 report; its existing aggregate renewables-share indicator remains unchanged.
+Pass is under 10\%, warning until 50\% and fail is larger than 50\%.
 
 <<policies, echo=FALSE, results='asis'>>=
 render_placeholder_or_findings(
@@ -221,7 +227,7 @@ render_placeholder_or_findings(
 
 \section{Indicators check}
 These checks use the indicators already calculated by
-\texttt{reportIndicators()}. 
+\texttt{reportIndicators()}. Pass is under 10\%, warning until 50\% and fail is larger than 50\%.  
 
 <<indicators, echo=FALSE, results='asis'>>=
 indicator_result <- validation_sections$indicators
@@ -260,7 +266,7 @@ This section compares model results with targets derived from
 \texttt{quantified\_longterm\_trends.md} which are based on the current policies document. Checks can compare annualized
 trends, cumulative changes, or endpoint levels. Exact configured years are
 required and no interpolation is performed. EU27 targets use the aggregate
-\texttt{EU} report region rather than separate member-state results.
+\texttt{EU} report region rather than separate member-state results. Pass is under 10\%, warning until 50\% and fail is larger than 50\%.
 
 <<long_term, echo=FALSE, results='asis'>>=
 long_term <- validation_sections$long_term
