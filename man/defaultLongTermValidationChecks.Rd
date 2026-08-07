@@ -10,7 +10,8 @@ defaultLongTermValidationChecks()
 A data frame describing long-term trend checks.
 }
 \description{
-Loads long-term trend targets derived from \code{long-term-targets.md}.
-Quantitative rows use exact endpoint years; qualitative targets without
-numeric bounds remain outside the active table.
+Loads long-term targets derived from
+\code{quantified_longterm_trends.md}. Checks cover annualized trends,
+cumulative changes, and endpoint levels using exact configured years.
+EU-specific checks use the aggregate OPEN-PROM \code{EU} region.
 }

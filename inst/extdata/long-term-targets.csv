@@ -1,0 +1,45 @@
+check_id,variable,unit,region,start_year,end_year,check_type,reference_value,fail_min,pass_min,pass_max,fail_max,source,notes,enabled
+lt_primary_energy_world,Primary Energy,Mtoe,World,2020,2050,change,0.15,0,0.10,0.20,0.30,quantified_longterm_trends.md,Global cumulative primary-energy change under current policies,TRUE
+lt_primary_energy_eu,Primary Energy,Mtoe,EU,2020,2050,change,-0.325,-0.50,-0.40,-0.25,-0.15,quantified_longterm_trends.md,EU aggregate overlay; individual EU27 countries are not evaluated,TRUE
+lt_primary_energy_usa,Primary Energy,Mtoe,USA,2020,2050,change,-0.15,-0.30,-0.20,-0.10,0,quantified_longterm_trends.md,USA uses the OECD advanced-economy range,TRUE
+lt_primary_energy_cha,Primary Energy,Mtoe,CHA,2020,2050,change,0.10,-0.05,0.05,0.15,0.25,quantified_longterm_trends.md,CHN is mapped to the OPEN-PROM CHA region,TRUE
+lt_primary_energy_ind,Primary Energy,Mtoe,IND,2020,2050,change,1.15,0.50,0.80,1.50,1.80,quantified_longterm_trends.md,India uses the developing India/ASEAN range as an indicative band,TRUE
+lt_final_energy_world,Final Energy,Mtoe,World,2020,2050,change,0.125,0,0.075,0.175,0.25,quantified_longterm_trends.md,Final energy is expected to grow slightly slower than primary energy,TRUE
+lt_final_energy_eu,Final Energy,Mtoe,EU,2020,2050,change,-0.325,-0.50,-0.40,-0.25,-0.15,quantified_longterm_trends.md,EU aggregate proxy using the quantified energy-demand range,TRUE
+lt_final_energy_usa,Final Energy,Mtoe,USA,2020,2050,change,-0.15,-0.30,-0.20,-0.10,0,quantified_longterm_trends.md,USA uses the OECD advanced-economy range,TRUE
+lt_final_energy_cha,Final Energy,Mtoe,CHA,2020,2050,change,0.075,-0.05,0,0.10,0.20,quantified_longterm_trends.md,Final energy grows slightly slower than the quantified CHA primary-energy range,TRUE
+lt_final_energy_ind,Final Energy,Mtoe,IND,2020,2050,change,1.05,0.40,0.70,1.40,1.70,quantified_longterm_trends.md,Indicative developing-economy band adjusted below primary-energy growth,TRUE
+lt_energy_intensity_gdp_world,Intensity|Primary Energy,Mtoe/billion US$2015,World,2020,2050,cagr,-0.020,-0.030,-0.025,-0.015,-0.010,quantified_longterm_trends.md,Global annual decline range,TRUE
+lt_energy_intensity_gdp_countries,Intensity|Primary Energy,Mtoe/billion US$2015,countries,2020,2050,cagr,-0.015,-0.030,-0.020,-0.010,0,quantified_longterm_trends.md,Non-EU countries; EU27 members are excluded when the EU aggregate exists,TRUE
+lt_energy_intensity_gdp_eu,Intensity|Primary Energy,Mtoe/billion US$2015,EU,2020,2050,cagr,-0.030,-0.040,-0.035,-0.025,-0.020,quantified_longterm_trends.md,EU aggregate annual decline range,TRUE
+lt_industry_energy_intensity_countries,Energy Intensity|Industry,1,countries,2020,2050,cagr,-0.015,-0.030,-0.020,-0.010,0,quantified_longterm_trends.md,Non-EU industrial activity decoupling,TRUE
+lt_industry_energy_intensity_eu,Energy Intensity|Industry,1,EU,2020,2050,cagr,-0.025,-0.040,-0.030,-0.020,-0.010,quantified_longterm_trends.md,EU aggregate stricter industrial activity decoupling,TRUE
+lt_residential_energy_intensity_countries,Energy Intensity|Residential,Mtoe/ACTV,countries,2020,2050,cagr,-0.015,-0.030,-0.020,-0.010,0,quantified_longterm_trends.md,Non-EU household-income proxy,TRUE
+lt_residential_energy_intensity_eu,Energy Intensity|Residential,Mtoe/ACTV,EU,2020,2050,cagr,-0.025,-0.040,-0.030,-0.020,-0.010,quantified_longterm_trends.md,EU aggregate stricter household-income proxy,TRUE
+lt_passenger_car_energy_intensity_countries,Energy Intensity|Transportation|Passenger Transport - Cars,Mtoe/ACTV,countries,2020,2050,cagr,-0.015,-0.030,-0.020,-0.010,0,quantified_longterm_trends.md,Non-EU passenger transport activity decoupling,TRUE
+lt_passenger_car_energy_intensity_eu,Energy Intensity|Transportation|Passenger Transport - Cars,Mtoe/ACTV,EU,2020,2050,cagr,-0.025,-0.040,-0.030,-0.020,-0.010,quantified_longterm_trends.md,EU aggregate stricter passenger transport decoupling,TRUE
+lt_freight_truck_energy_intensity_countries,Energy Intensity|Transportation|Goods Transport - Trucks,Mtoe/Gtkm,countries,2020,2050,cagr,-0.015,-0.030,-0.020,-0.010,0,quantified_longterm_trends.md,Non-EU freight transport activity decoupling,TRUE
+lt_freight_truck_energy_intensity_eu,Energy Intensity|Transportation|Goods Transport - Trucks,Mtoe/Gtkm,EU,2020,2050,cagr,-0.025,-0.040,-0.030,-0.020,-0.010,quantified_longterm_trends.md,EU aggregate stricter freight transport decoupling,TRUE
+lt_electricity_share_final_world,Final Energy|Electricity Share,1,World,,2050,level,0.325,0.25,0.30,0.35,0.40,quantified_longterm_trends.md,Global 2050 electricity share of final energy,TRUE
+lt_electricity_share_final_eu,Final Energy|Electricity Share,1,EU,,2050,level,0.375,0.30,0.35,0.40,0.45,quantified_longterm_trends.md,EU aggregate 2050 electricity share,TRUE
+lt_electricity_share_final_cha,Final Energy|Electricity Share,1,CHA,,2050,level,0.40,0.30,0.35,0.45,0.50,quantified_longterm_trends.md,China frontrunner target mapped to CHA,TRUE
+lt_co2_world,Emissions|CO2,Mt CO2/yr,World,2020,2050,change,-0.10,-0.25,-0.15,-0.05,0.05,quantified_longterm_trends.md,Global current-policies cumulative CO2 change,TRUE
+lt_co2_eu,Emissions|CO2,Mt CO2/yr,EU,2020,2050,change,-0.95,,-1.00,-0.90,-0.80,quantified_longterm_trends.md,EU aggregate near-net-zero overlay; reductions beyond 100 percent remain acceptable,TRUE
+lt_co2_usa,Emissions|CO2,Mt CO2/yr,USA,2020,2050,change,-0.40,-0.60,-0.50,-0.30,-0.20,quantified_longterm_trends.md,USA/OECD ex-EU cumulative CO2 change,TRUE
+lt_co2_cha,Emissions|CO2,Mt CO2/yr,CHA,2020,2050,change,-0.10,-0.30,-0.20,0,0.10,quantified_longterm_trends.md,CHN target mapped to CHA,TRUE
+lt_co2_rus,Emissions|CO2,Mt CO2/yr,RUS,2020,2050,change,0,-0.20,-0.10,0.10,0.20,quantified_longterm_trends.md,Russia approximately flat band,TRUE
+lt_co2_mea,Emissions|CO2,Mt CO2/yr,MEA,2020,2050,change,0,-0.20,-0.10,0.10,0.20,quantified_longterm_trends.md,MENA approximately flat band mapped to MEA,TRUE
+lt_co2_ind,Emissions|CO2,Mt CO2/yr,IND,2020,2050,change,0.55,0.10,0.30,0.80,1.00,quantified_longterm_trends.md,India uses the developing India/ASEAN indicative range,TRUE
+lt_power_co2_world,Emissions|CO2|Energy|Supply|Electricity,Mt CO2/yr,World,2020,2050,change,-0.65,-0.90,-0.80,-0.50,-0.40,quantified_longterm_trends.md,Global power-sector emissions decline,TRUE
+lt_power_co2_eu,Emissions|CO2|Energy|Supply|Electricity,Mt CO2/yr,EU,2020,2040,change,-0.95,,-1.00,-0.90,-0.80,quantified_longterm_trends.md,EU aggregate power sector near zero by 2035-2040,TRUE
+lt_demand_co2_world,Emissions|CO2|Energy|Demand,Mt CO2/yr,World,2020,2050,change,0.05,-0.10,0,0.10,0.20,quantified_longterm_trends.md,Operational interpretation of flat-to-slight global demand-emissions growth,TRUE
+lt_primary_energy_carbon_intensity_world,Carbon Intensity|Primary Energy,Mt CO2/Mtoe,World,2020,2050,cagr,-0.015,-0.025,-0.020,-0.010,-0.005,quantified_longterm_trends.md,Global energy-supply carbon-intensity decline,TRUE
+lt_gdp_carbon_intensity_world,Carbon Intensity|GDP,Mt CO2/billion US$2015,World,2020,2050,cagr,-0.030,-0.040,-0.035,-0.025,-0.020,quantified_longterm_trends.md,Global economy-wide carbon-intensity decline,TRUE
+lt_power_carbon_intensity_world,Carbon Intensity|Secondary Energy|Electricity,Mt CO2/TWh,World,,2050,level,0.20,0.10,0.15,0.25,0.30,quantified_longterm_trends.md,Equivalent to 150-250 g CO2/kWh,TRUE
+lt_power_carbon_intensity_eu,Carbon Intensity|Secondary Energy|Electricity,Mt CO2/TWh,EU,,2050,level,0.025,-0.10,-0.05,0.05,0.10,quantified_longterm_trends.md,EU aggregate target below 50 g CO2/kWh; net-negative values are allowed,TRUE
+lt_power_carbon_intensity_cha,Carbon Intensity|Secondary Energy|Electricity,Mt CO2/TWh,CHA,,2050,level,0.25,0.15,0.20,0.30,0.35,quantified_longterm_trends.md,China target mapped to CHA; equivalent to 200-300 g CO2/kWh,TRUE
+lt_power_carbon_intensity_usa,Carbon Intensity|Secondary Energy|Electricity,Mt CO2/TWh,USA,,2050,level,0.15,0.05,0.10,0.20,0.25,quantified_longterm_trends.md,Equivalent to 100-200 g CO2/kWh,TRUE
+lt_renewables_power_share_world,Secondary Energy|Electricity|Renewables Share,1,World,,2050,level,0.60,0.45,0.55,0.65,0.75,quantified_longterm_trends.md,Global renewable share of power generation,TRUE
+lt_renewables_power_share_eu,Secondary Energy|Electricity|Renewables Share,1,EU,,2050,level,0.85,0.70,0.80,0.90,1.00,quantified_longterm_trends.md,EU aggregate renewable share; individual EU27 countries are not evaluated,TRUE
+lt_renewables_power_share_cha,Secondary Energy|Electricity|Renewables Share,1,CHA,,2050,level,0.70,0.55,0.65,0.75,0.85,quantified_longterm_trends.md,China target mapped to CHA,TRUE
+lt_renewables_power_share_usa,Secondary Energy|Electricity|Renewables Share,1,USA,,2050,level,0.50,0.35,0.45,0.55,0.65,quantified_longterm_trends.md,USA renewable share of power generation,TRUE

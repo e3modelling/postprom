@@ -25,9 +25,10 @@ defaultPolicyValidationChecks <- function() {
 
 #' Long-term trend checks
 #'
-#' Loads long-term trend targets derived from \code{long-term-targets.md}.
-#' Quantitative rows use exact endpoint years; qualitative targets without
-#' numeric bounds remain outside the active table.
+#' Loads long-term targets derived from
+#' \code{quantified_longterm_trends.md}. Checks cover annualized trends,
+#' cumulative changes, and endpoint levels using exact configured years.
+#' EU-specific checks use the aggregate OPEN-PROM \code{EU} region.
 #'
 #' @return A data frame describing long-term trend checks.
 #' @export
@@ -478,12 +479,8 @@ addPolicyElectricitySourceShares <- function(tidy, checks) {
 }
 
 evaluateLongTermValidation <- function(report, checks) {
-  required <- c(
-    "check_id", "variable", "unit", "region", "start_year", "end_year",
-    "reference_cagr", "fail_min", "pass_min", "pass_max", "fail_max",
-    "source", "notes", "enabled"
-  )
-  if (!is.data.frame(checks) || !all(required %in% names(checks))) {
+  checks <- normalizeLongTermChecks(checks)
+  if (is.null(checks)) {
     return(validationSectionPlaceholder(
       "long_term", "Long-term current-policy configuration is unavailable."
     ))
@@ -510,61 +507,145 @@ evaluateLongTermValidation <- function(report, checks) {
       regions <- sort(availableRegions)
     } else if (identical(selector, "countries")) {
       regions <- sort(availableRegions[grepl("^[A-Z]{3}$", availableRegions)])
+      regions <- setdiff(regions, eu27Iso3())
     } else {
       regions <- selector
     }
-    if (!length(regions)) regions <- selector
+    if (!length(regions) && !selector %in% c("*", "countries")) {
+      regions <- selector
+    }
 
     for (region in regions) {
       outputIndex <- outputIndex + 1L
+      checkType <- check$check_type[[1]]
+      requiredYears <- if (checkType == "level") {
+        check$end_year[[1]]
+      } else {
+        c(check$start_year[[1]], check$end_year[[1]])
+      }
       rows <- tidy[
         tidy$region == region &
           tidy$variable == check$variable[[1]] &
           tidy$unit == check$unit[[1]] &
-          tidy$year %in% c(check$start_year[[1]], check$end_year[[1]]),
+          tidy$year %in% requiredYears,
         ,
         drop = FALSE
       ]
-      period <- paste0(check$start_year[[1]], "--", check$end_year[[1]])
-      if (nrow(rows) != 2L || any(!is.finite(rows$value)) ||
-          any(rows$value <= 0) || check$end_year[[1]] <= check$start_year[[1]]) {
+      period <- if (checkType == "level") {
+        as.character(check$end_year[[1]])
+      } else {
+        paste0(check$start_year[[1]], "--", check$end_year[[1]])
+      }
+      valid <- nrow(rows) == length(requiredYears) &&
+        !anyDuplicated(rows$year) && all(is.finite(rows$value))
+      if (checkType == "cagr") {
+        valid <- valid && all(rows$value > 0) &&
+          check$end_year[[1]] > check$start_year[[1]]
+      } else if (checkType == "change") {
+        startRows <- rows[rows$year == check$start_year[[1]], , drop = FALSE]
+        valid <- valid && nrow(startRows) == 1L && startRows$value[[1]] != 0 &&
+          check$end_year[[1]] > check$start_year[[1]]
+      } else if (checkType != "level") {
+        valid <- FALSE
+      }
+      if (!valid) {
         output[[outputIndex]] <- newValidationSectionFinding(
           "long_term", check$check_id[[1]], check$variable[[1]],
-          region, period, NA, check$reference_cagr[[1]], NA,
-          "1/yr", "skip",
-          "CAGR requires both exact years and positive finite endpoint values.",
+          region, period, NA, check$reference_value[[1]], NA,
+          longTermOutputUnit(checkType, check$unit[[1]]), "skip",
+          paste0(
+            "The ", checkType, " check requires its exact endpoint year(s) ",
+            "and finite compatible values."
+          ),
           check$source[[1]]
         )
         next
       }
-      startValue <- rows$value[match(check$start_year[[1]], rows$year)]
       endValue <- rows$value[match(check$end_year[[1]], rows$year)]
-      observed <- (endValue / startValue)^(
-        1 / (check$end_year[[1]] - check$start_year[[1]])
-      ) - 1
-      reference <- check$reference_cagr[[1]]
-      if (!is.finite(reference) || reference == 0) {
-        deviation <- NA_real_
-        status <- "skip"
+      observed <- if (checkType == "level") {
+        endValue
       } else {
-        deviation <- (observed - reference) / abs(reference)
-        status <- classifyValidationScore(deviation, check)
+        startValue <- rows$value[match(check$start_year[[1]], rows$year)]
+        if (checkType == "cagr") {
+          (endValue / startValue)^(
+            1 / (check$end_year[[1]] - check$start_year[[1]])
+          ) - 1
+        } else {
+          (endValue - startValue) / abs(startValue)
+        }
       }
+      reference <- check$reference_value[[1]]
+      deviation <- if (is.finite(reference) && reference != 0) {
+        (observed - reference) / abs(reference)
+      } else {
+        NA_real_
+      }
+      status <- classifyLongTermTarget(observed, check)
       output[[outputIndex]] <- newValidationSectionFinding(
         "long_term", check$check_id[[1]], check$variable[[1]],
         region, period, observed, reference, deviation,
-        "1/yr", status,
+        longTermOutputUnit(checkType, check$unit[[1]]), status,
         paste0(
-          "Annualized trend deviation is ",
-          ifelse(is.na(deviation), "unavailable", paste0(
-            formatC(100 * deviation, digits = 1, format = "f"), "%"
-          )), "."
+          "Observed ", checkType, " value is ",
+          formatC(observed, digits = 4, format = "g"),
+          "; preferred range is [",
+          formatC(check$pass_min[[1]], digits = 4, format = "g"), ", ",
+          formatC(check$pass_max[[1]], digits = 4, format = "g"), "]."
         ),
         check$source[[1]]
       )
     }
   }
   bindValidationRows(output, emptyValidationSectionFindings())
+}
+
+normalizeLongTermChecks <- function(checks) {
+  if (!is.data.frame(checks)) return(NULL)
+  common <- c(
+    "check_id", "variable", "unit", "region", "start_year", "end_year",
+    "fail_min", "pass_min", "pass_max", "fail_max", "source", "notes",
+    "enabled"
+  )
+  if (!all(common %in% names(checks))) return(NULL)
+  if (all(c("check_type", "reference_value") %in% names(checks))) {
+    return(checks)
+  }
+  if (!"reference_cagr" %in% names(checks)) return(NULL)
+
+  reference <- checks$reference_cagr
+  scale <- abs(reference)
+  checks$check_type <- "cagr"
+  checks$reference_value <- reference
+  checks$fail_min <- reference + scale * checks$fail_min
+  checks$pass_min <- reference + scale * checks$pass_min
+  checks$pass_max <- reference + scale * checks$pass_max
+  checks$fail_max <- reference + scale * checks$fail_max
+  checks
+}
+
+classifyLongTermTarget <- function(observed, check) {
+  if (!is.finite(observed)) return("skip")
+  if ((!is.na(check$fail_min[[1]]) && observed < check$fail_min[[1]]) ||
+      (!is.na(check$fail_max[[1]]) && observed > check$fail_max[[1]])) {
+    return("fail")
+  }
+  if ((!is.na(check$pass_min[[1]]) && observed < check$pass_min[[1]]) ||
+      (!is.na(check$pass_max[[1]]) && observed > check$pass_max[[1]])) {
+    return("warn")
+  }
+  "pass"
+}
+
+longTermOutputUnit <- function(checkType, sourceUnit) {
+  switch(checkType, cagr = "1/yr", change = "1", level = sourceUnit, sourceUnit)
+}
+
+eu27Iso3 <- function() {
+  c(
+    "AUT", "BEL", "BGR", "HRV", "CYP", "CZE", "DNK", "EST", "FIN",
+    "FRA", "DEU", "GRC", "HUN", "IRL", "ITA", "LVA", "LTU", "LUX",
+    "MLT", "NLD", "POL", "PRT", "ROU", "SVK", "SVN", "ESP", "SWE"
+  )
 }
 
 indicatorFindingsForPdf <- function(validation) {

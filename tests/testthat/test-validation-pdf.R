@@ -362,30 +362,67 @@ test_that("long-term current-policy checks evaluate exact endpoint CAGRs", {
   expect_equal(result$long_term$status, "fail")
 })
 
-test_that("long-term country selectors expand one check to ISO3 regions", {
+test_that("long-term checks use aggregate EU and exclude its member countries", {
   report <- makeCompletedValidationReport(
-    regions = c("GRC", "DEU", "EU", "World"),
-    years = c(2025, 2050)
+    regions = c("GRC", "DEU", "EU", "USA", "World"),
+    years = c(2020, 2050)
   )
   intensity <- report[, , "Intensity|Primary Energy"]
-  intensity[, 2025, ] <- 1
-  intensity["GRC", 2050, ] <- (1 - 0.01)^25
-  intensity["DEU", 2050, ] <- (1 - 0.02)^25
+  intensity[, 2020, ] <- 1
+  intensity["GRC", 2050, ] <- (1 - 0.01)^30
+  intensity["DEU", 2050, ] <- (1 - 0.02)^30
+  intensity["EU", 2050, ] <- (1 - 0.03)^30
+  intensity["USA", 2050, ] <- (1 - 0.015)^30
   report <- replaceValidationVariable(
     report, "Intensity|Primary Energy", intensity
   )
   checks <- defaultLongTermValidationChecks()
   checks <- checks[
-    checks$check_id == "lt_energy_intensity_gdp_countries",
+    checks$check_id %in% c(
+      "lt_energy_intensity_gdp_countries",
+      "lt_energy_intensity_gdp_eu"
+    ),
     ,
     drop = FALSE
   ]
 
   result <- validateResults(report, long_term_checks = checks)
 
-  expect_setequal(result$long_term$region, c("DEU", "GRC"))
+  expect_setequal(result$long_term$region, c("EU", "USA"))
+  expect_false(any(result$long_term$region %in% c("DEU", "GRC")))
   expect_true(all(result$long_term$status == "pass"))
-  expect_equal(result$long_term$observed, c(-0.02, -0.01), tolerance = 1e-10)
+  expect_equal(
+    result$long_term$observed[match(c("EU", "USA"), result$long_term$region)],
+    c(-0.03, -0.015), tolerance = 1e-10
+  )
+})
+
+test_that("long-term checks support cumulative changes and endpoint levels", {
+  report <- makeCompletedValidationReport(
+    regions = "World", years = c(2020, 2050)
+  )
+  primary <- report[, , "Primary Energy"]
+  primary[, 2020, ] <- 100
+  primary[, 2050, ] <- 115
+  report <- replaceValidationVariable(report, "Primary Energy", primary)
+  share <- report[, , "Final Energy|Electricity Share"]
+  share[, 2050, ] <- 0.325
+  report <- replaceValidationVariable(
+    report, "Final Energy|Electricity Share", share
+  )
+  checks <- defaultLongTermValidationChecks()
+  checks <- checks[checks$check_id %in% c(
+    "lt_primary_energy_world", "lt_electricity_share_final_world"
+  ), , drop = FALSE]
+
+  result <- validateResults(report, long_term_checks = checks)$long_term
+
+  expect_setequal(result$check_id, checks$check_id)
+  expect_equal(
+    result$observed[match(checks$check_id, result$check_id)],
+    c(0.15, 0.325), tolerance = 1e-10
+  )
+  expect_true(all(result$status == "pass"))
 })
 
 test_that("the dedicated template contains all four validation sections", {
@@ -448,6 +485,21 @@ test_that("the dedicated template contains all four validation sections", {
   expect_equal(sum(doiMatches > 0), 1)
   expect_false(grepl("Message & Source", policyText, fixed = TRUE))
   expect_false(grepl("Evaluated & Pass & Warn & Fail", tex, fixed = TRUE))
+
+  longTermText <- sub(
+    ".*\\\\section\\{Long term checks\\}", "", tex
+  )
+  expect_match(
+    longTermText,
+    "\\subsection{Evaluated long-term checks - Pass}",
+    fixed = TRUE
+  )
+  expect_match(
+    longTermText,
+    "\\subsection{Evaluated long-term checks - Warnings, fails and NAs}",
+    fixed = TRUE
+  )
+  expect_false(grepl("Message & Source", longTermText, fixed = TRUE))
 
   templateText <- paste(readLines(
     system.file("templates", "validation.Rnw", package = "postprom"),

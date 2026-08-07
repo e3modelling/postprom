@@ -247,7 +247,7 @@ indicator_exceptions <- indicatorFindingsForPdf(indicator_result)
 indicator_exceptions <- indicator_exceptions[
   indicator_exceptions$status != "pass", , drop = FALSE
 ]
-cat("\\subsection{Evaluated benchmarks - Warnings, fails and unavailable checks}\n\n")
+cat("\\subsection{Evaluated benchmarks - Warnings, fails and NAs}\n\n")
 if (!nrow(indicator_exceptions)) {
   cat("All evaluated indicator checks passed.\n\n")
 } else {
@@ -256,12 +256,34 @@ if (!nrow(indicator_exceptions)) {
 @
 
 \section{Long term checks}
-This section compares model CAGRs with targets derived from
-\texttt{long-term-targets.md}.
-Exact start and end years are required and no interpolation is performed.
+This section compares model results with targets derived from
+\texttt{quantified\_longterm\_trends.md} which are based on the current policies document. Checks can compare annualized
+trends, cumulative changes, or endpoint levels. Exact configured years are
+required and no interpolation is performed. EU27 targets use the aggregate
+\texttt{EU} report region rather than separate member-state results.
 
 <<long_term, echo=FALSE, results='asis'>>=
-render_placeholder_or_findings(validation_sections$long_term)
+long_term <- validation_sections$long_term
+long_term_pass <- long_term[long_term$status == "pass", , drop = FALSE]
+long_term_other <- long_term[long_term$status != "pass", , drop = FALSE]
+
+cat("\\subsection{Evaluated long-term checks - Pass}\n\n")
+if (nrow(long_term_pass)) {
+  render_table(prepare_findings(
+    long_term_pass, include_source = FALSE
+  ))
+} else {
+  cat("No evaluated long-term checks passed.\n\n")
+}
+
+cat("\\subsection{Evaluated long-term checks - Warnings, fails and NAs}\n\n")
+if (!nrow(long_term_other)) {
+  cat("All evaluated long-term checks passed.\n\n")
+} else {
+  render_placeholder_or_findings(
+    long_term_other, include_source = FALSE
+  )
+}
 @
 
 \end{document}
