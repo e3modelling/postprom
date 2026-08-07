@@ -1,123 +1,3 @@
-#' Historical numerical validation checks
-#'
-#' Loads 2024 historical benchmark levels derived from
-#' \code{validation-research-report.md}. Reference values are stored in native
-#' Postprom units and can be inspected or extended before validation.
-#'
-#' @return A data frame describing historical numerical checks.
-#' @export
-defaultValidationChecks <- function() {
-  readValidationCsv("validation-checks.csv")
-}
-
-#' Country policy validation checks
-#'
-#' Loads country-level targets converted from the Climate Policy Modelling
-#' Protocol. Only directly reportable OPEN-PROM regions are retained. The
-#' protocol's CHN identifier is mapped explicitly to OPEN-PROM's CHA region;
-#' other unavailable jurisdictions are not assigned to model aggregates.
-#'
-#' @return A data frame describing country policy checks.
-#' @export
-defaultPolicyValidationChecks <- function() {
-  readValidationCsv("policy-validation-checks.csv")
-}
-
-#' Long-term trend checks
-#'
-#' Loads long-term targets derived from
-#' \code{quantified_longterm_trends.md}. Checks cover annualized trends,
-#' cumulative changes, and endpoint levels using exact configured years.
-#' EU-specific checks use the aggregate OPEN-PROM \code{EU} region.
-#'
-#' @return A data frame describing long-term trend checks.
-#' @export
-defaultLongTermValidationChecks <- function() {
-  readValidationCsv("long-term-targets.csv")
-}
-
-#' Validate Postprom results
-#'
-#' Runs the four maintained check families: historical validation, country
-#' policies, reported indicators, and long-term targets.
-#' Indicator formulas are consumed from the report and are never recalculated.
-#'
-#' @param results A completed MAgPIE report, or a uniquely named list of
-#'   completed MAgPIE reports.
-#' @param validation_checks Historical model-versus-reference checks.
-#' @param policy_checks Individual-country policy checks.
-#' @param indicators_checks Checks for reported indicators and their trends.
-#' @param long_term_checks Long-term target checks.
-#'
-#' @return A \code{postprom_validation} object containing unified findings,
-#'   summaries, indicator values, and the four family-specific results.
-#' @export
-validateResults <- function(
-    results,
-    validation_checks = defaultValidationChecks(),
-    policy_checks = defaultPolicyValidationChecks(),
-    indicators_checks = defaultIndicatorsChecks(),
-    long_term_checks = defaultLongTermValidationChecks()) {
-  reports <- normalizeValidationReports(results)
-  validation <- evaluateChecksByScenario(
-    reports, evaluateHistoricalValidation, validation_checks
-  )
-  policies <- evaluateChecksByScenario(
-    reports, evaluatePolicyValidation, policy_checks
-  )
-  indicators <- validateIndicatorResults(reports, indicators_checks)
-  longTerm <- evaluateChecksByScenario(
-    reports, evaluateLongTermValidation, long_term_checks
-  )
-
-  familyTables <- list(
-    "Validation checks" = validation,
-    "Policy checks" = policies,
-    "Indicators check" = indicatorFindingsForPdf(indicators),
-    "Long term checks" = longTerm
-  )
-  overview <- do.call(rbind, lapply(names(familyTables), function(family) {
-    summarizeValidationFamily(familyTables[[family]], family)
-  }))
-  rownames(overview) <- NULL
-  findings <- do.call(rbind, unname(familyTables))
-  rownames(findings) <- NULL
-
-  structure(
-    list(
-      findings = findings,
-      summary = overview,
-      indicator_values = indicators$indicator_values,
-      overview = overview,
-      validation = validation,
-      validation_summary = summarizeHistoricalValidation(validation),
-      policies = policies,
-      indicators = indicators,
-      long_term = longTerm
-    ),
-    class = "postprom_validation"
-  )
-}
-
-#' @export
-print.postprom_validation <- function(x, ...) {
-  cat("Postprom validation\n")
-  print(x$summary, row.names = FALSE)
-  exceptions <- x$findings[x$findings$status != "pass", , drop = FALSE]
-  if (!nrow(exceptions)) {
-    cat("No validation exceptions found.\n")
-  } else {
-    cat(nrow(exceptions), "validation exception(s). Showing up to 10:\n")
-    columns <- c(
-      "scenario", "check_id", "variable", "region", "period", "status",
-      "message"
-    )
-    print(utils::head(exceptions[, columns, drop = FALSE], 10),
-          row.names = FALSE)
-  }
-  invisible(x)
-}
-
 #' Create a standalone OPEN-PROM validation PDF
 #'
 #' Builds four check sections: historical validation, country policy targets,
@@ -193,6 +73,44 @@ validationPdfReport <- function(
   )
   message("Saving validation PDF in ", outputFile)
   invisible(list(pdf = outputFile, tex = texFile, sections = sections))
+}
+
+#' Historical numerical validation checks
+#'
+#' Loads 2024 historical benchmark levels derived from
+#' \code{validation-research-report.md}. Reference values are stored in native
+#' Postprom units and can be inspected or extended before validation.
+#'
+#' @return A data frame describing historical numerical checks.
+#' @export
+defaultValidationChecks <- function() {
+  readValidationCsv("validation-checks.csv")
+}
+
+#' Country policy validation checks
+#'
+#' Loads country-level targets converted from the Climate Policy Modelling
+#' Protocol. Only directly reportable OPEN-PROM regions are retained. The
+#' protocol's CHN identifier is mapped explicitly to OPEN-PROM's CHA region;
+#' other unavailable jurisdictions are not assigned to model aggregates.
+#'
+#' @return A data frame describing country policy checks.
+#' @export
+defaultPolicyValidationChecks <- function() {
+  readValidationCsv("policy-validation-checks.csv")
+}
+
+#' Long-term trend checks
+#'
+#' Loads long-term targets derived from
+#' \code{quantified_longterm_trends.md}. Checks cover annualized trends,
+#' cumulative changes, and endpoint levels using exact configured years.
+#' EU-specific checks use the aggregate OPEN-PROM \code{EU} region.
+#'
+#' @return A data frame describing long-term trend checks.
+#' @export
+defaultLongTermValidationChecks <- function() {
+  readValidationCsv("long-term-targets.csv")
 }
 
 evaluateChecksByScenario <- function(reports, evaluator, checks) {

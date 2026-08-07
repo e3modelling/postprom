@@ -1,3 +1,87 @@
+#' Validate Postprom results
+#'
+#' Runs the four maintained check families: historical validation, country
+#' policies, reported indicators, and long-term targets.
+#' Indicator formulas are consumed from the report and are never recalculated.
+#'
+#' @param results A completed MAgPIE report, or a uniquely named list of
+#'   completed MAgPIE reports.
+#' @param validation_checks Historical model-versus-reference checks.
+#' @param policy_checks Individual-country policy checks.
+#' @param indicators_checks Checks for reported indicators and their trends.
+#' @param long_term_checks Long-term target checks.
+#'
+#' @return A \code{postprom_validation} object containing unified findings,
+#'   summaries, indicator values, and the four family-specific results.
+#' @export
+validateResults <- function(
+    results,
+    validation_checks = defaultValidationChecks(),
+    policy_checks = defaultPolicyValidationChecks(),
+    indicators_checks = defaultIndicatorsChecks(),
+    long_term_checks = defaultLongTermValidationChecks()) {
+  reports <- normalizeValidationReports(results)
+  validation <- evaluateChecksByScenario(
+    reports, evaluateHistoricalValidation, validation_checks
+  )
+  policies <- evaluateChecksByScenario(
+    reports, evaluatePolicyValidation, policy_checks
+  )
+  indicators <- validateIndicatorResults(reports, indicators_checks)
+  longTerm <- evaluateChecksByScenario(
+    reports, evaluateLongTermValidation, long_term_checks
+  )
+
+  familyTables <- list(
+    "Validation checks" = validation,
+    "Policy checks" = policies,
+    "Indicators check" = indicatorFindingsForPdf(indicators),
+    "Long term checks" = longTerm
+  )
+  overview <- do.call(rbind, lapply(names(familyTables), function(family) {
+    summarizeValidationFamily(familyTables[[family]], family)
+  }))
+  rownames(overview) <- NULL
+  findings <- do.call(rbind, unname(familyTables))
+  rownames(findings) <- NULL
+
+  structure(
+    list(
+      findings = findings,
+      summary = overview,
+      indicator_values = indicators$indicator_values,
+      overview = overview,
+      validation = validation,
+      validation_summary = summarizeHistoricalValidation(validation),
+      policies = policies,
+      indicators = indicators,
+      long_term = longTerm
+    ),
+    class = "postprom_validation"
+  )
+}
+
+#' @export
+print.postprom_validation <- function(x, ...) {
+  cat("Postprom validation\n")
+  print(x$summary, row.names = FALSE)
+  exceptions <- x$findings[x$findings$status != "pass", , drop = FALSE]
+  if (!nrow(exceptions)) {
+    cat("No validation exceptions found.\n")
+  } else {
+    cat(nrow(exceptions), "validation exception(s). Showing up to 10:\n")
+    columns <- c(
+      "scenario", "check_id", "variable", "region", "period", "status",
+      "message"
+    )
+    print(utils::head(exceptions[, columns, drop = FALSE], 10),
+          row.names = FALSE)
+  }
+  invisible(x)
+}
+
+# Helpers -------------------------------------------------------------
+
 #' Default indicator checks
 #'
 #' Loads the lightweight bounds and published benchmark checks shipped with
