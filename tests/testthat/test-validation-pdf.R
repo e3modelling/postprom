@@ -364,9 +364,9 @@ test_that("long-term current-policy checks evaluate exact endpoint CAGRs", {
   expect_equal(result$long_term$status, "fail")
 })
 
-test_that("long-term checks use aggregate EU and exclude its member countries", {
+test_that("long-term checks include model regions and exclude EU members", {
   report <- makeCompletedValidationReport(
-    regions = c("GRC", "DEU", "EU", "USA", "World"),
+    regions = c("GRC", "DEU", "EU", "USA", "CAZ", "MEA", "World"),
     years = c(2020, 2050)
   )
   intensity <- report[, , "Intensity|Primary Energy"]
@@ -375,13 +375,15 @@ test_that("long-term checks use aggregate EU and exclude its member countries", 
   intensity["DEU", 2050, ] <- (1 - 0.02)^30
   intensity["EU", 2050, ] <- (1 - 0.03)^30
   intensity["USA", 2050, ] <- (1 - 0.015)^30
+  intensity["CAZ", 2050, ] <- (1 - 0.015)^30
+  intensity["MEA", 2050, ] <- (1 - 0.015)^30
   report <- replaceValidationVariable(
     report, "Intensity|Primary Energy", intensity
   )
   checks <- defaultLongTermValidationChecks()
   checks <- checks[
     checks$check_id %in% c(
-      "lt_energy_intensity_gdp_countries",
+      "lt_energy_intensity_gdp_regions",
       "lt_energy_intensity_gdp_eu"
     ),
     ,
@@ -390,12 +392,14 @@ test_that("long-term checks use aggregate EU and exclude its member countries", 
 
   result <- validateResults(report, long_term_checks = checks)
 
-  expect_setequal(result$long_term$region, c("EU", "USA"))
+  expect_setequal(result$long_term$region, c("CAZ", "EU", "MEA", "USA"))
   expect_false(any(result$long_term$region %in% c("DEU", "GRC")))
   expect_true(all(result$long_term$status == "pass"))
   expect_equal(
-    result$long_term$observed[match(c("EU", "USA"), result$long_term$region)],
-    c(-0.03, -0.015), tolerance = 1e-10
+    result$long_term$observed[match(
+      c("CAZ", "EU", "MEA", "USA"), result$long_term$region
+    )],
+    c(-0.015, -0.03, -0.015, -0.015), tolerance = 1e-10
   )
 })
 
@@ -488,6 +492,11 @@ test_that("the dedicated template contains all four validation sections", {
   )[[1]]
   expect_equal(sum(doiMatches > 0), 1)
   expect_false(grepl("Message & Source", policyText, fixed = TRUE))
+  expect_match(
+    policyText,
+    "an approximate 1\\% pass margin and 10\\% warning margin.",
+    fixed = TRUE
+  )
   expect_false(grepl("Evaluated & Pass & Warn & Fail", tex, fixed = TRUE))
 
   historicalText <- sub(
@@ -526,6 +535,11 @@ test_that("the dedicated template contains all four validation sections", {
     fixed = TRUE
   )
   expect_false(grepl("Message & Source", longTermText, fixed = TRUE))
+  expect_match(
+    longTermText,
+    "results inside the preferred range pass, results between",
+    fixed = TRUE
+  )
 
   templateText <- paste(readLines(
     system.file("templates", "validation.Rnw", package = "postprom"),

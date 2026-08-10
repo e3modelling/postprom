@@ -214,7 +214,11 @@ baseline year. For Japan's technology-specific electricity targets, validation
 derives the required share internally as source generation divided by total
 electricity generation. These temporary shares are not added to the Postprom
 report; its existing aggregate renewables-share indicator remains unchanged.
-Pass is under 10\%, warning until 50\% and fail is larger than 50\%.
+Each policy row uses its configured directional target and
+\texttt{warn\_tolerance}. A result passes within a small numerical/model-year
+margin equal to 10\% of that tolerance, warns within the full tolerance, and
+fails beyond it. Packaged tolerances are generally 10\% of the target, giving
+an approximate 1\% pass margin and 10\% warning margin.
 
 <<policies, echo=FALSE, results='asis'>>=
 render_placeholder_or_findings(
@@ -265,7 +269,12 @@ This section compares model results with targets derived from
 \texttt{quantified\_longterm\_trends.md} which are based on the current policies document. Checks can compare annualized
 trends, cumulative changes, or endpoint levels. Exact configured years are
 required and no interpolation is performed. EU27 targets use the aggregate
-\texttt{EU} report region rather than separate member-state results. Pass is under 10\%, warning until 50\% and fail is larger than 50\%.
+\texttt{EU} report region rather than separate member-state results. Each
+target supplies its own absolute preferred range (\texttt{pass\_min} to
+\texttt{pass\_max}) and allowed range (\texttt{fail\_min} to
+\texttt{fail\_max}): results inside the preferred range pass, results between
+the preferred and allowed ranges warn, and results outside the allowed range
+fail.
 
 <<long_term, echo=FALSE, results='asis'>>=
 long_term <- validation_sections$long_term
