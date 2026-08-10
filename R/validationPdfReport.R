@@ -423,13 +423,13 @@ evaluateLongTermValidation <- function(report, checks) {
     selector <- check$region[[1]]
     if (identical(selector, "*")) {
       regions <- sort(availableRegions)
-    } else if (identical(selector, "countries")) {
+    } else if (identical(selector, "regions")) {
       regions <- sort(availableRegions[grepl("^[A-Z]{3}$", availableRegions)])
       regions <- setdiff(regions, eu27Iso3())
     } else {
       regions <- selector
     }
-    if (!length(regions) && !selector %in% c("*", "countries")) {
+    if (!length(regions) && !selector %in% c("*", "regions")) {
       regions <- selector
     }
 
