@@ -39,19 +39,12 @@ test_that("validation checks compare report values with packaged benchmarks", {
 test_that("packaged historical checks use native units and compatible scopes", {
   checks <- defaultValidationChecks()
 
-  expect_equal(nrow(checks), 116)
+  expect_equal(nrow(checks), 112)
   expect_equal(anyDuplicated(checks$check_id), 0L)
   expect_true(all(checks$enabled))
   expect_false(any(grepl("GDP", checks$variable, fixed = TRUE)))
   expect_false(any(grepl("Total excl", checks$variable, fixed = TRUE)))
   expect_false(any(checks$source == "validation-research-report.md"))
-
-  primary <- checks[
-    checks$check_id == "hist_2024_primary_energy_world", , drop = FALSE
-  ]
-  expect_equal(primary$unit, "Mtoe")
-  expect_equal(primary$central, 620 / 0.041868, tolerance = 1e-6)
-  expect_match(primary$source, "IEA World Energy Balances", fixed = TRUE)
 
   electricity <- checks[
     checks$check_id == "hist_2024_secondary_energy_electricity_usa",

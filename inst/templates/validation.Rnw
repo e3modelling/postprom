@@ -208,8 +208,7 @@ Elzen, M. (2026), \textit{Climate Policy Modelling Protocol} [Dataset], Zenodo,
 \href{https://doi.org/10.5281/zenodo.20848687}{Zenodo record}.
 Only protocol regions available directly in OPEN-PROM are included; CHN is
 mapped explicitly to CHA. Policy years use the nearest available model year up
-to two years away, with no interpolation. The pass margin is 1\% of the target;
-the warn margin extends to 10\%. A configured target can be an absolute maximum
+to two years away, with no interpolation. A configured target can be an absolute maximum
 or minimum, or a minimum/maximum reduction or increase relative to a specified
 baseline year. For Japan's technology-specific electricity targets, validation
 derives the required share internally as source generation divided by total
