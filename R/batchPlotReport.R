@@ -5,14 +5,37 @@
 #' group. The plots are then saved as a PDF using an R Markdown template.
 #'
 #' @param report A data object containing report information.
+#' @param metadata Scenario metadata shown in the generated PDF.
 #' @param save_pdf A character string specifying the file path where the
 #'   generated PDF report should be saved.
-#' @return None. The function saves a PDF report and prints a message.
+#' @param PngFiles Logical; whether to save the area plots as PNG files.
+#' @param include_validation Logical; create a separate
+#'   \code{Validation.pdf}.
+#' @param validation_checks Historical-number checks passed to
+#'   \code{\link{validationPdfReport}}.
+#' @param policy_checks Country policy checks passed to
+#'   \code{\link{validationPdfReport}}.
+#' @param indicators_checks Indicator checks passed to
+#'   \code{\link{validateResults}}.
+#' @param long_term_checks Long-term target checks passed to
+#'   \code{\link{validationPdfReport}}.
+#' @param validation_output Target path for the separate validation PDF.
+#' @return Invisibly returns the result from \code{\link{validationPdfReport}},
+#'   or \code{NULL} when validation is disabled. The function also saves the plot
+#'   report PDF.
 #' @importFrom dplyr group_by group_keys group_split %>%
 #' @importFrom purrr map2
 #' @importFrom knitr knit2pdf opts_knit
 #' @export
-batchPlotReport <- function(report, metadata, save_pdf, PngFiles) {
+batchPlotReport <- function(report, metadata, save_pdf, PngFiles,
+                            include_validation = TRUE,
+                            validation_checks = defaultValidationChecks(),
+                            policy_checks = defaultPolicyValidationChecks(),
+                            indicators_checks = defaultIndicatorsChecks(),
+                            long_term_checks = defaultLongTermValidationChecks(),
+                            validation_output = file.path(
+                              dirname(save_pdf), "Validation.pdf"
+                            )) {
   if (!tinytex::is_tinytex()) {
     message("⚠️ TinyTeX (LaTeX engine) is not installed. Skipping PDF creation.")
     message("To enable PDF output, install TinyTeX with: tinytex::install_tinytex()")
@@ -36,6 +59,7 @@ batchPlotReport <- function(report, metadata, save_pdf, PngFiles) {
   # Save the plots list to a temporary file
   plot_rds_path <- tempfile(fileext = ".rds")
   saveRDS(plots_list, file = plot_rds_path)
+  on.exit(unlink(plot_rds_path), add = TRUE)
   render_env <- new.env()
   render_env$plot_rds_path <- plot_rds_path
   render_env$pdf_title <- gsub("_", "-", basename(dirname(save_pdf)))
@@ -58,6 +82,23 @@ batchPlotReport <- function(report, metadata, save_pdf, PngFiles) {
     envir = render_env,
     quiet = TRUE
   )
+
+  validationResult <- if (isTRUE(include_validation)) {
+    validationPdfReport(
+      report = report,
+      metadata = metadata,
+      output_file = validation_output,
+      scenario = basename(dirname(save_pdf)),
+      validation_checks = validation_checks,
+      policy_checks = policy_checks,
+      indicators_checks = indicators_checks,
+      long_term_checks = long_term_checks
+    )
+  } else {
+    NULL
+  }
+
+  invisible(validationResult)
 }
 # Helpers -------------------------------------------------------------
 #' Plot a group of related variables

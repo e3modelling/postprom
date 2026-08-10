@@ -87,38 +87,24 @@ reportIndicators <- function(reports, path, regions, years, blabla_regions) {
   FEACTV <- add_dimension(FEACTV, dim = 3.2, add = "unit", nm = "Mtoe/ACTV")
   FEACTV[is.na(FEACTV)] <- 0
   
-  # ============ Energy Efficiency (GDP/TFC),====================
-  Energy <- reports[,,c("GDP|PPP.billion US$2015/yr", "Final Energy.Mtoe",
-                        "Emissions|CO2.Mt CO2/yr", "Primary Energy.Mtoe",
+  transitionIndicators <- calculateTransitionIndicators(reports)
+  EnergyEfficiency <- transitionIndicators$energyEfficiency
+  EnergyIntensity <- transitionIndicators$finalEnergyIntensity
+  EmissionsIntensity <- transitionIndicators$economyWideCo2Intensity
+  PrimaryEnergyEfficiency <- transitionIndicators$primaryEnergyEfficiency
+  PrimaryEnergyIntensity <- transitionIndicators$primaryEnergyIntensity
+  PrimaryEnergyCarbonIntensity <- transitionIndicators$primaryEnergyCarbonIntensity
+  EnergyCo2GdpIntensity <- transitionIndicators$energyCo2GdpIntensity
+  PrimaryEnergyFossilShare <- transitionIndicators$primaryEnergyFossilShare
+  ElectricityshareFE <- transitionIndicators$electricityShare
+  CO2Intensityindicators <- transitionIndicators$secondaryEnergyCarbonIntensity
+
+  # ============ Energy intensity (TES/GDP) =============================
+  Energy <- reports[,,c("GDP|PPP.billion US$2015/yr", "Primary Energy.Mtoe",
                         "Trade|Import|Primary Energy.Mtoe", "Trade|Export|Primary Energy.Mtoe",
                         "Trade|Import|Secondary Energy.Mtoe", "Trade|Export|Secondary Energy.Mtoe",
                         "Final Energy|Bunkers.Mtoe")]
   Energy <- collapseDim(Energy, dim = 3.2)
-  EnergyEfficiency <- Energy[,,"GDP|PPP"] / Energy[,,"Final Energy"]
-  getItems(EnergyEfficiency, 3) <- "Efficiency|Final Energy"
-  names(dimnames(EnergyEfficiency))[3] <- "EnergyEfficiency"
-  EnergyEfficiency <- add_dimension(EnergyEfficiency, dim = 3.2, add = "unit", nm = "billion US$2015/Mtoe")
-  # ============ Energy intensity (TFC/GDP) =============================
-  EnergyIntensity  <- Energy[,,"Final Energy"] / Energy[,,"GDP|PPP"]
-  getItems(EnergyIntensity, 3) <- "Intensity|Final Energy"
-  names(dimnames(EnergyIntensity))[3] <- "EnergyIntensity"
-  EnergyIntensity <- add_dimension(EnergyIntensity, dim = 3.2, add = "unit", nm = "Mtoe/billion US$2015")
-  # ============ Emissions intensity (CO2/GDP) =============================
-  EmissionsIntensity  <- Energy[,,"Emissions|CO2"] / Energy[,,"GDP|PPP"]
-  getItems(EmissionsIntensity, 3) <- "Carbon Intensity|GDP"
-  names(dimnames(EmissionsIntensity))[3] <- "EnergyIntensityCO2"
-  EmissionsIntensity <- add_dimension(EmissionsIntensity, dim = 3.2, add = "unit", nm = "Mt CO2/billion US$2015")
-  # ============ Primary Energy Efficiency (GDP/TES),====================
-  PrimaryEnergyEfficiency <- Energy[,,"GDP|PPP"] / Energy[,,"Primary Energy"]
-  getItems(PrimaryEnergyEfficiency, 3) <- "Efficiency|Primary Energy"
-  names(dimnames(PrimaryEnergyEfficiency))[3] <- "PrimaryEnergyEfficiency"
-  PrimaryEnergyEfficiency <- add_dimension(PrimaryEnergyEfficiency, dim = 3.2, add = "unit", nm = "billion US$2015/Mtoe")
-  # ============ Primary Energy intensity (TES/GDP) =============================
-  PrimaryEnergyIntensity  <- Energy[,,"Primary Energy"] / Energy[,,"GDP|PPP"]
-  getItems(PrimaryEnergyIntensity, 3) <- "Intensity|Primary Energy"
-  names(dimnames(PrimaryEnergyIntensity))[3] <- "PrimaryEnergyIntensity"
-  PrimaryEnergyIntensity <- add_dimension(PrimaryEnergyIntensity, dim = 3.2, add = "unit", nm = "Mtoe/billion US$2015")
-  # ============ Energy intensity (TES/GDP) =============================
   imports <- Energy[,,"Trade|Import|Primary Energy"] + Energy[,,"Trade|Import|Secondary Energy"]
   exports <- Energy[,,"Trade|Export|Primary Energy"] + Energy[,,"Trade|Export|Secondary Energy"]
   TES <- Energy[,,"Primary Energy"] + imports - exports - Energy[,,"Final Energy|Bunkers"]
@@ -174,51 +160,6 @@ reportIndicators <- function(reports, path, regions, years, blabla_regions) {
   
   names(dimnames(CO2FEIntensityindicators))[3] <- "CO2FEIntensityindicators"
   CO2FEIntensityindicators <- add_dimension(CO2FEIntensityindicators, dim = 3.2, add = "unit", nm = "Mt CO2/Mtoe")
-  # ============ Electricity share in final energy demand =============================
-  FEELEC  <-  reports[,,"Final Energy|Electricity"]
-  FEELEC <- collapseDim(FEELEC, 3)
-  FE  <-  reports[,,"Final Energy"]
-  FE <- collapseDim(FE, 3)
-  ElectricityshareFE <- FEELEC / FE
-  getItems(ElectricityshareFE, 3.1) <- "Final Energy|Electricity Share"
-  getItems(ElectricityshareFE, 3.2) <- "1"
-  names(dimnames(ElectricityshareFE))[3] <- "ElectricityshareFE"
-  # ============ CO2 intensity of electricity generation (Emissions / Electricity production)============
-  emi_supply_level5_same <- c("Emissions|CO2|Energy|Supply|Electricity.Mt CO2/yr",
-                                "Emissions|CO2|Energy|Supply|Hydrogen.Mt CO2/yr",
-                                "Emissions|CO2|Energy|Supply|Heat.Mt CO2/yr",
-                                "Emissions|CO2|Energy|Supply|Liquids.Mt CO2/yr",
-                                "Emissions|CO2|Energy|Supply|Gases.Mt CO2/yr",
-                                "Emissions|CO2|Energy|Supply|Solids.Mt CO2/yr")
-  
-  sec_level2 <- c("Secondary Energy|Electricity.TWh","Secondary Energy|Hydrogen.TWh",
-                  "Secondary Energy|Heat.TWh","Secondary Energy|Liquids.TWh",
-                  "Secondary Energy|Gases.TWh","Secondary Energy|Solids.TWh")  
-  
-  CO2Intensity <- reports[,,c(emi_supply_level5_same, sec_level2)]
-  CO2Intensity <- collapseDim(CO2Intensity, dim = 3.2)
-  emi_supply_level5_same <- sub("\\.[^.]+$", "", emi_supply_level5_same)
-  sec_level2 <- sub("\\.[^.]+$", "", sec_level2)
-  CO2Intensity <- CO2Intensity[, , emi_supply_level5_same] / CO2Intensity[, , sec_level2]
-  
-  items_y <- getItems(CO2Intensity, 3)
-  
-  emi_cat <- sub("^Emissions\\|CO2\\|Energy\\|Supply\\|([^.]*)\\..*$", "\\1", items_y)
-  sec_cat <- sub("^.*\\.Secondary Energy\\|", "", items_y)
-  
-  same_items <- items_y[emi_cat == sec_cat]
-  
-  CO2Intensityindicators <- CO2Intensity[, , same_items]
-  
-  cats <- sub("^.*\\.Secondary Energy\\|", "", getItems(CO2Intensityindicators, 3))
-  
-  getItems(CO2Intensityindicators, 3) <- paste0(
-    "Carbon Intensity|Secondary Energy|",
-    cats
-  )
-  
-  names(dimnames(CO2Intensityindicators))[3] <- "CO2Intensityindicators"
-  CO2Intensityindicators <- add_dimension(CO2Intensityindicators, dim = 3.2, add = "unit", nm = "Mt CO2/TWh")
   # ============ CO2 intensity of INDUSTRY (Emissions/Useful Energy)============
   CO2DemandIndustry <- reports[,,"Emissions|CO2|Energy|Demand|Industry.Mt CO2/yr"]
   CO2DemandIndustry <- collapseDim(CO2DemandIndustry, dim = 3.2)
@@ -375,6 +316,9 @@ reportIndicators <- function(reports, path, regions, years, blabla_regions) {
     EnergyIntensity,
     PrimaryEnergyEfficiency,
     PrimaryEnergyIntensity,
+    PrimaryEnergyCarbonIntensity,
+    EnergyCo2GdpIntensity,
+    PrimaryEnergyFossilShare,
     CO2Intensityindicators,
     CO2IntensityofIndustry,
     EnergyIntensityofIndustry,
@@ -390,4 +334,133 @@ reportIndicators <- function(reports, path, regions, years, blabla_regions) {
   magpie_object[is.na(magpie_object) | is.infinite(magpie_object)] <- 0
   
   return(magpie_object)
+}
+
+# Calculate the transition indicators used by result validation. This helper is
+# deliberately called only by reportIndicators(); validation reads its outputs.
+calculateTransitionIndicators <- function(reports) {
+  energy <- reports[, , c(
+    "GDP|PPP.billion US$2015/yr",
+    "Final Energy.Mtoe",
+    "Final Energy|Electricity.Mtoe",
+    "Emissions|CO2.Mt CO2/yr",
+    "Emissions|CO2|Energy.Mt CO2/yr",
+    "Primary Energy.Mtoe",
+    "Primary Energy|Coal.Mtoe",
+    "Primary Energy|Gas.Mtoe",
+    "Primary Energy|Oil.Mtoe"
+  )]
+  energy <- collapseDim(energy, dim = 3.2)
+
+  addIndicatorMetadata <- function(x, variable, dimension, unit) {
+    getItems(x, 3) <- variable
+    names(dimnames(x))[3] <- dimension
+    add_dimension(x, dim = 3.2, add = "unit", nm = unit)
+  }
+
+  energyEfficiency <- addIndicatorMetadata(
+    energy[, , "GDP|PPP"] / energy[, , "Final Energy"],
+    "Efficiency|Final Energy", "EnergyEfficiency",
+    "billion US$2015/Mtoe"
+  )
+  finalEnergyIntensity <- addIndicatorMetadata(
+    energy[, , "Final Energy"] / energy[, , "GDP|PPP"],
+    "Intensity|Final Energy", "EnergyIntensity",
+    "Mtoe/billion US$2015"
+  )
+  economyWideCo2Intensity <- addIndicatorMetadata(
+    energy[, , "Emissions|CO2"] / energy[, , "GDP|PPP"],
+    "Carbon Intensity|GDP", "EnergyIntensityCO2",
+    "Mt CO2/billion US$2015"
+  )
+  primaryEnergyEfficiency <- addIndicatorMetadata(
+    energy[, , "GDP|PPP"] / energy[, , "Primary Energy"],
+    "Efficiency|Primary Energy", "PrimaryEnergyEfficiency",
+    "billion US$2015/Mtoe"
+  )
+  primaryEnergyIntensity <- addIndicatorMetadata(
+    energy[, , "Primary Energy"] / energy[, , "GDP|PPP"],
+    "Intensity|Primary Energy", "PrimaryEnergyIntensity",
+    "Mtoe/billion US$2015"
+  )
+  primaryEnergyCarbonIntensity <- addIndicatorMetadata(
+    energy[, , "Emissions|CO2|Energy"] / energy[, , "Primary Energy"],
+    "Carbon Intensity|Primary Energy", "PrimaryEnergyCarbonIntensity",
+    "Mt CO2/Mtoe"
+  )
+  energyCo2GdpIntensity <- addIndicatorMetadata(
+    energy[, , "Emissions|CO2|Energy"] / energy[, , "GDP|PPP"],
+    "Carbon Intensity|GDP|Energy", "EnergyCo2GdpIntensity",
+    "Mt CO2/billion US$2015"
+  )
+  fossilPrimaryEnergy <- energy[, , "Primary Energy|Coal"] +
+    energy[, , "Primary Energy|Gas"] +
+    energy[, , "Primary Energy|Oil"]
+  primaryEnergyFossilShare <- addIndicatorMetadata(
+    fossilPrimaryEnergy / energy[, , "Primary Energy"],
+    "Primary Energy|Fossil Share", "PrimaryEnergyFossilShare", "1"
+  )
+  electricityShare <- addIndicatorMetadata(
+    energy[, , "Final Energy|Electricity"] / energy[, , "Final Energy"],
+    "Final Energy|Electricity Share", "ElectricityshareFE", "1"
+  )
+
+  emissionVariables <- c(
+    "Emissions|CO2|Energy|Supply|Electricity.Mt CO2/yr",
+    "Emissions|CO2|Energy|Supply|Hydrogen.Mt CO2/yr",
+    "Emissions|CO2|Energy|Supply|Heat.Mt CO2/yr",
+    "Emissions|CO2|Energy|Supply|Liquids.Mt CO2/yr",
+    "Emissions|CO2|Energy|Supply|Gases.Mt CO2/yr",
+    "Emissions|CO2|Energy|Supply|Solids.Mt CO2/yr"
+  )
+  secondaryEnergyVariables <- c(
+    "Secondary Energy|Electricity.TWh",
+    "Secondary Energy|Hydrogen.TWh",
+    "Secondary Energy|Heat.TWh",
+    "Secondary Energy|Liquids.TWh",
+    "Secondary Energy|Gases.TWh",
+    "Secondary Energy|Solids.TWh"
+  )
+  secondaryEnergy <- reports[, , c(emissionVariables, secondaryEnergyVariables)]
+  secondaryEnergy <- collapseDim(secondaryEnergy, dim = 3.2)
+  emissionNames <- sub("\\.[^.]+$", "", emissionVariables)
+  secondaryNames <- sub("\\.[^.]+$", "", secondaryEnergyVariables)
+  intensities <- secondaryEnergy[, , emissionNames] /
+    secondaryEnergy[, , secondaryNames]
+  intensityItems <- getItems(intensities, 3)
+  emissionCategory <- sub(
+    "^Emissions\\|CO2\\|Energy\\|Supply\\|([^.]*)\\..*$",
+    "\\1", intensityItems
+  )
+  secondaryCategory <- sub(
+    "^.*\\.Secondary Energy\\|", "", intensityItems
+  )
+  matchingItems <- intensityItems[emissionCategory == secondaryCategory]
+  secondaryEnergyCarbonIntensity <- intensities[, , matchingItems]
+  categories <- sub(
+    "^.*\\.Secondary Energy\\|", "",
+    getItems(secondaryEnergyCarbonIntensity, 3)
+  )
+  getItems(secondaryEnergyCarbonIntensity, 3) <- paste0(
+    "Carbon Intensity|Secondary Energy|", categories
+  )
+  names(dimnames(secondaryEnergyCarbonIntensity))[3] <-
+    "CO2Intensityindicators"
+  secondaryEnergyCarbonIntensity <- add_dimension(
+    secondaryEnergyCarbonIntensity,
+    dim = 3.2, add = "unit", nm = "Mt CO2/TWh"
+  )
+
+  list(
+    energyEfficiency = energyEfficiency,
+    finalEnergyIntensity = finalEnergyIntensity,
+    economyWideCo2Intensity = economyWideCo2Intensity,
+    primaryEnergyEfficiency = primaryEnergyEfficiency,
+    primaryEnergyIntensity = primaryEnergyIntensity,
+    primaryEnergyCarbonIntensity = primaryEnergyCarbonIntensity,
+    energyCo2GdpIntensity = energyCo2GdpIntensity,
+    primaryEnergyFossilShare = primaryEnergyFossilShare,
+    electricityShare = electricityShare,
+    secondaryEnergyCarbonIntensity = secondaryEnergyCarbonIntensity
+  )
 }
