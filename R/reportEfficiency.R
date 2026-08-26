@@ -56,7 +56,7 @@ reportEfficiency <- function(reports, path, regions, years, blabla_regions) {
     "Final Energy|Industry|Textiles", "TX",
     "Final Energy|Industry|Ore Extraction", "OE",
     "Final Energy|Industry|Other Industrial sectors", "OI",
-    "Final Energy|Commercial|Services.Mtoe", "SE",
+    "Final Energy|Commercial|Services", "SE",
     "Final Energy|Agriculture, Fishing, Forestry", "AG",
     "Final Energy|Residential", "HOU",
     "Final Energy|Transportation|Passenger Transport - Cars", "PC",
@@ -70,6 +70,29 @@ reportEfficiency <- function(reports, path, regions, years, blabla_regions) {
     "Final Energy|Bunkers", "BU",
     "Final Energy|Non-Energy Use|Petrochemicals Industry", "PCH",
     "Final Energy|Non-Energy Use|Other Non Energy Uses", "NEN")
+  
+  # -------------------------- Commercial +  Residential -------
+  Com_Res <- reports[, , c("Final Energy|Residential", "Final Energy|Commercial|Services")]
+  
+  Com_Res <- dimSums(Com_Res, 3)
+  getItems(Com_Res, 3.1) <- "Final Energy|Residential and Commercial"
+  getItems(Com_Res, 3.2) <- "Mtoe"
+  
+  Com_Res_ACTV <- IFullACTV[, , c("SE", "HOU")]
+  
+  Com_Res_ACTV <- dimSums(Com_Res_ACTV, 3)
+  getItems(Com_Res_ACTV, 3.1) <- "ACTV|Residential and Commercial"
+  
+  Energy_Intensity_Com_Res <- Com_Res / Com_Res_ACTV
+
+  Energy_Intensity_Com_Res <- collapseDim(Energy_Intensity_Com_Res, dim = 3.3)
+  Energy_Intensity_Com_Res <- collapseDim(Energy_Intensity_Com_Res, dim = 3.2)
+  
+  getItems(Energy_Intensity_Com_Res, dim = 3) <- paste0("Energy Intensity|Residential and Commercial")
+  
+  Energy_Intensity_Com_Res <- add_dimension(Energy_Intensity_Com_Res, dim = 3.2, add = "unit", nm = "Mtoe/ACTV")
+  Energy_Intensity_Com_Res[is.na(Energy_Intensity_Com_Res)] <- 0
+  ################
   
   FEACTV <- NULL
   
@@ -94,6 +117,8 @@ reportEfficiency <- function(reports, path, regions, years, blabla_regions) {
   
   FEACTV <- add_dimension(FEACTV, dim = 3.2, add = "unit", nm = "Mtoe/ACTV")
   FEACTV[is.na(FEACTV)] <- 0
+  
+  FEACTV <- mbind(FEACTV, Energy_Intensity_Com_Res)
   
   # ============ Energy Efficiency (GDP/TFC),====================
   Energy <- reports[,,c("GDP|PPP.billion US$2015/yr", "Final Energy.Mtoe",
@@ -162,7 +187,21 @@ reportEfficiency <- function(reports, path, regions, years, blabla_regions) {
   CO2FEIntensity <- collapseDim(CO2FEIntensity, dim = 3.2)
   emi_demand_level5_same <- sub("\\.[^.]+$", "", emi_demand_level5_same)
   FE_demand_level2 <- sub("\\.[^.]+$", "", FE_demand_level2)
-  CO2FEIntensity <- CO2FEIntensity[, , emi_demand_level5_same] / CO2FEIntensity[, , FE_demand_level2]
+  
+  # -------------------------- Commercial +  Residential -------
+  Com_Res <- reports[, , c("Final Energy|Residential and Commercial", "Final Energy|Commercial|Services")]
+  Com_Res <- dimSums(Com_Res, 3)
+  getItems(Com_Res, 3.1) <- "Final Energy|Residential and Commercial"
+  
+  Com_ResEmissions <- reports[, , c("Emissions|CO2|Energy|Demand|Residential and Commercial",
+                                "Emissions|CO2|Energy|Demand|Commercial")]
+  
+  Com_ResEmissions <- dimSums(Com_ResEmissions, 3)
+  getItems(Com_ResEmissions, 3.1) <- "Emissions|CO2|Energy|Demand|Residential and Commercial"
+  ##########
+  CO2FEIntensity <- mbind(CO2FEIntensity, Com_ResEmissions, Com_Res)
+  
+  CO2FEIntensity <- CO2FEIntensity[, , c(emi_demand_level5_same, "Emissions|CO2|Energy|Demand|Residential and Commercial")] / CO2FEIntensity[, , c(FE_demand_level2, "Final Energy|Residential and Commercial")]
   
   items_z <- getItems(CO2FEIntensity, 3)
   
