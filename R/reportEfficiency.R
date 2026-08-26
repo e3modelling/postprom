@@ -22,6 +22,8 @@ reportEfficiency <- function(reports, path, regions, years, blabla_regions) {
   IFullACTV <- calcOutput("IFullACTV", aggregate = TRUE, regionmapping = "regionmappingOPDEV5.csv")
   IFullACTV <- IFullACTV[blabla_regions, years, ]
   
+  unitsPassenger <- getItems(IFullACTV,3)
+  
   IFullACTV <- collapseDim(IFullACTV, dim = 3.2)
   
   if ("World" %in% regions) {
@@ -82,7 +84,7 @@ reportEfficiency <- function(reports, path, regions, years, blabla_regions) {
   
   getItems(Energy_Intensity_Com_Res, dim = 3) <- paste0("Energy Intensity|Residential and Commercial")
   
-  Energy_Intensity_Com_Res <- add_dimension(Energy_Intensity_Com_Res, dim = 3.2, add = "unit", nm = "Mtoe/ACTV")
+  Energy_Intensity_Com_Res <- add_dimension(Energy_Intensity_Com_Res, dim = 3.2, add = "unit", nm = "Mtoe/billion $")
   Energy_Intensity_Com_Res[is.na(Energy_Intensity_Com_Res)] <- 0
   ################
   
@@ -107,7 +109,7 @@ reportEfficiency <- function(reports, path, regions, years, blabla_regions) {
   
   getItems(FEACTV, dim = 3) <- paste0("Energy Intensity|",getItems(FEACTV, dim = 3))
   
-  FEACTV <- add_dimension(FEACTV, dim = 3.2, add = "unit", nm = "Mtoe/ACTV")
+  FEACTV <- add_dimension(FEACTV, dim = 3.2, add = "unit", nm = "Mtoe/billion $")
   FEACTV[is.na(FEACTV)] <- 0
   
   FEACTV <- mbind(FEACTV, Energy_Intensity_Com_Res)
@@ -331,7 +333,13 @@ reportEfficiency <- function(reports, path, regions, years, blabla_regions) {
   ActivPassTrnsp <- TRANP / v01ActivPassTrnsp
   ActivGoodsTransp <-  TRANG / V01ActivGoodsTransp
   
-  ActivPassTrnsp <- add_dimension(ActivPassTrnsp, dim = 3.2, add = "unit", nm = "Mtoe/ACTV")
+  unitsActivPassTrnsp <- paste0("Mtoe/",sub("^[^.]+\\.","",unitsPassenger[
+    match(c("PC", "PB", "PT", "PN", "PA"),sub("\\..*", "", unitsPassenger))]))
+  
+  ActivPassTrnsp <- mbind(
+    lapply(seq_along(unitsActivPassTrnsp), function(i) {
+      add_dimension(ActivPassTrnsp[, , i],dim = 3.2,add = "unit",nm = unitsActivPassTrnsp[i])}))
+  
   ActivGoodsTransp <- add_dimension(ActivGoodsTransp, dim = 3.2, add = "unit", nm = "Mtoe/Gtkm")
   
   ActivTrnsp <- mbind(ActivPassTrnsp, ActivGoodsTransp)
