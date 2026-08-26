@@ -372,7 +372,7 @@ reportIndicators <- function(reports, path, regions, years, blabla_regions) {
     FEACTV,
     ActivTrnsp,
     EmissionsIntensity,
-    # RESSecShare,
+    RESSecShare,
     ElectricityshareFE,
     CO2FEIntensityindicators,
     TESEnergyIntensity
