@@ -41,11 +41,11 @@ reportEnergySystemCosts <- function(path, regions, years) {
     investment <- investment * imCGI
   }
   investment[!is.finite(investment)] <- 0
-  investment <- RenametoSTECH(investment)
+  investment <- RenametoSTECH(path, investment)
   getItems(investment, 3) <- paste0("Investment|Energy Supply|Electricity|", getItems(investment, 3))
   investment <- add_dimension(investment, dim = 3.2, add = "unit", nm = "billion US$2015/yr")
 
-  capitalCost <- RenametoSTECH(capitalCost)
+  capitalCost <- RenametoSTECH(path, capitalCost)
   getItems(capitalCost, 3) <- paste0("Capital Cost|Energy Supply|Electricity|", getItems(capitalCost, 3))
   capitalCost <- add_dimension(capitalCost, dim = 3.2, add = "unit", nm = "US$2015/kW")
 
@@ -60,7 +60,7 @@ reportEnergySystemCosts <- function(path, regions, years) {
 }
 
 # Helper ----------------------------------------------------------------------------------------
-RenametoSTECH <- function(prod) {
+RenametoSTECH <- function(path, prod) {
   STECH <- rgdx.set(path, "STECH", te = TRUE) %>%
     filter(i %in% getItems(prod,3))
   
