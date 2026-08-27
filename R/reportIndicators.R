@@ -18,9 +18,12 @@ reportIndicators <- function(reports, path, regions, years, blabla_regions) {
   items <- getItems(reports,3)
   
   # ============ Energy demand/ activity====================
-  
+  # to do, check if units of activity are in billion 2015$ or 2017$, probably should be in 2017$
+
   IFullACTV <- calcOutput("IFullACTV", aggregate = TRUE, regionmapping = "regionmappingOPDEV5.csv")
   IFullACTV <- IFullACTV[blabla_regions, years, ]
+  
+  unitsPassenger <- getItems(IFullACTV,3)
   
   IFullACTV <- collapseDim(IFullACTV, dim = 3.2)
   
@@ -56,12 +59,35 @@ reportIndicators <- function(reports, path, regions, years, blabla_regions) {
     "Final Energy|Industry|Textiles", "TX",
     "Final Energy|Industry|Ore Extraction", "OE",
     "Final Energy|Industry|Other Industrial sectors", "OI",
-    "Final Energy|Commercial|Services.Mtoe", "SE",
+    "Final Energy|Commercial|Services", "SE",
     "Final Energy|Agriculture, Fishing, Forestry", "AG",
     "Final Energy|Residential", "HOU",
     "Final Energy|Bunkers", "BU",
     "Final Energy|Non-Energy Use|Petrochemicals Industry", "PCH",
     "Final Energy|Non-Energy Use|Other Non Energy Uses", "NEN")
+  
+  # -------------------------- Commercial +  Residential -------
+  Com_Res <- reports[, , c("Final Energy|Residential", "Final Energy|Commercial|Services")]
+  
+  Com_Res <- dimSums(Com_Res, 3)
+  getItems(Com_Res, 3.1) <- "Final Energy|Residential and Commercial"
+  getItems(Com_Res, 3.2) <- "Mtoe"
+  
+  Com_Res_ACTV <- IFullACTV[, , c("SE", "HOU")]
+  
+  Com_Res_ACTV <- dimSums(Com_Res_ACTV, 3)
+  getItems(Com_Res_ACTV, 3.1) <- "ACTV|Residential and Commercial"
+  
+  Energy_Intensity_Com_Res <- Com_Res / Com_Res_ACTV
+  
+  Energy_Intensity_Com_Res <- collapseDim(Energy_Intensity_Com_Res, dim = 3.3)
+  Energy_Intensity_Com_Res <- collapseDim(Energy_Intensity_Com_Res, dim = 3.2)
+  
+  getItems(Energy_Intensity_Com_Res, dim = 3) <- paste0("Energy Intensity|Residential and Commercial")
+  
+  Energy_Intensity_Com_Res <- add_dimension(Energy_Intensity_Com_Res, dim = 3.2, add = "unit", nm = "Mtoe/billion $")
+  Energy_Intensity_Com_Res[is.na(Energy_Intensity_Com_Res)] <- 0
+  ################
   
   FEACTV <- NULL
   
@@ -84,8 +110,10 @@ reportIndicators <- function(reports, path, regions, years, blabla_regions) {
   
   getItems(FEACTV, dim = 3) <- paste0("Energy Intensity|",getItems(FEACTV, dim = 3))
   
-  FEACTV <- add_dimension(FEACTV, dim = 3.2, add = "unit", nm = "Mtoe/ACTV")
+  FEACTV <- add_dimension(FEACTV, dim = 3.2, add = "unit", nm = "Mtoe/billion $")
   FEACTV[is.na(FEACTV)] <- 0
+  
+  FEACTV <- mbind(FEACTV, Energy_Intensity_Com_Res)
   
   transitionIndicators <- calculateTransitionIndicators(reports)
   EnergyEfficiency <- transitionIndicators$energyEfficiency
@@ -98,7 +126,7 @@ reportIndicators <- function(reports, path, regions, years, blabla_regions) {
   PrimaryEnergyFossilShare <- transitionIndicators$primaryEnergyFossilShare
   ElectricityshareFE <- transitionIndicators$electricityShare
   CO2Intensityindicators <- transitionIndicators$secondaryEnergyCarbonIntensity
-
+  
   # ============ Energy intensity (TES/GDP) =============================
   Energy <- reports[,,c("GDP|PPP.billion US$2015/yr", "Primary Energy.Mtoe",
                         "Trade|Import|Primary Energy.Mtoe", "Trade|Export|Primary Energy.Mtoe",
@@ -112,7 +140,7 @@ reportIndicators <- function(reports, path, regions, years, blabla_regions) {
   getItems(TESEnergyIntensity, 3) <- "Energy Intensity"
   names(dimnames(TESEnergyIntensity))[3] <- "TESEnergyIntensity"
   TESEnergyIntensity <- add_dimension(TESEnergyIntensity, dim = 3.2, add = "unit", nm = "Mtoe/billion US$2015")
-   # ============ RES share in power generation missing (RES/TOTAL) =============================
+  # ============ RES share in power generation missing (RES/TOTAL) =============================
   RESSec  <-  reports[,,"Secondary Energy|Electricity|Renewables"]
   RESSec <- collapseDim(RESSec, 3)
   SecTotal <- reports[,,"Secondary Energy|Electricity"]
@@ -130,17 +158,31 @@ reportIndicators <- function(reports, path, regions, years, blabla_regions) {
                               "Emissions|CO2|Energy|Demand|Bunkers.Mt CO2/yr")
   
   FE_demand_level2 <-  c("Final Energy|Industry.Mtoe",
-                              "Final Energy|Commercial.Mtoe",
-                              "Final Energy|Agriculture, Fishing, Forestry.Mtoe",
-                              "Final Energy|Residential.Mtoe",
-                              "Final Energy|Transportation.Mtoe",
-                              "Final Energy|Bunkers.Mtoe")
+                         "Final Energy|Commercial.Mtoe",
+                         "Final Energy|Agriculture, Fishing, Forestry.Mtoe",
+                         "Final Energy|Residential.Mtoe",
+                         "Final Energy|Transportation.Mtoe",
+                         "Final Energy|Bunkers.Mtoe")
   
   CO2FEIntensity <- reports[,,c(emi_demand_level5_same, FE_demand_level2)]
   CO2FEIntensity <- collapseDim(CO2FEIntensity, dim = 3.2)
   emi_demand_level5_same <- sub("\\.[^.]+$", "", emi_demand_level5_same)
   FE_demand_level2 <- sub("\\.[^.]+$", "", FE_demand_level2)
-  CO2FEIntensity <- CO2FEIntensity[, , emi_demand_level5_same] / CO2FEIntensity[, , FE_demand_level2]
+  
+  # -------------------------- Commercial +  Residential -------
+  Com_Res <- reports[, , c("Final Energy|Residential and Commercial", "Final Energy|Commercial|Services")]
+  Com_Res <- dimSums(Com_Res, 3)
+  getItems(Com_Res, 3.1) <- "Final Energy|Residential and Commercial"
+  
+  Com_ResEmissions <- reports[, , c("Emissions|CO2|Energy|Demand|Residential and Commercial",
+                                    "Emissions|CO2|Energy|Demand|Commercial")]
+  
+  Com_ResEmissions <- dimSums(Com_ResEmissions, 3)
+  getItems(Com_ResEmissions, 3.1) <- "Emissions|CO2|Energy|Demand|Residential and Commercial"
+  ##########
+  CO2FEIntensity <- mbind(CO2FEIntensity, Com_ResEmissions, Com_Res)
+  
+  CO2FEIntensity <- CO2FEIntensity[, , c(emi_demand_level5_same, "Emissions|CO2|Energy|Demand|Residential and Commercial")] / CO2FEIntensity[, , c(FE_demand_level2, "Final Energy|Residential and Commercial")]
   
   items_z <- getItems(CO2FEIntensity, 3)
   
@@ -212,7 +254,7 @@ reportIndicators <- function(reports, path, regions, years, blabla_regions) {
   getItems(EnergyIntensityofIndustry, 3) <- "Energy Intensity|Industry"
   names(dimnames(EnergyIntensityofIndustry))[3] <- "EnergyIntensityofIndustry"
   EnergyIntensityofIndustry <- add_dimension(EnergyIntensityofIndustry, dim = 3.2, add = "unit", nm = "1")
-
+  
   # ============Energy intensity of Transportation============
   variablesACTVTransport <- readGDX(
     path,
@@ -252,20 +294,20 @@ reportIndicators <- function(reports, path, regions, years, blabla_regions) {
   # -------------------------- Transport Passenger -------
   mappingTransport <- tribble(
     ~variable, ~code,
-  "Final Energy|Transportation|Passenger Transport - Cars", "PC",
-  "Final Energy|Transportation|Passenger Transport - Busses", "PB",
-  "Final Energy|Transportation|Passenger Transport - Rail", "PT",
-  "Final Energy|Transportation|Passenger Transport - Inland Navigation", "PN",
-  "Final Energy|Transportation|Passenger Transport - Aviation", "PA",
-  "Final Energy|Transportation|Goods Transport - Trucks", "GU",
-  "Final Energy|Transportation|Goods Transport - Rail", "GT",
-  "Final Energy|Transportation|Goods Transport - Inland Navigation", "GN")
+    "Final Energy|Transportation|Passenger Transport - Cars", "PC",
+    "Final Energy|Transportation|Passenger Transport - Busses", "PB",
+    "Final Energy|Transportation|Passenger Transport - Rail", "PT",
+    "Final Energy|Transportation|Passenger Transport - Inland Navigation", "PN",
+    "Final Energy|Transportation|Passenger Transport - Aviation", "PA",
+    "Final Energy|Transportation|Goods Transport - Trucks", "GU",
+    "Final Energy|Transportation|Goods Transport - Rail", "GT",
+    "Final Energy|Transportation|Goods Transport - Inland Navigation", "GN")
   
   TRANP <- reports[, , c("Final Energy|Transportation|Passenger Transport - Cars",
-                              "Final Energy|Transportation|Passenger Transport - Busses",
-                              "Final Energy|Transportation|Passenger Transport - Rail",
-                              "Final Energy|Transportation|Passenger Transport - Inland Navigation",
-                              "Final Energy|Transportation|Passenger Transport - Aviation")]
+                         "Final Energy|Transportation|Passenger Transport - Busses",
+                         "Final Energy|Transportation|Passenger Transport - Rail",
+                         "Final Energy|Transportation|Passenger Transport - Inland Navigation",
+                         "Final Energy|Transportation|Passenger Transport - Aviation")]
   
   TRANP <- collapseDim(TRANP, 3.2)
   
@@ -273,26 +315,32 @@ reportIndicators <- function(reports, path, regions, years, blabla_regions) {
   getItems(PassengerFE, 3.1) <- "Final Energy|Transportation|Passenger"
   
   v01ActivPassTrnsp <- toolAggregate(v01ActivPassTrnsp, weight = NULL, dim = 3,
-                     rel = mappingTransport,from = "code",to = "variable")
+                                     rel = mappingTransport,from = "code",to = "variable")
   v01ActivPassTrnsp <- v01ActivPassTrnsp[,,getItems(TRANP, 3)]
   # -------------------------- Transport Freight -------
   TRANG <- reports[, , c("Final Energy|Transportation|Goods Transport - Trucks",
-                              "Final Energy|Transportation|Goods Transport - Rail",
-                              "Final Energy|Transportation|Goods Transport - Inland Navigation")]
+                         "Final Energy|Transportation|Goods Transport - Rail",
+                         "Final Energy|Transportation|Goods Transport - Inland Navigation")]
   TRANG <- collapseDim(TRANG, 3.2)
   
   FreightFE <- dimSums(TRANG, 3)
   getItems(FreightFE, 3.1) <- "Final Energy|Transportation|Freight"
   
   V01ActivGoodsTransp <- toolAggregate(V01ActivGoodsTransp, weight = NULL, dim = 3,
-                                     rel = mappingTransport,from = "code",to = "variable")
+                                       rel = mappingTransport,from = "code",to = "variable")
   V01ActivGoodsTransp <- V01ActivGoodsTransp[,,getItems(TRANG, 3)]
   # -------------------------- 
   
   ActivPassTrnsp <- TRANP / v01ActivPassTrnsp
   ActivGoodsTransp <-  TRANG / V01ActivGoodsTransp
   
-  ActivPassTrnsp <- add_dimension(ActivPassTrnsp, dim = 3.2, add = "unit", nm = "Mtoe/ACTV")
+  unitsActivPassTrnsp <- paste0("Mtoe/",sub("^[^.]+\\.","",unitsPassenger[
+    match(c("PC", "PB", "PT", "PN", "PA"),sub("\\..*", "", unitsPassenger))]))
+  
+  ActivPassTrnsp <- mbind(
+    lapply(seq_along(unitsActivPassTrnsp), function(i) {
+      add_dimension(ActivPassTrnsp[, , i],dim = 3.2,add = "unit",nm = unitsActivPassTrnsp[i])}))
+  
   ActivGoodsTransp <- add_dimension(ActivGoodsTransp, dim = 3.2, add = "unit", nm = "Mtoe/Gtkm")
   
   ActivTrnsp <- mbind(ActivPassTrnsp, ActivGoodsTransp)
@@ -310,7 +358,7 @@ reportIndicators <- function(reports, path, regions, years, blabla_regions) {
   
   ActivTrnsp <- mbind(ActivTrnsp, PassengerFE, FreightFE)
   
-    # ==================== Combine all indicators into a single magpie object ============================
+  # ==================== Combine all indicators into a single magpie object ============================
   magpie_object <- mbind(
     EnergyEfficiency,
     EnergyIntensity,
@@ -351,13 +399,13 @@ calculateTransitionIndicators <- function(reports) {
     "Primary Energy|Oil.Mtoe"
   )]
   energy <- collapseDim(energy, dim = 3.2)
-
+  
   addIndicatorMetadata <- function(x, variable, dimension, unit) {
     getItems(x, 3) <- variable
     names(dimnames(x))[3] <- dimension
     add_dimension(x, dim = 3.2, add = "unit", nm = unit)
   }
-
+  
   energyEfficiency <- addIndicatorMetadata(
     energy[, , "GDP|PPP"] / energy[, , "Final Energy"],
     "Efficiency|Final Energy", "EnergyEfficiency",
@@ -404,7 +452,7 @@ calculateTransitionIndicators <- function(reports) {
     energy[, , "Final Energy|Electricity"] / energy[, , "Final Energy"],
     "Final Energy|Electricity Share", "ElectricityshareFE", "1"
   )
-
+  
   emissionVariables <- c(
     "Emissions|CO2|Energy|Supply|Electricity.Mt CO2/yr",
     "Emissions|CO2|Energy|Supply|Hydrogen.Mt CO2/yr",
@@ -450,7 +498,7 @@ calculateTransitionIndicators <- function(reports) {
     secondaryEnergyCarbonIntensity,
     dim = 3.2, add = "unit", nm = "Mt CO2/TWh"
   )
-
+  
   list(
     energyEfficiency = energyEfficiency,
     finalEnergyIntensity = finalEnergyIntensity,
