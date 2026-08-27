@@ -18,7 +18,8 @@ reportIndicators <- function(reports, path, regions, years, blabla_regions) {
   items <- getItems(reports,3)
   
   # ============ Energy demand/ activity====================
-  
+  # to do, check if units of activity are in billion 2015$ or 2017$, probably should be in 2017$
+
   IFullACTV <- calcOutput("IFullACTV", aggregate = TRUE, regionmapping = "regionmappingOPDEV5.csv")
   IFullACTV <- IFullACTV[blabla_regions, years, ]
   
