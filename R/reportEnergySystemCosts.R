@@ -46,7 +46,7 @@ reportEnergySystemCosts <- function(path, regions, years) {
   investment <- add_dimension(investment, dim = 3.2, add = "unit", nm = "billion US$2015/yr")
 
   capitalCost <- RenametoSTECH(path, capitalCost)
-  getItems(capitalCost, 3) <- paste0("Capital Cost|Energy Supply|Electricity|", getItems(capitalCost, 3))
+  getItems(capitalCost, 3) <- paste0("Capital Cost|Electricity|", getItems(capitalCost, 3))
   capitalCost <- add_dimension(capitalCost, dim = 3.2, add = "unit", nm = "US$2015/kW")
 
   subsidyTotal <- readGDX(path, "V11SubsiTot", field = "l")[regions, years, ]
