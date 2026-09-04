@@ -30,7 +30,7 @@ reportEnergySystemCosts <- function(path, regions, years) {
   newCapacity <- readGDX(path, "V04NewCapElec", field = "l")[regions, years, ]
   availability <- readGDX(path, "i04AvailRate", field = "l")[regions, years, ]
   overnightCost <- readGDX(path, "i04GrossCapCosSubRen", field = "l")[regions, years, ]
-  capitalCost <- readGDX(path, "V04CapexFixCostPG", field = "l")[regions, years, ]
+  capitalCost <- readGDX(path, "i04GrossCapCosSubRen", field = "l")[regions, years, ] * 1000 #kUS$2015 to US$2015
 
   nominalNewCapacity <- newCapacity / availability
   nominalNewCapacity[!is.finite(nominalNewCapacity)] <- 0
