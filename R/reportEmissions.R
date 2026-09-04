@@ -936,6 +936,25 @@ getREMIND_MAgPIE_PRISMA <- function(path, magpie_object) {
   # take absolute value
   AFOLU_CDR[, , "Carbon Removal|Land Use"] <-
     abs(AFOLU_CDR[, , "Carbon Removal|Land Use"])
+  
+  region_mappingAFOLU_CDR <- data.frame(
+    AFOLU_CDR = c(
+      "CAZ", "CHA", "EU28", "IND", "JPN", "LAM", "MEA", "NEU",
+      "OAS", "REF", "SSA", "USA", "AUT", "BEL", "BGR", "HRV",
+      "CYP", "CZE", "DNK", "EST", "FIN", "FRA", "DEU", "GRC",
+      "HUN", "IRL", "ITA", "LVA", "LTU", "LUX", "MLT", "NLD",
+      "POL", "PRT", "ROU", "SVK", "SVN", "ESP", "SWE", "GBR"
+    ),
+    OMNIA = c(
+      "ROW", "CHN", "EUR", "OAS", "JPN", "SAM", "MEA", "EUR",
+      "OAS", "OMP", "ROW", "NAM", "EUR", "EUR", "EUR", "EUR",
+      "EUR", "EUR", "EUR", "EUR", "EUR", "EUR", "EUR", "EUR",
+      "EUR", "EUR", "EUR", "EUR", "EUR", "EUR", "EUR", "EUR",
+      "EUR", "EUR", "EUR", "EUR", "EUR", "EUR", "EUR", "GBR"
+    )
+  )
+  
+  AFOLU_CDR <- toolAggregate(AFOLU_CDR, dim = 1, rel = region_mappingAFOLU_CDR, from = "AFOLU_CDR", to = "OMNIA")
 
   return(AFOLU_CDR)
 }
@@ -975,6 +994,26 @@ getIndustrialProcesses <- function(path, magpie_object) {
     interpolate_missing_periods(period = getYears(magpie_object, as.integer = T), expand.values = TRUE) %>%
     as.quitte() %>%
     as.magpie()
+  
+  region_mappingIndustrialProcesses <- data.frame(
+    region_mappingIndustrialProcesses = c(
+      "CAZ", "CHA", "World", "IND", "JPN", "LAM", "MEA", "NEU",
+      "OAS", "REF", "SSA", "USA", "AUT", "BEL", "BGR", "HRV",
+      "CYP", "CZE", "DNK", "EST", "FIN", "FRA", "DEU", "GRC",
+      "HUN", "IRL", "ITA", "LVA", "LTU", "LUX", "MLT", "NLD",
+      "POL", "PRT", "ROU", "SVK", "SVN", "ESP", "SWE", "GBR"
+    ),
+    OMNIA = c(
+      "ROW", "CHN", "World", "OAS", "JPN", "SAM", "MEA", "EUR",
+      "OAS", "OMP", "ROW", "NAM", "EUR", "EUR", "EUR", "EUR",
+      "EUR", "EUR", "EUR", "EUR", "EUR", "EUR", "EUR", "EUR",
+      "EUR", "EUR", "EUR", "EUR", "EUR", "EUR", "EUR", "EUR",
+      "EUR", "EUR", "EUR", "EUR", "EUR", "EUR", "EUR", "GBR"
+    )
+  )
+  
+  IndustrialProcesses <- toolAggregate(IndustrialProcesses, dim = 1, rel = region_mappingIndustrialProcesses, from = "region_mappingIndustrialProcesses", to = "OMNIA")
+  
 
   return(IndustrialProcesses)
 }
