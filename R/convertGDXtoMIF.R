@@ -147,7 +147,6 @@ convertGDXtoMIF_single <- function(.path, path_mif, append, regions = NULL,
   reports <- mbind(reports, reportCapacityElectricity(path_gdx, regions, years))
   reports <- mbind(reports, reportACTV(path_gdx, regions, years))
   reports <- mbind(reports, reportCapacityAdditions(path_gdx, regions, years))
-  reports <- mbind(reports, reportCostsPGtechnologies(path_gdx, regions, years))
   reports <- mbind(reports, reportEnergySystemCosts(path_gdx, regions, years))
   reports <- mbind(reports, reportVehicles(path_gdx, regions, years))
   reports <- mbind(reports, reportGrossInlandConsumption(path_gdx, regions, years))
@@ -201,16 +200,18 @@ aggregateMIF <- function(report) {
 
   # --- Define Item Categories ---
   # Exclude Price|Final Energy, Price|Carbon, Activity growth rate
-  itemsToSum <- items[!grepl("^Price|^Activity growth rate", items)]
+  itemsToSum <- items[!grepl("^Price|^Activity growth rate|^Capital Cost|^Investment|^Policy Cost", items)]
 
   # Take Price|Final Energy, Activity growth rate (excluding Carbon)
   itemsWeightedGdp <- items[grep("^(Price|Activity growth rate)", items, perl = TRUE)]
   itemsWeightedGdp <- setdiff(itemsWeightedGdp, "Price|Carbon.US$2015/tn CO2")
   itemPriceCarbon <- "Price|Carbon"
+  itemCost <- items[grepl("^Capital Cost|^Investment|^Policy Cost", items)]
 
   # --- Extract Weights ---
   gdp <- reportData[, , "GDP|PPP.billion US$2015/yr"]
   emissions <- reportData[, , "Emissions|CO2"]
+  CapacityElectricity <- reportData[, , "Capacity|Electricity"]
 
   # --- Helper Function for region aggregation ---
   aggregateRegion <- function(regionName, regionCodes) {
@@ -218,6 +219,7 @@ aggregateMIF <- function(report) {
     regionData <- reportData[regionCodes, , ]
     regionGdp <- gdp[regionCodes, , ]
     regionEmissions <- emissions[regionCodes, , ]
+    regionCapacityElectricity <- CapacityElectricity[regionCodes, , ]
 
     # Create mapping data frame for toolAggregate
     rmap <- data.frame(regionCode = regionCodes, targetRegion = regionName)
@@ -245,9 +247,19 @@ aggregateMIF <- function(report) {
       to = "targetRegion"
     )
     getItems(carbonPriceMeanAgg, 1) <- regionName
+    
+    # Weighted mean aggregation (Emissions) for Price|Carbon
+    CapitalInvestmentCost <- toolAggregate(
+      regionData[, , itemCost],
+      weight = regionCapacityElectricity,
+      rel = rmap,
+      from = "regionCode",
+      to = "targetRegion"
+    )
+    getItems(CapitalInvestmentCost, 1) <- regionName
 
     # Combine and return the aggregated parts
-    return(mbind(sumAgg, gdpMeanAgg, carbonPriceMeanAgg))
+    return(mbind(sumAgg, gdpMeanAgg, carbonPriceMeanAgg, CapitalInvestmentCost))
   }
   # --- Calculate World Aggregation ---
   worldRegion <- aggregateRegion(regionName = "World", regionCodes = worldCodes)
