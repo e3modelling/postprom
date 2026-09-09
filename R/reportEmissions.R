@@ -867,11 +867,11 @@ getREMIND_MAgPIE_PRISMA <- function(path, magpie_object) {
   # Add REMIND_MAgPIE_PRISMA run
   REMIND_MAgPIE_PRISMA <- readSource("REMIND_MAgPIE_PRISMA")
 
-  # Filter REMIND_MAgPIE_PRISMA by scenario — same fscenario codes as SoCDR
-  if (fscenario %in% c(0, 1)) {
-    REMIND_MAgPIE_PRISMA <- REMIND_MAgPIE_PRISMA[, , "SSP2_Meet_Aspirations"]
-  } else if (fscenario == 2) {
+  # Filter REMIND_MAgPIE_PRISMA by scenario — same fscenario codes as SoCDR.
+  if (fscenario %in% c(0, 1, 2)) {
+    # REMIND_MAgPIE_PRISMA <- REMIND_MAgPIE_PRISMA[, , "SSP2_Meet_Aspirations"]
     REMIND_MAgPIE_PRISMA <- REMIND_MAgPIE_PRISMA[, , "SSP2_Asymmetric_Roll_Back"]
+    # REMIND_MAgPIE_PRISMA <- REMIND_MAgPIE_PRISMA[, , "SSP2_Late_Reawakening"]
   } else if (fscenario == 3) {
     REMIND_MAgPIE_PRISMA <- REMIND_MAgPIE_PRISMA[, , "SSP2_Late_Reawakening"]
   }
@@ -914,11 +914,14 @@ getIndustrialProcesses <- function(path, magpie_object) {
   fscenario <- readGDX(path, "fscenario")
 
   # Filter REMIND_MAgPIE_SoCDR by scenario
+  # NOTE: scenario 2 intentionally reports "STEPS-LTT" (not "NT-Zero2050")
+  # industrial-process emissions.
   if (fscenario %in% c(0)) {
     IndustrialProcesses <- IndustrialProcesses[, , "CurrentPolicies"]
-  } else if (fscenario %in% c(1)) {
-    IndustrialProcesses <- IndustrialProcesses[, , "STEPS-LTT"]
-  } else if (fscenario %in% c(2, 5, 6)) {
+  } else if (fscenario %in% c(1, 2)) {
+    # IndustrialProcesses <- IndustrialProcesses[, , "STEPS-LTT"]
+    IndustrialProcesses <- IndustrialProcesses[, , "AsymmetricRollBack"]
+  } else if (fscenario %in% c(5, 6)) {
     IndustrialProcesses <- IndustrialProcesses[, , "NT-Zero2050"]
   } else if (fscenario == 3) {
     IndustrialProcesses <- IndustrialProcesses[, , "STEPS-LTT"]
