@@ -131,7 +131,7 @@ reportEmissions <- function(path, regions, years) {
     # exo: external default sources (legacy) — choose between SoCDR and PRISMA
     afoluSource <- "PRISMA"  # "SoCDR" or "PRISMA"
     if (afoluSource == "PRISMA") {
-      AFOLU_CDR <- getREMIND_MAgPIE_PRISMA(path, grossCO2Demand)[, years, ][regions, , ]
+      AFOLU_CDR <- new.magpie(cells_and_regions = regions,years = years,fill = 0)
     } else {
       AFOLU_CDR <- mbind(
         getGLOBIOMEU(path, grossCO2Demand)[, years, ],
@@ -143,13 +143,13 @@ reportEmissions <- function(path, regions, years) {
   }
   useMagpieAfolu <- landEmiMode %in% c("softmif", "curve")   # both provide AFOLU CH4/N2O
   # ========================= Industrial Processes ===========================
-  IndustrialProcesses <- getIndustrialProcesses(
-    path, grossCO2Demand
-  )[regions, years, ]
+   #IndustrialProcesses <- getIndustrialProcesses(
+   #  path, grossCO2Demand
+   #)[regions, years, ]
   # -----------------------------------------------------------------------
   EmissionsCo2 <- mbind(
     grossCO2Demand, netCO2Demand, grossCO2Supply,
-    netCO2Supply, AFOLUCO2, IndustrialProcesses
+    netCO2Supply, AFOLUCO2
   )
   EmissionsCo2 <- helperAggregateLevel(EmissionsCo2, level = 2, recursive = TRUE)
   # ------------------------ Carbon Capture & Removal --------------------------
