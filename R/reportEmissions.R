@@ -138,8 +138,8 @@ reportEmissions <- function(path, regions, years) {
         getREMIND_MAgPIE_SoCDR(path, grossCO2Demand)[, years, ]
       )[regions, , ]
     }
-    AFOLUCO2 <- AFOLU_CDR[, , "Emissions|CO2|AFOLU"]
-    CDRCO2 <- AFOLU_CDR[, , "Carbon Removal|Land Use"]
+    AFOLUCO2 <- AFOLU_CDR
+    CDRCO2 <- AFOLU_CDR
   }
   useMagpieAfolu <- landEmiMode %in% c("softmif", "curve")   # both provide AFOLU CH4/N2O
   # ========================= Industrial Processes ===========================
@@ -151,6 +151,7 @@ reportEmissions <- function(path, regions, years) {
     grossCO2Demand, netCO2Demand, grossCO2Supply,
     netCO2Supply, AFOLUCO2
   )
+  EmissionsCo2 <- EmissionsCo2[,,"dummy", invert = TRUE]
   EmissionsCo2 <- helperAggregateLevel(EmissionsCo2, level = 2, recursive = TRUE)
   # ------------------------ Carbon Capture & Removal --------------------------
   CCS <- CCS[, , c("DAC", "EW"), invert = TRUE]
@@ -241,10 +242,10 @@ reportEmissions <- function(path, regions, years) {
   names(dimnames(Cumulated))[3] <- "SBS"
   # =============================== Auxiliary =================================
   #  ---------------- Emissions|CO2|Energy and Industrial Processes -----------
-  sumIPEnergy <- EmissionsCo2[, , c("Emissions|CO2|Energy", "Emissions|CO2|Industrial Processes")]
-  sumIPEnergy <- dimSums(sumIPEnergy, dim = 3, na.rm = TRUE)
-  getItems(sumIPEnergy, 3) <- "Emissions|CO2|Energy and Industrial Processes"
-  # ------------ Emissions|CO2|Energy|Demand|Residential and Commercial -------
+  # sumIPEnergy <- EmissionsCo2[, , c("Emissions|CO2|Energy", "Emissions|CO2|Industrial Processes")]
+  # sumIPEnergy <- dimSums(sumIPEnergy, dim = 3, na.rm = TRUE)
+  # getItems(sumIPEnergy, 3) <- "Emissions|CO2|Energy and Industrial Processes"
+  # # ------------ Emissions|CO2|Energy|Demand|Residential and Commercial -------
   resCom <- EmissionsCo2[, , c("Emissions|CO2|Energy|Demand|Residential", "Emissions|CO2|Energy|Demand|Commercial", "Emissions|CO2|Energy|Demand|Agriculture, Fishing, Forestry")]
   resCom <- dimSums(resCom, 3)
   getItems(resCom, 3.1) <- "Emissions|CO2|Energy|Demand|Residential and Commercial"
@@ -306,7 +307,7 @@ reportEmissions <- function(path, regions, years) {
   EmissionsCo2 <- add_dimension(EmissionsCo2, dim = 3.2, add = "unit", nm = unitsCO2)
   kyotoGases <- add_dimension(kyotoGases, dim = 3.2, add = "unit", nm = "Mt CO2-equiv/yr")
   Cumulated <- add_dimension(Cumulated, dim = 3.2, add = "unit", nm = "Gt CO2")
-  sumIPEnergy <- add_dimension(sumIPEnergy, dim = 3.2, add = "unit", nm = unitsCO2)
+  # sumIPEnergy <- add_dimension(sumIPEnergy, dim = 3.2, add = "unit", nm = unitsCO2)
   resCom <- add_dimension(resCom, dim = 3.2, add = "unit", nm = unitsCO2)
   captureGeoStorage <- add_dimension(captureGeoStorage, dim = 3.2, add = "unit", nm = unitsCO2)  
   TRANP <- add_dimension(TRANP, dim = 3.2, add = "unit", nm = unitsCO2)
@@ -320,7 +321,7 @@ reportEmissions <- function(path, regions, years) {
 
   magpie_object <- mbind(
     emissionsNonCO2, EmissionsCo2, kyotoGases,
-    Cumulated, sumIPEnergy, resCom, captured, captureGeoStorage,
+    Cumulated, resCom, captured, captureGeoStorage,
     TRANP, TRANG, OtherFuelTransformation, HFCAgg, PFCAgg, FgasAgg,
     emissionsCO2woBunkers, emissionsKyotowoBunkers
   )
