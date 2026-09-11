@@ -143,7 +143,7 @@ reportAreaPNG <- function(report,
                           grouped,
                           output_dir) {
   
-  regionsPNG <- c("World", "EU", "IND", "CHA", "USA")
+  regionsPNG <- c("World","IND", "USA")
   yearsPNG <- c(2023, seq(2025, max(getYears(report, as.integer = TRUE)), by = 5))
   if (all(regionsPNG %in% getRegions(report))) {
     if (all(yearsPNG %in% as.numeric(sub("^y", "", getYears(report))))) {

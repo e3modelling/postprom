@@ -4,8 +4,6 @@ Emissions|CO2|Total,Energy|Demand|Industry
 Emissions|CO2|Total,Energy|Demand|Residential and Commercial
 Emissions|CO2|Total,Energy|Demand|Transportation
 Emissions|CO2|Total,Energy|Supply
-Emissions|CO2|Total,AFOLU
-Emissions|CO2|Total,Industrial Processes
 Emissions|CO2|Total,Energy|Demand|Direct Air Capture
 Emissions|CO2|Total,Validation
 Emissions|CO2|Total,
@@ -78,6 +76,5 @@ Carbon Capture|Total,Direct Air Capture
 Carbon Capture|Total,Utilization
 Carbon Capture|Total,
 Carbon Removal|Total,Geological Storage
-Carbon Removal|Total,Land Use
 Carbon Removal|Total,Enhanced Weathering
 Carbon Removal|Total,

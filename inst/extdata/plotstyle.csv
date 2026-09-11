@@ -77,8 +77,6 @@ Emissions|CO2|Energy|Demand|Enhanced Weathering,Enhanced Weathering,grey,area
 Emissions|CO2|VAL,EDGAR,red,dLine
 Emissions|CO2|Validation,IEA|Projections,green,solidLine
 Emissions|CO2|Energy|Demand|Direct Air Capture,DAC,#87e6a4,area
-Emissions|CO2|AFOLU,AFOLU,#595933,area
-Emissions|CO2|Industrial Processes,Industrial Processes,#661a00,area
 Emissions|CO2|Energy|Demand|Industry,Industry,orange,area
 Emissions|CO2|Energy|Demand|Residential and Commercial,Res and Com,#0000FF,area
 Emissions|CO2|Energy|Demand|Transportation,Transportation,#000000,area
@@ -93,6 +91,5 @@ Carbon Capture|Direct Air Capture,Direct Air Capture,#ffcc00,area
 Carbon Capture|Utilization,Utilization,#337fff,area
 Carbon Capture,Total,black,solidLine
 Carbon Removal|Geological Storage,Geological Storage,#661a00,area
-Carbon Removal|Land Use,Land Use,#595933,area
 Carbon Removal|Enhanced Weathering,Enhanced Weathering,#ffcc00,area
 Carbon Removal,Total,black,solidLine
