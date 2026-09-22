@@ -1,5 +1,6 @@
 Name,Variables
-Emissions|CO2|Total,Energy|Demand|Bunkers
+Emissions|CO2|Total,Energy|Demand|Transportation|Bunkers maritime
+Emissions|CO2|Total,Energy|Demand|Transportation|Bunkers aviation
 Emissions|CO2|Total,Energy|Demand|Industry
 Emissions|CO2|Total,Energy|Demand|Residential and Commercial
 Emissions|CO2|Total,Energy|Demand|Transportation
@@ -24,7 +25,8 @@ Final Energy|Sector,Transportation|VAL
 Final Energy|Sector,Industry|Validation
 Final Energy|Sector,Transportation|Validation
 Final Energy|Sector,Non-Energy Use
-Final Energy|Sector,Bunkers
+Final Energy|Sector,Transportation|Bunkers aviation
+Final Energy|Sector,Transportation|Bunkers maritime
 Final Energy|Sector,Carbon Management
 Final Energy|Fuel,Solids
 Final Energy|Fuel,Hydrogen

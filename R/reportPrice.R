@@ -34,7 +34,7 @@ reportPrice <- function(path, regions, years, weightsForreportPrice) {
     mutate(SBS = "Transportation")
   DSBS_NonEnergy <- readGDX(path, "NENSE") %>%
     as.data.frame() %>%
-    filter(. != "BU") %>%
+    filter(!. %in% c("BAV", "BMAR")) %>%
     mutate(SBS = "Non-Energy Use")
   DSBS_CDR <- readGDX(path, "CDR") %>%
     as.data.frame() %>%

@@ -78,7 +78,8 @@ vars <- c(
   "Emissions|CO2|Energy|Demand|Industry.Mt CO2/yr",
   "Emissions|CO2|Energy|Demand|Residential and Commercial.Mt CO2/yr",
   "Emissions|CO2|Energy|Demand|Transportation.Mt CO2/yr",
-  "Emissions|CO2|Energy|Demand|Bunkers.Mt CO2/yr",
+  "Emissions|CO2|Energy|Demand|Transportation|Bunkers maritime.Mt CO2/yr",
+  "Emissions|CO2|Energy|Demand|Transportation|Bunkers aviation.Mt CO2/yr",
   "Emissions|CO2|Energy|Supply.Mt CO2/yr",
   "Emissions|CO2|Industrial Processes.Mt CO2/yr",
   "Emissions|CO2|AFOLU.Mt CO2/yr",
@@ -90,7 +91,8 @@ in_plot <- c(
   "Industry",
   "Residential and Commercial",
   "Transportation",
-  "Bunkers",
+  "Bunkers Maritime",
+  "Bunkers Aviation",
   "Supply",
   "Industrial Processes",
   "AFOLU",
@@ -1173,7 +1175,8 @@ vars <- c(
   "Final Energy|Transportation.Mtoe",
   "Final Energy|Non-Energy Use.Mtoe",
   "Final Energy|Residential and Commercial.Mtoe",
-  "Final Energy|Bunkers.Mtoe",
+  "Final Energy|Transportation|Bunkers aviation.Mtoe",
+  "Final Energy|Transportation|Bunkers maritime.Mtoe",
   "Final Energy|Carbon Management.Mtoe",
   "Final Energy|Agriculture, Fishing, Forestry.Mtoe"
 )
@@ -1183,7 +1186,8 @@ in_plot <- c(
   "Transportation",
   "Non-Energy Use",
   "Residential and Commercial",
-  "Bunkers",
+  "Bunkers Maritime",
+  "Bunkers Aviation",
   "Carbon Management",
   "Agriculture"
 )

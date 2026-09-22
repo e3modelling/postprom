@@ -287,10 +287,10 @@ reportEmissions <- function(path, regions, years) {
   FgasAgg <- dimSums(FgasAgg, 3)
   getItems(FgasAgg, 3.1) <- "Emissions|F-gases"
   # -------------------------- Emissions|CO2 (w/o bunkers), Emissions|Kyoto Gases (w/o bunkers) -------
-  emissionsCO2woBunkers <- EmissionsCo2[, , "Emissions|CO2"] - EmissionsCo2[, , "Emissions|CO2|Energy|Demand|Bunkers"]
+  emissionsCO2woBunkers <- EmissionsCo2[, , "Emissions|CO2"] - EmissionsCo2[, , "Emissions|CO2|Energy|Demand|Transportation|Bunkers maritime"] - EmissionsCo2[, , "Emissions|CO2|Energy|Demand|Transportation|Bunkers aviation"]
   getItems(emissionsCO2woBunkers, dim = 3) <- "Emissions|CO2-(w/o bunkers)"
   getSets(emissionsCO2woBunkers)[3] <- "DSBS"
-  emissionsKyotowoBunkers <- kyotoGases[, , "Emissions|Kyoto Gases"] - EmissionsCo2[, , "Emissions|CO2|Energy|Demand|Bunkers"]
+  emissionsKyotowoBunkers <- kyotoGases[, , "Emissions|Kyoto Gases"] -  - EmissionsCo2[, , "Emissions|CO2|Energy|Demand|Transportation|Bunkers maritime"] - EmissionsCo2[, , "Emissions|CO2|Energy|Demand|Transportation|Bunkers aviation"]
   getItems(emissionsKyotowoBunkers, dim = 3) <- "Emissions|Kyoto Gases-(w/o bunkers)"
   getSets(emissionsKyotowoBunkers)[3] <- "DSBS"
   # =============================== Add Dimensions ============================

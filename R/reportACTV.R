@@ -28,7 +28,7 @@ reportACTV <- function(path, regions, years) {
   iActv <- vector$imActv[regions, years, setdiff(getItems(iActv, 3), c("PG", "H2P", "H2INFR"))]
   getItems(iActv, 3.1) <- paste0("Activity growth rate|", getItems(iActv, 3.1))
 
-  transport <- as.character(vector$TRANSE)
+  transport <- setdiff(as.character(vector$TRANSE),c("BAV", "BMAR"))
   pred_years <- years[years > "y2020"]
   VActv_Pass <- readGDX(path, "V01ActivPassTrnsp", field = "l")[regions, pred_years, c("PC", "PB", "PT", "PN", "PA")]
   getItems(VActv_Pass, 3.1) <- paste0("Activity growth rate|", getItems(VActv_Pass, 3.1))
@@ -71,7 +71,8 @@ reportACTV <- function(path, regions, years) {
     "Activity|GU" = "GTKM",
     "Activity|GT" = "GTKM",
     "Activity|GN" = "GTKM",
-    "Activity growth rate|BU" = "1",
+    "Activity growth rate|BAV" = "1",
+    "Activity growth rate|BMAR" = "1",
     "Activity growth rate|PCH" = "1",
     "Activity growth rate|NEN" = "1"
   )

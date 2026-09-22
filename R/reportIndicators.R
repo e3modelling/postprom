@@ -62,7 +62,8 @@ reportIndicators <- function(reports, path, regions, years, blabla_regions) {
     "Final Energy|Commercial|Services", "SE",
     "Final Energy|Agriculture, Fishing, Forestry", "AG",
     "Final Energy|Residential", "HOU",
-    "Final Energy|Bunkers", "BU",
+    "Final Energy|Transportation|Bunkers aviation", "BAV",
+    "Final Energy|Transportation|Bunkers maritime", "BMAR",
     "Final Energy|Non-Energy Use|Petrochemicals Industry", "PCH",
     "Final Energy|Non-Energy Use|Other Non Energy Uses", "NEN")
   
@@ -131,11 +132,12 @@ reportIndicators <- function(reports, path, regions, years, blabla_regions) {
   Energy <- reports[,,c("GDP|PPP.billion US$2015/yr", "Primary Energy.Mtoe",
                         "Trade|Import|Primary Energy.Mtoe", "Trade|Export|Primary Energy.Mtoe",
                         "Trade|Import|Secondary Energy.Mtoe", "Trade|Export|Secondary Energy.Mtoe",
-                        "Final Energy|Bunkers.Mtoe")]
+                        "Final Energy|Transportation|Bunkers aviation.Mtoe",
+                        "Final Energy|Transportation|Bunkers maritime.Mtoe")]
   Energy <- collapseDim(Energy, dim = 3.2)
   imports <- Energy[,,"Trade|Import|Primary Energy"] + Energy[,,"Trade|Import|Secondary Energy"]
   exports <- Energy[,,"Trade|Export|Primary Energy"] + Energy[,,"Trade|Export|Secondary Energy"]
-  TES <- Energy[,,"Primary Energy"] + imports - exports - Energy[,,"Final Energy|Bunkers"]
+  TES <- Energy[,,"Primary Energy"] + imports - exports - Energy[,,"Final Energy|Transportation|Bunkers aviation"] - Energy[,,"Final Energy|Transportation|Bunkers maritime"]
   TESEnergyIntensity  <- TES / Energy[,,"GDP|PPP"]
   getItems(TESEnergyIntensity, 3) <- "Energy Intensity"
   names(dimnames(TESEnergyIntensity))[3] <- "TESEnergyIntensity"
@@ -155,14 +157,16 @@ reportIndicators <- function(reports, path, regions, years, blabla_regions) {
                               "Emissions|CO2|Energy|Demand|Agriculture, Fishing, Forestry.Mt CO2/yr",
                               "Emissions|CO2|Energy|Demand|Residential.Mt CO2/yr",
                               "Emissions|CO2|Energy|Demand|Transportation.Mt CO2/yr",
-                              "Emissions|CO2|Energy|Demand|Bunkers.Mt CO2/yr")
+                              "Emissions|CO2|Energy|Demand|Transportation|Bunkers aviation.Mt CO2/yr",
+                              "Emissions|CO2|Energy|Demand|Transportation|Bunkers maritime.Mt CO2/yr")
   
   FE_demand_level2 <-  c("Final Energy|Industry.Mtoe",
                          "Final Energy|Commercial.Mtoe",
                          "Final Energy|Agriculture, Fishing, Forestry.Mtoe",
                          "Final Energy|Residential.Mtoe",
                          "Final Energy|Transportation.Mtoe",
-                         "Final Energy|Bunkers.Mtoe")
+                         "Final Energy|Transportation|Bunkers aviation.Mtoe",
+                         "Final Energy|Transportation|Bunkers maritime.Mtoe")
   
   CO2FEIntensity <- reports[,,c(emi_demand_level5_same, FE_demand_level2)]
   CO2FEIntensity <- collapseDim(CO2FEIntensity, dim = 3.2)
@@ -314,7 +318,7 @@ reportIndicators <- function(reports, path, regions, years, blabla_regions) {
   PassengerFE <- dimSums(TRANP, 3)
   getItems(PassengerFE, 3.1) <- "Final Energy|Transportation|Passenger"
   
-  v01ActivPassTrnsp <- toolAggregate(v01ActivPassTrnsp, weight = NULL, dim = 3,
+  v01ActivPassTrnsp <- toolAggregate(v01ActivPassTrnsp[,,mappingTransport[["code"]]], weight = NULL, dim = 3,
                                      rel = mappingTransport,from = "code",to = "variable")
   v01ActivPassTrnsp <- v01ActivPassTrnsp[,,getItems(TRANP, 3)]
   # -------------------------- Transport Freight -------
@@ -326,7 +330,7 @@ reportIndicators <- function(reports, path, regions, years, blabla_regions) {
   FreightFE <- dimSums(TRANG, 3)
   getItems(FreightFE, 3.1) <- "Final Energy|Transportation|Freight"
   
-  V01ActivGoodsTransp <- toolAggregate(V01ActivGoodsTransp, weight = NULL, dim = 3,
+  V01ActivGoodsTransp <- toolAggregate(V01ActivGoodsTransp[,,mappingTransport[["code"]]], weight = NULL, dim = 3,
                                        rel = mappingTransport,from = "code",to = "variable")
   V01ActivGoodsTransp <- V01ActivGoodsTransp[,,getItems(TRANG, 3)]
   # -------------------------- 
