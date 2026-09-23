@@ -104,6 +104,8 @@ reportEmissions <- function(path, regions, years) {
   #   exo     = external default sources (legacy compatibility)
   iEmissions_magpie <- file.path(dirname(path), "iEmissions_magpie.mif")
   landEmiMode <- readGDX(path, "sLandEmiMode", react = "silent")
+
+  landEmiMode <- "softmif"
   landEmiMode <- if (!is.null(landEmiMode) && length(landEmiMode))
     as.character(landEmiMode)[1]
   else if (file.exists(iEmissions_magpie)) "softmif" else "exo"  # fallback for pre-tag gdx
@@ -271,6 +273,29 @@ reportEmissions <- function(path, regions, years) {
                                        "Emissions|CO2|Energy|Supply|Gases")]
   OtherFuelTransformation <- dimSums(OtherFuelTransformation, dim = 3, na.rm = TRUE)
   getItems(OtherFuelTransformation, 3) <- "Emissions|CO2|Energy|Supply|Other Fuel Transformation"
+  # ---------------- IAMC Electricity & Heat (CHP allocated by output) ----------
+  # SSBS carries CHP as its own subsector, so the raw "Supply|Electricity" leaf is
+  # PG-only and "Supply|Heat" is district heat only. IAMC expects CHP fuel
+  # emissions to be shared between the two products it actually delivers.
+  # reportSE already folds CHP electricity into Secondary Energy|Electricity, so
+  # reporting PG-only here made the two sides of the same run inconsistent.
+  # Split on delivered output (elec TWh vs steam Mtoe->TWh) rather than on
+  # i09EffSteElc / i09EffSteThrm, because i09EffSteThrm carries an unexplained
+  # /4 scaling (09_Heat/heat/input.gms:183, flagged by an open FIXME) and so is
+  # not a reliable thermal efficiency.
+  chpElecShare <- getChpElecShare(path, regions, years)
+  chpEmi <- EmissionsCo2[, , "Emissions|CO2|Energy|Supply|Combined Heat and Power"]
+
+  elecIAMC <- EmissionsCo2[, , "Emissions|CO2|Energy|Supply|Electricity"] +
+    magclass::setNames(chpEmi * chpElecShare, NULL)
+  getItems(elecIAMC, 3.1) <- "Emissions|CO2|Energy|Supply|Electricity and Heat|Electricity"
+
+  heatIAMC <- EmissionsCo2[, , "Emissions|CO2|Energy|Supply|Heat"] +
+    magclass::setNames(chpEmi * (1 - chpElecShare), NULL)
+  getItems(heatIAMC, 3.1) <- "Emissions|CO2|Energy|Supply|Electricity and Heat|Heat"
+
+  elecHeatIAMC <- dimSums(mbind(elecIAMC, heatIAMC), dim = 3, na.rm = TRUE)
+  getItems(elecHeatIAMC, 3) <- "Emissions|CO2|Energy|Supply|Electricity and Heat"
   # ------------ Emissions|HFC (all HFCs aggregated in HFC134a-equiv with GWP (1430/1000 = 1.43)) -------
   allHfcVars <- grep("Emissions\\|HFC", getNames(emissionsCO2eq), value = TRUE)
   HFCAgg <- emissionsCO2eq[, , allHfcVars] / 1.43
@@ -312,6 +337,9 @@ reportEmissions <- function(path, regions, years) {
   TRANP <- add_dimension(TRANP, dim = 3.2, add = "unit", nm = unitsCO2)
   TRANG <- add_dimension(TRANG, dim = 3.2, add = "unit", nm = unitsCO2)
   OtherFuelTransformation <- add_dimension(OtherFuelTransformation, dim = 3.2, add = "unit", nm = unitsCO2)
+  elecIAMC <- add_dimension(elecIAMC, dim = 3.2, add = "unit", nm = unitsCO2)
+  heatIAMC <- add_dimension(heatIAMC, dim = 3.2, add = "unit", nm = unitsCO2)
+  elecHeatIAMC <- add_dimension(elecHeatIAMC, dim = 3.2, add = "unit", nm = unitsCO2)
   HFCAgg <- add_dimension(HFCAgg, dim = 3.2, add = "unit", nm = "kt HFC134a-equiv/yr")
   PFCAgg <- add_dimension(PFCAgg, dim = 3.2, add = "unit", nm = "kt CF4-equiv/yr")
   FgasAgg <- add_dimension(FgasAgg, dim = 3.2, add = "unit", nm = "Mt CO2-equiv/yr")
@@ -322,6 +350,7 @@ reportEmissions <- function(path, regions, years) {
     emissionsNonCO2, EmissionsCo2, kyotoGases,
     Cumulated, sumIPEnergy, resCom, captured, captureGeoStorage,
     TRANP, TRANG, OtherFuelTransformation, HFCAgg, PFCAgg, FgasAgg,
+    elecIAMC, heatIAMC, elecHeatIAMC,
     emissionsCO2woBunkers, emissionsKyotowoBunkers
   )
   # Add other emissions from magpie run if they are available
@@ -952,7 +981,7 @@ getIndustrialProcesses <- function(path, magpie_object) {
     IndustrialProcesses <- IndustrialProcesses[, , "CurrentPolicies"]
   } else if (fscenario %in% c(1)) {
     IndustrialProcesses <- IndustrialProcesses[, , "STEPS-LTT"]
-  } else if (fscenario %in% c(2, 5, 6)) {
+  } else if (fscenario %in% c(2, 5, 6, 7, 8, 9)) {
     IndustrialProcesses <- IndustrialProcesses[, , "NT-Zero2050"]
   } else if (fscenario == 3) {
     IndustrialProcesses <- IndustrialProcesses[, , "STEPS-LTT"]
@@ -977,4 +1006,57 @@ getIndustrialProcesses <- function(path, magpie_object) {
     as.magpie()
 
   return(IndustrialProcesses)
+}
+
+#' Share of CHP fuel emissions attributable to electricity
+#'
+#' CHP plants deliver both electricity and steam from one fuel input, but
+#' OPEN-PROM books their emissions to a single `CHP` supply subsector. IAMC
+#' reporting wants them split across `Supply|Electricity` and `Supply|Heat`.
+#' This returns the electricity share, computed from delivered output so that
+#' the split follows what the plants actually produced in each region and year.
+#'
+#' Output is used in preference to the efficiency parameters: `i09EffSteThrm`
+#' is divided by 4 in `09_Heat/heat/input.gms` for reasons an open FIXME in that
+#' file leaves unexplained, so it is not a usable thermal efficiency.
+#'
+#' CHP technologies are the `TCHP` subset of `TSTEAM` (`TSTE1*`); the `TDHP`
+#' (`TSTE2*`) plants are district-heat-only and already report under
+#' `Supply|Heat`, so they are excluded.
+#'
+#' @param path Path to the GDX file.
+#' @param regions Regions to filter.
+#' @param years Years to filter.
+#' @return A magpie object of the electricity share, in [0, 1].
+#' @noRd
+getChpElecShare <- function(path, regions, years) {
+  MtoeToTWh <- 11630 * 1e-3
+  fallback <- 0.5
+
+  prodElecCHP <- readGDX(path, c("V04ProdElecEstCHP", "V04ProdElecCHP"),
+    field = "l", format = "first_found", react = "silent"
+  )
+  prodSte <- readGDX(path, "VmProdSte", field = "l", react = "silent")
+  TCHP <- readGDX(path, "TCHP", react = "silent")
+
+  if (is.null(prodElecCHP) || is.null(prodSte) || is.null(TCHP)) {
+    message(
+      "getChpElecShare: CHP output not found in gdx - ",
+      "falling back to a flat ", fallback, " electricity share."
+    )
+    return(new.magpie(regions, years, NULL, fill = fallback))
+  }
+
+  # V04ProdElecEstCHP is already in TWh (reportSE mbinds it with VmProdElec
+  # without conversion); VmProdSte is Mtoe and needs converting.
+  elec <- dimSums(prodElecCHP[regions, years, ], dim = 3)
+  heat <- dimSums(prodSte[regions, years, ][, , TCHP], dim = 3) * MtoeToTWh
+
+  total <- elec + heat
+  share <- elec / total
+  # Regions/years with no CHP output at all give 0/0; the emissions they scale
+  # are zero too, so the value only has to be finite.
+  share[!is.finite(share)] <- fallback
+  share[total <= 0] <- fallback
+  share
 }
