@@ -287,6 +287,10 @@ reportEmissions <- function(path, regions, years) {
   FgasAgg <- dimSums(FgasAgg, 3)
   getItems(FgasAgg, 3.1) <- "Emissions|F-gases"
   # -------------------------- Emissions|CO2 (w/o bunkers), Emissions|Kyoto Gases (w/o bunkers) -------
+  Bunkers <- mbind(EmissionsCo2[, , "Emissions|CO2|Energy|Demand|Transportation|Bunkers maritime"], EmissionsCo2[, , "Emissions|CO2|Energy|Demand|Transportation|Bunkers aviation"])
+  Bunkers <- dimSums(Bunkers, 3)
+  getItems(Bunkers, 3) <- "Emissions|CO2|Energy|Demand|Bunkers"
+  EmissionsCo2 <- mbind(EmissionsCo2, Bunkers)
   emissionsCO2woBunkers <- EmissionsCo2[, , "Emissions|CO2"] - EmissionsCo2[, , "Emissions|CO2|Energy|Demand|Bunkers"]
   getItems(emissionsCO2woBunkers, dim = 3) <- "Emissions|CO2-(w/o bunkers)"
   getSets(emissionsCO2woBunkers)[3] <- "DSBS"

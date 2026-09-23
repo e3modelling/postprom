@@ -24,21 +24,27 @@
 reportACTV <- function(path, regions, years) {
   vector <- readGDX(path, c("imActv", "TRANSE"))
   iActv <- vector$imActv
-  iActv <- iActv[, , c("DAC", "EW"), invert = TRUE]
+  iActv <- iActv[, , c("DAC", "EW", "BAV", "BMAR"), invert = TRUE]
   iActv <- vector$imActv[regions, years, setdiff(getItems(iActv, 3), c("PG", "H2P", "H2INFR"))]
   getItems(iActv, 3.1) <- paste0("Activity growth rate|", getItems(iActv, 3.1))
 
-  transport <- as.character(vector$TRANSE)
+  transport <- setdiff(as.character(vector$TRANSE),c("BAV", "BMAR"))
+  transport <- c(transport, "BU")
   pred_years <- years[years > "y2020"]
   VActv_Pass <- readGDX(path, "V01ActivPassTrnsp", field = "l")[regions, pred_years, c("PC", "PB", "PT", "PN", "PA")]
   getItems(VActv_Pass, 3.1) <- paste0("Activity growth rate|", getItems(VActv_Pass, 3.1))
 
   pred_years <- years[years > "y2020"]
   VActv_Goods <- readGDX(path, "V01ActivGoodsTransp", field = "l")[regions, pred_years, c("GU", "GT", "GN")]
+  VActv_GoodsBunkers <- readGDX(path, "V01ActivGoodsTransp", field = "l")[regions, pred_years, c("BAV", "BMAR")]
+  VActv_GoodsBunkers <- dimSums(VActv_GoodsBunkers, 3)
+  getItems(VActv_GoodsBunkers, 3) <-"BU"
+  VActv_Goods <- mbind(VActv_Goods, VActv_GoodsBunkers)
   getItems(VActv_Goods, 3.1) <- paste0("Activity growth rate|", getItems(VActv_Goods, 3.1))
 
   VActv <- mbind(VActv_Pass, VActv_Goods)
 
+  iActv <- add_columns(iActv, addnm = "Activity growth rate|BU", dim = 3, fill = 0)
   iActv[regions, pred_years, paste0("Activity growth rate|", transport)] <- VActv
   old_names <- paste0("Activity growth rate|", transport)
   new_names <- paste0("Activity|", transport)
@@ -71,7 +77,7 @@ reportACTV <- function(path, regions, years) {
     "Activity|GU" = "GTKM",
     "Activity|GT" = "GTKM",
     "Activity|GN" = "GTKM",
-    "Activity growth rate|BU" = "1",
+    "Activity|BU" = "1",
     "Activity growth rate|PCH" = "1",
     "Activity growth rate|NEN" = "1"
   )
