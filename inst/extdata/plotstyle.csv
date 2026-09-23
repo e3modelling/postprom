@@ -47,7 +47,8 @@ Secondary Energy|Electricity|Coal|CHP,Coal w/o CHP,#262625,area
 Secondary Energy|Electricity|Gas|Non-CHP,Gas w/ CHP,#bfbf69,area
 Secondary Energy|Electricity|Gas|CHP,Gas w/o CHP,#595933,area
 Final Energy|Non-Energy Use,Non-Energy Use,yellow,bar
-Final Energy|Bunkers,Bunkers,#970824ff,bar
+Final Energy|Transportation|Bunkers aviation,Bunkers aviation,#970824ff,bar
+Final Energy|Transportation|Bunkers maritime,Bunkers maritime,#ffcc00,bar
 Final Energy|Industry,Industry,orange,bar
 Final Energy|Transportation,Transportation,black,bar
 Final Energy|Carbon Management,Carbon Management,grey,bar
@@ -67,7 +68,8 @@ Final Energy|Electricity,Electricity,yellow,bar
 Final Energy|Fossil Liquids,Fossil Liquids,grey,bar
 Final Energy|Heat,Heat,firebrick2,bar
 Final Energy|Other fuels,Other Fuels,darkorchid3,bar
-Emissions|CO2|Energy|Demand|Bunkers,Bunkers,yellow,area
+Emissions|CO2|Energy|Demand|Transportation|Bunkers aviation,Bunkers,yellow,area
+Emissions|CO2|Energy|Demand|Transportation|Bunkers maritime,Bunkers,#ffcc00,area
 Emissions|CO2|Energy|Supply,Supply,#bcbc6d,area
 Emissions|CO2|Cumulated,Cumulated,#661a00,area
 Emissions|CO2|Budget1p5C,Budget1p5C,black,dLine

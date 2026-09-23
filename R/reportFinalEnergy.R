@@ -33,7 +33,7 @@ reportFinalEnergy <- function(path, regions, years) {
     mutate(SBS = "Transportation")
   DSBS_NonEnergy <- readGDX(path, "NENSE") %>%
     as.data.frame() %>%
-    filter(. != "BU") %>%
+    filter(!. %in% c("BAV", "BMAR")) %>%
     mutate(SBS = "Non-Energy Use")
   DSBS_CDR <- readGDX(path, "CDR") %>%
     as.data.frame() %>%
@@ -73,7 +73,7 @@ reportFinalEnergy <- function(path, regions, years) {
   )
   keep <- setdiff(unique(BALEFtoEF$BALEF), EFSTable$.te[match(getItems(finalPerFuel, 3.1), EFSTable$EF)])
   finalPerFuelAggregated <- finalPerFuelAggregated[, , keep]
-  fuelWOBunkers <- dimSums(fuel[, , "BU", invert = TRUE], dim = 3)
+  fuelWOBunkers <- dimSums(fuel[, , c("BAV", "BMAR"), invert = TRUE], dim = 3)
 
   # -------------------------- Rename Variables -------------------------------
   getItems(fuel, 3.1) <- DSBSTable$.te[match(getItems(fuel, 3.1), DSBSTable$SBS)]
