@@ -30,10 +30,10 @@ reportFinalEnergy <- function(path, regions, years) {
     mutate(SBS = "Industry")
   DSBS_Transport <- readGDX(path, "TRANSE") %>%
     as.data.frame() %>%
+    filter(!. %in% c("BAV", "BMAR")) %>%
     mutate(SBS = "Transportation")
   DSBS_NonEnergy <- readGDX(path, "NENSE") %>%
     as.data.frame() %>%
-    filter(. != "BU") %>%
     mutate(SBS = "Non-Energy Use")
   DSBS_CDR <- readGDX(path, "CDR") %>%
     as.data.frame() %>%
@@ -53,6 +53,13 @@ reportFinalEnergy <- function(path, regions, years) {
   lookup <- setNames(DSBS_SBS$SBS, DSBS_SBS$DSBS)
   # -------------------------- Prepare data --------------------------------------
   fuel <- readGDX(path, "VmFinalEnergy", field = "l")[regions, years, ]
+  tableBU <- data.frame(
+    GRAN = getItems(fuel, dim = 3.1),
+    AGGR = getItems(fuel, dim = 3.1),
+    stringsAsFactors = FALSE
+  ) %>%
+    mutate(AGGR = ifelse(AGGR %in% c("BAV", "BMAR"), "BU", AGGR))
+  fuel <- toolAggregate(fuel, dim = 3.1, rel = tableBU, from = "GRAN", to = "AGGR", partrel = TRUE)
   years <- getYears(fuel)
   units <- sub(".*\\((.*)\\).*", "\\1", fuel@description)
   # fuel <- fuel[, , EFSTable$EF]
@@ -73,7 +80,7 @@ reportFinalEnergy <- function(path, regions, years) {
   )
   keep <- setdiff(unique(BALEFtoEF$BALEF), EFSTable$.te[match(getItems(finalPerFuel, 3.1), EFSTable$EF)])
   finalPerFuelAggregated <- finalPerFuelAggregated[, , keep]
-  fuelWOBunkers <- dimSums(fuel[, , "BU", invert = TRUE], dim = 3)
+  fuelWOBunkers <- dimSums(fuel[, , c("BAV", "BMAR"), invert = TRUE], dim = 3)
 
   # -------------------------- Rename Variables -------------------------------
   getItems(fuel, 3.1) <- DSBSTable$.te[match(getItems(fuel, 3.1), DSBSTable$SBS)]
