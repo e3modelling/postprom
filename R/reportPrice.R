@@ -21,8 +21,12 @@
 #' @importFrom stringr str_extract str_replace str_count fixed
 #' @export
 reportPrice <- function(path, regions, years, weightsForreportPrice) {
-  DSBS <- rgdx.set(path, "DSBS", te = FALSE)
-  DSBSTable <- rgdx.set(path, "DSBS", te = TRUE)
+  DSBS <- rgdx.set(path, "DSBS", te = FALSE) %>%
+    filter(!(SBS %in% c("BAV", "BMAR"))) %>%
+    rbind(data.frame(SBS = "BU"))
+  DSBSTable <- rgdx.set(path, "DSBS", te = TRUE) %>%
+    filter(!(SBS %in% c("BAV", "BMAR"))) %>%
+    rbind(data.frame(SBS = "BU", .te = "Bunkers"))
   EFSTable <- rgdx.set(path, "EFS", te = TRUE)
   
   #---------- Create a DSBS TO SBS mapping (e.g., Iron & Steel -> Industry)
@@ -31,6 +35,7 @@ reportPrice <- function(path, regions, years, weightsForreportPrice) {
     mutate(SBS = "Industry")
   DSBS_Transport <- readGDX(path, "TRANSE") %>%
     as.data.frame() %>%
+    filter(!. %in% c("BAV", "BMAR")) %>%
     mutate(SBS = "Transportation")
   DSBS_NonEnergy <- readGDX(path, "NENSE") %>%
     as.data.frame() %>%
@@ -53,10 +58,18 @@ reportPrice <- function(path, regions, years, weightsForreportPrice) {
     rename(DSBS = .te)
   lookup <- setNames(DSBS_SBS$SBS, DSBS_SBS$DSBS)
   # -------------------------- Prepare data --------------------------------------
-  prices <- readGDX(path, "VmPriceFuelSubsecCarVal", field = "l")[regions, years, DSBS]
+  prices <- readGDX(path, "VmPriceFuelSubsecCarVal", field = "l")[regions, years, ]
+  units <- sub(".*\\((.*)\\).*", "\\1", prices@description)
+  tableBU <- data.frame(
+    GRAN = getItems(prices, dim = 3.1),
+    AGGR = getItems(prices, dim = 3.1),
+    stringsAsFactors = FALSE
+  ) %>%
+    mutate(AGGR = ifelse(AGGR %in% c("BAV", "BMAR"), "BU", AGGR))
+  prices <- toolAggregate(prices, dim = 3.1, rel = tableBU, from = "GRAN", to = "AGGR", partrel = TRUE)
+  prices <- prices[,, DSBS]
   pricesNoAgr <- prices
   years <- getYears(prices)
-  units <- sub(".*\\((.*)\\).*", "\\1", prices@description)
   # -------------------------- Renamings ------------------------------
   name <- DSBSTable$.te[match(getItems(prices, 3.1), DSBSTable$SBS)]
   getItems(prices, 3.1) <- name
