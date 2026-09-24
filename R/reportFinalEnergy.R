@@ -22,7 +22,9 @@
 reportFinalEnergy <- function(path, regions, years) {
   EFSTable <- rgdx.set(path, "EFS", te = TRUE)
   EFSTable$.te <- gsub("\\s*\\([^)]*\\)", "", EFSTable$.te)
-  DSBSTable <- rgdx.set(path, "DSBS", te = TRUE)
+  DSBSTable <- rgdx.set(path, "DSBS", te = TRUE) %>%
+    filter(!(SBS %in% c("BAV", "BMAR"))) %>%
+    rbind(data.frame(SBS = "BU", .te = "Bunkers"))
 
   #---------- Create a DSBS TO SBS mapping (e.g., Iron & Steel -> Industry)
   DSBS_Industry <- readGDX(path, "INDSE") %>%
