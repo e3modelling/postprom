@@ -455,7 +455,7 @@ calculateTransitionIndicators <- function(reports) {
   
   emissionVariables <- c(
     "Emissions|CO2|Energy|Supply|Electricity.Mt CO2/yr",
-    "Emissions|CO2|Energy|Supply|Hydrogen.Mt CO2/yr",
+    # "Emissions|CO2|Energy|Supply|Hydrogen.Mt CO2/yr",
     "Emissions|CO2|Energy|Supply|Heat.Mt CO2/yr",
     "Emissions|CO2|Energy|Supply|Liquids.Mt CO2/yr",
     "Emissions|CO2|Energy|Supply|Gases.Mt CO2/yr",
@@ -463,7 +463,7 @@ calculateTransitionIndicators <- function(reports) {
   )
   secondaryEnergyVariables <- c(
     "Secondary Energy|Electricity.TWh",
-    "Secondary Energy|Hydrogen.TWh",
+    # "Secondary Energy|Hydrogen.TWh",
     "Secondary Energy|Heat.TWh",
     "Secondary Energy|Liquids.TWh",
     "Secondary Energy|Gases.TWh",

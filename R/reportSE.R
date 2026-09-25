@@ -56,15 +56,15 @@ reportSE <- function(path, regions, years) {
     )
   getItems(prodElecAll, 3) <- paste0("Secondary Energy|Electricity|", getItems(prodElecAll, 3))
   # =========================== H2 =======================================
-  TECHtoEF <- readGDX(path, "H2TECHtoFEEDSTOCK") %>%
-    rename(TECH = H2TECH) %>%
-    rbind(c("weg", "ELC"))
-    
-  CCS <- readGDX(path, "H2CCS")
-  NOCCS <- readGDX(path, "H2NOCCS")
-  prodH2 <- readGDX(path, "VmProdH2", field = "l")[regions, years, ] * MtoeToTWh
-  prodH2 <- getSecondaryEnergy(TECHtoEF, prodH2, CCS, NOCCS)
-  getItems(prodH2, 3) <- paste0("Secondary Energy|Hydrogen|", getItems(prodH2, 3))
+  # TECHtoEF <- readGDX(path, "H2TECHtoFEEDSTOCK") %>%
+  #   rename(TECH = H2TECH) %>%
+  #   rbind(c("weg", "ELC"))
+  #   
+  # CCS <- readGDX(path, "H2CCS")
+  # NOCCS <- readGDX(path, "H2NOCCS")
+  # prodH2 <- readGDX(path, "VmProdH2", field = "l")[regions, years, ] * MtoeToTWh
+  # prodH2 <- getSecondaryEnergy(TECHtoEF, prodH2, CCS, NOCCS)
+  # getItems(prodH2, 3) <- paste0("Secondary Energy|Hydrogen|", getItems(prodH2, 3))
   # =========================== Heat =====================================
   prodHeat <- readGDX(path, "VmProdSte", field = "l")[regions, years, ] * MtoeToTWh
   TECHtoEF <- readGDX(path, "TSTEAMtoEF") %>%
@@ -80,7 +80,7 @@ reportSE <- function(path, regions, years) {
   prodHeat <- getSecondaryEnergy(TECHtoEF, prodHeat, CCS, NOCCS, sharesTech)
   getItems(prodHeat, 3) <- paste0("Secondary Energy|Heat|", getItems(prodHeat, 3))
   # ========================== Total ========================================
-  magpie_object <- mbind(prodElecAll, prodH2, prodHeat)
+  magpie_object <- mbind(prodElecAll, prodHeat)
   magpie_object <- helperAggregateLevel(magpie_object, level = 2, recursive = TRUE)
   # ========================== Elc Demand =======================================
   elcDemand <- readGDX(path, "V04DemElecTot", field = "l")[regions, years, ]
