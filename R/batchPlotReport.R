@@ -143,13 +143,20 @@ reportAreaPNG <- function(report,
                           grouped,
                           output_dir) {
   
-  regionsPNG <- c("World", "EU", "IND", "CHA", "USA")
+  regionsPNG <- c("World", "DEU", "IND", "CHA", "USA")
   yearsPNG <- c(2023, seq(2025, max(getYears(report, as.integer = TRUE)), by = 5))
   if (all(regionsPNG %in% getRegions(report))) {
     if (all(yearsPNG %in% as.numeric(sub("^y", "", getYears(report))))) {
+      
       output_dir <- file.path(output_dir, "PNG_area_plots")
-      dir.create(output_dir, recursive = TRUE, showWarnings = FALSE)
+      dir.create(
+        output_dir,
+        recursive = TRUE,
+        showWarnings = FALSE
+      )
+      
       message("Saving png files in ", output_dir)
+      
       dataPlotPNG <- grouped[
         !grepl(
           "(VAL|Validation|Budget1p5C|Budget2C)$",
@@ -159,63 +166,162 @@ reportAreaPNG <- function(report,
           trimws(grouped$Variables) != "",
       ]
       
-      dataPlotPNG <- dataPlotPNG %>% filter(!(Variables == "Demand"))
+      dataPlotPNG <- dataPlotPNG %>%
+        filter(!(Variables == "Demand"))
       
-      magpiePNG <- report[regionsPNG, yearsPNG, ]
+      magpiePNG <- report[
+        regionsPNG,
+        yearsPNG,
+      ]
       
       plots_list <- map2(
         group_split(dataPlotPNG),
         group_keys(dataPlotPNG)$Name,
-        ~ plotGroups(.x$Variables, .y, magpiePNG)
-      ) %>% setNames(group_keys(dataPlotPNG)$Name)
+        ~ plotGroups(
+          .x$Variables,
+          .y,
+          magpiePNG
+        )
+      ) %>%
+        setNames(
+          group_keys(dataPlotPNG)$Name
+        )
       
       purrr::imap(
         plots_list,
         function(plot_group, list_name) {
           
-          # Each element contains one ggplot inside a list
+          # Get ggplot
           p <- plot_group[[1]]
           
-          # Use the plots_list element name as the title
+          # Main title
           p <- p +
             ggplot2::labs(
               title = list_name
             )
           
-          # Remove the existing layers
+          # Remove existing layers
           p$layers <- list()
           
           # Change colour mapping to fill mapping
           p$mapping$fill <- p$mapping$colour
           p$mapping$colour <- NULL
           
-          # Keep all region panels in one row with separate y-axes
+          # --------------------------------------------------
+          # AREA PLOT LAYOUT
+          #
+          # CHA       DEU
+          # FRA       IND
+          # USA       LEGEND
+          # --------------------------------------------------
+          
           p$facet <- ggplot2::facet_wrap(
             ~region,
-            nrow = 1,
+            ncol = 2,
             scales = "free_y"
           )
           
-          # Add stacked area geometry
           p <- p +
+            
+            # Stacked area
             ggplot2::geom_area(
               position = "stack",
               alpha = 0.85,
               colour = "white",
               linewidth = 0.15
             ) +
+            
             ggplot2::labs(
               colour = NULL,
               fill = NULL
             ) +
+            
+            # ------------------------------------------------
+          # LEGEND CONTENT
+          # Put legend variables on 6 rows
+          # ------------------------------------------------
+          ggplot2::guides(
+            fill = ggplot2::guide_legend(
+              nrow = 6,
+              byrow = TRUE
+            )
+          ) +
+            
             ggplot2::theme(
+              
+              # Main plot title
               plot.title = ggplot2::element_text(
                 face = "bold",
                 size = 18,
                 hjust = 0.5
               ),
-              legend.position = "bottom"
+              
+              # ------------------------------------------------
+              # ONLY REGION NAMES ARE MADE BIGGER
+              # ------------------------------------------------
+              strip.text = ggplot2::element_text(
+                face = "bold",
+                size = 30
+              ),
+              
+              # Normal axis titles
+              axis.title = ggplot2::element_text(
+                size = 12
+              ),
+              
+              # Normal axis values
+              axis.text = ggplot2::element_text(
+                size = 10
+              ),
+              
+              # ------------------------------------------------
+              # LEGEND POSITION
+              # Empty bottom-right area
+              # ------------------------------------------------
+              legend.position = "inside",
+              
+              legend.position.inside = c(
+                0.75,
+                0.17
+              ),
+              
+              # Legend variable names
+              legend.text = ggplot2::element_text(
+                size = 25
+              ),
+              
+              legend.title = ggplot2::element_text(
+                size = 10
+              ),
+              
+              # Legend keys
+              legend.key.size = grid::unit(
+                0.6,
+                "cm"
+              ),
+              
+              # Horizontal spacing between legend items
+              legend.spacing.x = grid::unit(
+                0.15,
+                "cm"
+              ),
+              
+              # Vertical spacing between legend rows
+              legend.spacing.y = grid::unit(
+                0.10,
+                "cm"
+              ),
+              
+              # Transparent legend background
+              legend.background = ggplot2::element_rect(
+                fill = "transparent",
+                colour = NA
+              )
             )
+          
+          # --------------------------------------------------
+          # File name
+          # --------------------------------------------------
           
           file_name <- paste0(
             stringr::str_replace_all(
@@ -226,14 +332,18 @@ reportAreaPNG <- function(report,
             ".png"
           )
           
+          # --------------------------------------------------
+          # Save PNG
+          # --------------------------------------------------
+          
           ggplot2::ggsave(
             filename = file.path(
               output_dir,
               file_name
             ),
             plot = p,
-            width = 24,
-            height = 6,
+            width = 16,
+            height = 18,
             dpi = 300,
             bg = "white"
           )
