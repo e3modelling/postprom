@@ -114,12 +114,23 @@ reportEmissions <- function(path, regions, years) {
     if (!file.exists(iEmissions_magpie))
       stop("sLandEmiMode=softmif but iEmissions_magpie.mif is missing at ", iEmissions_magpie)
     magpieAfolu <- prepareMagpieAfolu(iEmissions_magpie)
-    AFOLU_CDR <- magpieAfolu$afolu
-    AFOLUCO2 <- magpieAfolu$co2
-    CDRCO2 <- magpieAfolu$cdr
-    AFOLUCh4N2o <- magpieAfolu$ch4N2o
+    missingRegions <- setdiff(regions, getRegions(magpieAfolu$afolu))
+    missingYears <- setdiff(years, getYears(magpieAfolu$afolu))
+    if (length(missingRegions) || length(missingYears)) {
+      stop(
+        "MAgPIE emissions MIF does not cover the requested GDX domain. Missing regions: ",
+        paste(missingRegions, collapse = ", "), "; missing years: ",
+        paste(missingYears, collapse = ", ")
+      )
+    }
+    AFOLU_CDR <- magpieAfolu$afolu[regions, years, ]
+    AFOLUCO2 <- magpieAfolu$co2[regions, years, ]
+    CDRCO2 <- magpieAfolu$cdr[regions, years, ]
+    AFOLUCh4N2o <- magpieAfolu$ch4N2o[regions, years, ]
     extraAFOLU <- magpieAfolu$extra
+    if (!is.null(extraAFOLU)) extraAFOLU <- extraAFOLU[regions, years, ]
     kyotoAfolu <- magpieAfolu$kyoto
+    if (!is.null(kyotoAfolu)) kyotoAfolu <- kyotoAfolu[regions, years, ]
   } else if (landEmiMode == "curve") {
     internalAfolu <- getInternalAfolu(path, regions, years)
     AFOLU_CDR <- internalAfolu$afolu
