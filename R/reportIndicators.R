@@ -91,6 +91,10 @@ reportIndicators <- function(reports, path, regions, years, blabla_regions) {
   
   FEACTV <- NULL
   
+  BUFullACTV <- dimSums(IFullACTV[,,c("BAV", "BMAR")], 3)
+  getItems(BUFullACTV, 3) <- "BU"
+  IFullACTV <- mbind(IFullACTV, BUFullACTV)
+  
   for (i in seq_len(nrow(mappingACTV))) {
     
     tmp <- reports[, , mappingACTV$variable[i]] /
