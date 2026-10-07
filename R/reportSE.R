@@ -56,8 +56,10 @@ reportSE <- function(path, regions, years) {
     )
   getItems(prodElecAll, 3) <- paste0("Secondary Energy|Electricity|", getItems(prodElecAll, 3))
   # =========================== H2 =======================================
-  TECHtoEF <- readGDX(path, "H2TECHEFtoEF") %>%
-    rename(TECH = H2TECH)
+  TECHtoEF <- readGDX(path, "H2TECHtoFEEDSTOCK") %>%
+    rename(TECH = H2TECH) %>%
+    rbind(c("weg", "ELC"))
+    
   CCS <- readGDX(path, "H2CCS")
   NOCCS <- readGDX(path, "H2NOCCS")
   prodH2 <- readGDX(path, "VmProdH2", field = "l")[regions, years, ] * MtoeToTWh
