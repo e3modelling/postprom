@@ -130,7 +130,7 @@ reportEmissions <- function(path, regions, years) {
     extraAFOLU <- internalAfolu$extra
   } else {
     # exo: external default sources (legacy) — choose between SoCDR and PRISMA
-    afoluSource <- "SoCDR"  # "SoCDR" or "PRISMA"
+    afoluSource <- "PRISMA"  # "SoCDR" or "PRISMA"
     if (afoluSource == "PRISMA") {
       AFOLU_CDR <- getREMIND_MAgPIE_PRISMA(path, grossCO2Demand)[, years, ][regions, , ]
     } else {
