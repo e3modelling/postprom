@@ -127,6 +127,27 @@ reportFinalEnergy <- function(path, regions, years) {
   resCom <- fuel[, , c("Final Energy|Residential", "Final Energy|Commercial")]
   resCom <- dimSums(resCom, 3)
   getItems(resCom, 3.1) <- "Final Energy|Residential and Commercial"
+  # --------------------------- Agriculture --------------------------------
+  agriculture <- readGDX(path, "V12ConsFuel", field = "l")[regions, years, ]
+
+  AGRI_MODEStoEF <- rgdx.set(path, "AGRI_MODEStoEF", te = FALSE)
+  AGRI_MODES <- rgdx.set(path, "AGRI_MODES", te = TRUE)
+
+  agriculture <- agriculture[, , c(paste(AGRI_MODEStoEF$AGRI_MODES, AGRI_MODEStoEF$EF, sep = "."))]
+  getItems(agriculture, 3.1) <- AGRI_MODES$.te[match(getItems(agriculture, 3.1), AGRI_MODES$i)]
+  getItems(agriculture, 3.2) <- EFSTable$.te[match(getItems(agriculture, 3.2), EFSTable$EF)]
+
+  name <- gsub("\\.", "|", getItems(agriculture, dim = 3)) # e.g., IS.HCL --> IS|HCL
+  key <- str_extract(name, "^[^|]+")
+  mapped <- lookup[key]
+
+  name <- if_else(
+    !is.na(mapped),
+    str_replace(name, "^[^|]+", paste0(mapped, "|\\0")),
+    name
+  ) # prepend SBS (e.g., IS|HCL -> Industry|IS|HCL)
+
+  getItems(agriculture, 3) <- paste0("Final Energy|", DSBSTable[DSBSTable$SBS == "AG", ".te"], "|", name)
   # ============================ Add units ================================
   magpie_object <- mbind(fuel, finalPerFuel, fuelWOBunkers, resCom, finalPerFuelAggregated)
   magpie_object <- add_dimension(magpie_object, dim = 3.2, add = "unit", nm = units)
