@@ -29,6 +29,7 @@ export(reportBudget)
 export(reportCapacityAdditions)
 export(reportCapacityElectricity)
 export(reportEmissions)
+export(reportEnergyService)
 export(reportEnergySystemCosts)
 export(reportEquipmentCapacityShare)
 export(reportFinalEnergy)
@@ -143,4 +144,5 @@ importFrom(tidyr,
   pivot_longer,
   separate_rows
 )
+importFrom(tools,toTitleCase)
 importFrom(utils,read.csv)
