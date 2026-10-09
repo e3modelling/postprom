@@ -287,17 +287,13 @@ reportEmissions <- function(path, regions, years) {
   FgasAgg <- dimSums(FgasAgg, 3)
   getItems(FgasAgg, 3.1) <- "Emissions|F-gases"
   # -------------------------- Emissions|CO2 (w/o bunkers), Emissions|Kyoto Gases (w/o bunkers) -------
-  Bunkers <- mbind(EmissionsCo2[, , "Emissions|CO2|Energy|Demand|Transportation|Bunkers maritime"], EmissionsCo2[, , "Emissions|CO2|Energy|Demand|Transportation|Bunkers aviation"])
-  Bunkers <- dimSums(Bunkers, 3)
-  emissionsCO2woBunkers <- EmissionsCo2[, , "Emissions|CO2"] - Bunkers
+  emissionsCO2woBunkers <- EmissionsCo2[, , "Emissions|CO2"] - EmissionsCo2[, , "Emissions|CO2|Energy|Demand|Bunkers"]
   getItems(emissionsCO2woBunkers, dim = 3) <- "Emissions|CO2-(w/o bunkers)"
   getSets(emissionsCO2woBunkers)[3] <- "DSBS"
-  emissionsKyotowoBunkers <- kyotoGases[, , "Emissions|Kyoto Gases"] - Bunkers
+  emissionsKyotowoBunkers <- kyotoGases[, , "Emissions|Kyoto Gases"] - EmissionsCo2[, , "Emissions|CO2|Energy|Demand|Bunkers"]
   getItems(emissionsKyotowoBunkers, dim = 3) <- "Emissions|Kyoto Gases-(w/o bunkers)"
   getSets(emissionsKyotowoBunkers)[3] <- "DSBS"
-  # =============================== Bunkers ============================
-  getItems(Bunkers, 3) <- "Emissions|CO2|Energy|Demand|Bunkers"
-  # =========================================================================
+  # =============================== Add Dimensions ============================
   emissionsNonCO2 <- add_dimension(
     emissionsNonCO2,
     dim = 3.2,
@@ -309,7 +305,6 @@ reportEmissions <- function(path, regions, years) {
   captured <- add_dimension(captured, dim = 3.2, add = "unit", nm = unitsCO2)
   EmissionsCo2 <- add_dimension(EmissionsCo2, dim = 3.2, add = "unit", nm = unitsCO2)
   kyotoGases <- add_dimension(kyotoGases, dim = 3.2, add = "unit", nm = "Mt CO2-equiv/yr")
-  Bunkers <- add_dimension(Bunkers, dim = 3.2, add = "unit", nm = unitsCO2)
   Cumulated <- add_dimension(Cumulated, dim = 3.2, add = "unit", nm = "Gt CO2")
   sumIPEnergy <- add_dimension(sumIPEnergy, dim = 3.2, add = "unit", nm = unitsCO2)
   resCom <- add_dimension(resCom, dim = 3.2, add = "unit", nm = unitsCO2)
@@ -324,7 +319,7 @@ reportEmissions <- function(path, regions, years) {
   emissionsKyotowoBunkers <- add_dimension(emissionsKyotowoBunkers, dim = 3.2, add = "unit", nm =  "Mt CO2-equiv/yr")
 
   magpie_object <- mbind(
-    emissionsNonCO2, EmissionsCo2, kyotoGases, Bunkers,
+    emissionsNonCO2, EmissionsCo2, kyotoGases,
     Cumulated, sumIPEnergy, resCom, captured, captureGeoStorage,
     TRANP, TRANG, OtherFuelTransformation, HFCAgg, PFCAgg, FgasAgg,
     emissionsCO2woBunkers, emissionsKyotowoBunkers
