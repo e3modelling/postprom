@@ -1198,6 +1198,34 @@ coupleMagpieToProm <- function(reportMifPath,
 }
 
 
+.rebuildIamcParents <- function(arr, regions, vars, childrenMap, isLeaf) {
+  done <- isLeaf
+  remaining <- vars[!isLeaf]
+  while (length(remaining) > 0) {
+    ready <- remaining[vapply(remaining, function(parent) {
+      all(done[childrenMap[[parent]]])
+    }, logical(1))]
+    if (length(ready) == 0) {
+      stop("[disaggregateToResCy] hierarchy contains a cycle or unresolved ",
+           "dependency among: ", paste(remaining, collapse = ", "))
+    }
+    for (parent in ready) {
+      children <- childrenMap[[parent]]
+      total <- arr[regions, , children[1], drop = FALSE]
+      if (length(children) > 1) {
+        for (child in children[-1]) {
+          total <- total + arr[regions, , child, drop = FALSE]
+        }
+      }
+      arr[regions, , parent] <- total
+      done[parent] <- TRUE
+    }
+    remaining <- setdiff(remaining, ready)
+  }
+  arr
+}
+
+
 # ============================================================================
 # helper: extensive-variable disaggregation h12 -> 39 OPEN-PROM resCy
 # ============================================================================
@@ -1279,10 +1307,16 @@ coupleMagpieToProm <- function(reportMifPath,
   if (length(dim(mArr)) == 2) dim(mArr) <- c(dim(mArr), 1)
   dimnames(mArr)[[3]] <- vars
 
-  # ---- 1. non-EU resCy: pure broadcast for all variables (h12 already
-  #         satisfies sum-to-parent identities)
+  # ---- 1. non-EU resCy: copy MAgPIE leaves; rebuild parents below
   for (c in nonEu) {
     arr[c, , ] <- mArr[h12For[c], , ]
+  }
+
+  if (length(nonEu) > 0) {
+    childrenMap <- .parseIamcChildren(vars)
+    isLeaf <- vapply(vars, function(v) length(childrenMap[[v]]) == 0, logical(1))
+    names(isLeaf) <- vars
+    arr <- .rebuildIamcParents(arr, nonEu, vars, childrenMap, isLeaf)
   }
 
   if (length(euCy) == 0) {
