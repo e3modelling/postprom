@@ -91,6 +91,10 @@ reportIndicators <- function(reports, path, regions, years, blabla_regions) {
   
   FEACTV <- NULL
   
+  BUFullACTV <- dimSums(IFullACTV[,,c("BAV", "BMAR")], 3)
+  getItems(BUFullACTV, 3) <- "BU"
+  IFullACTV <- mbind(IFullACTV, BUFullACTV)
+  
   for (i in seq_len(nrow(mappingACTV))) {
     
     tmp <- reports[, , mappingACTV$variable[i]] /
@@ -314,7 +318,7 @@ reportIndicators <- function(reports, path, regions, years, blabla_regions) {
   PassengerFE <- dimSums(TRANP, 3)
   getItems(PassengerFE, 3.1) <- "Final Energy|Transportation|Passenger"
   
-  v01ActivPassTrnsp <- toolAggregate(v01ActivPassTrnsp, weight = NULL, dim = 3,
+  v01ActivPassTrnsp <- toolAggregate(v01ActivPassTrnsp[,,mappingTransport[["code"]]], weight = NULL, dim = 3,
                                      rel = mappingTransport,from = "code",to = "variable")
   v01ActivPassTrnsp <- v01ActivPassTrnsp[,,getItems(TRANP, 3)]
   # -------------------------- Transport Freight -------
@@ -326,7 +330,7 @@ reportIndicators <- function(reports, path, regions, years, blabla_regions) {
   FreightFE <- dimSums(TRANG, 3)
   getItems(FreightFE, 3.1) <- "Final Energy|Transportation|Freight"
   
-  V01ActivGoodsTransp <- toolAggregate(V01ActivGoodsTransp, weight = NULL, dim = 3,
+  V01ActivGoodsTransp <- toolAggregate(V01ActivGoodsTransp[,,mappingTransport[["code"]]], weight = NULL, dim = 3,
                                        rel = mappingTransport,from = "code",to = "variable")
   V01ActivGoodsTransp <- V01ActivGoodsTransp[,,getItems(TRANG, 3)]
   # -------------------------- 
