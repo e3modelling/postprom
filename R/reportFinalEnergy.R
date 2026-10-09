@@ -121,7 +121,6 @@ reportFinalEnergy <- function(path, regions, years) {
   fuel[, years[years <= "y2023"], "Final Energy|Commercial|Data centers and Networks|Infrastructure", pmatch = TRUE] <- fuel[, years[years <= "y2023"], "Final Energy|Commercial|Data centers and Networks|Infrastructure", pmatch = TRUE] * (1 - 1 / (1 + 0.91))
   # ----------------------------------------------------------------------------
   fuel <- helperAggregateLevel(fuel, level = 1, recursive = TRUE)
-
   # =========================== Auxiliary variables ======================
   # --------------------------- Residential & Comercial ------------------
   resCom <- fuel[, , c("Final Energy|Residential", "Final Energy|Commercial")]
@@ -149,7 +148,10 @@ reportFinalEnergy <- function(path, regions, years) {
 
   getItems(agriculture, 3) <- paste0("Final Energy|", DSBSTable[DSBSTable$SBS == "AG", ".te"], "|", name)
   # ============================ Add units ================================
-  magpie_object <- mbind(fuel, finalPerFuel, fuelWOBunkers, resCom, finalPerFuelAggregated)
+  magpie_object <- mbind(
+    fuel, finalPerFuel, fuelWOBunkers,
+    resCom, finalPerFuelAggregated, agriculture
+  )
   magpie_object <- add_dimension(magpie_object, dim = 3.2, add = "unit", nm = units)
   return(magpie_object)
 }
