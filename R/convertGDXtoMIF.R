@@ -140,6 +140,7 @@ convertGDXtoMIF_single <- function(.path, path_mif, append, regions = NULL,
   reports <- mbind(reports, reportSE(path_gdx, regions, years))
   reports <- mbind(reports, reportPE(path_gdx, regions, years))
   reports <- mbind(reports, reportGDP(path_gdx, regions, years))
+  reports <- mbind(reports, reportGDP_MER(path_gdx, regions, years))
   reports <- mbind(reports, reportPOP(path_gdx, regions, years))
   reports <- mbind(reports, reportPriceCarbon(path_gdx, regions, years))
   reports <- mbind(reports, reportPrice(path_gdx, regions, years))
