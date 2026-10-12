@@ -61,7 +61,7 @@ reportPrice <- function(path, regions, years, weightsForreportPrice) {
   lookup <- setNames(DSBS_SBS$SBS, DSBS_SBS$DSBS)
 
   SECtoEF <- rgdx.set(path, "SECtoEF", te = FALSE) %>%
-    filter(SBS %in% DSBS <- rgdx.set(path, "DSBS", te = FALSE)$SBS)
+    filter(SBS %in% rgdx.set(path, "DSBS", te = FALSE)$SBS)
   # -------------------------- Prepare data --------------------------------------
   finalEnergy <- readGDX(path, "VmFinalEnergy", field = "l")[regions, years, c(paste(SECtoEF$SBS, SECtoEF$EF, sep = "."))]
   finalEnergy[, , ] <- finalEnergy[, , ] + 1e-6
