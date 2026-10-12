@@ -18,8 +18,9 @@
 #' @importFrom magclass getItems add_dimension
 #' @export
 reportGDP_MER <- function(path, regions, years) {
-  gdp <- calcOutput("iGDP_MER", aggregate = TRUE,  regionmapping = "regionmappingOPDEV5.csv")
-  getItems(gdp, 3) <- "GDP|MER"
-  gdp <- add_dimension(gdp, dim = 3.2, add = "unit", nm = "billion US$2015/yr")
-  return(gdp)
+  GDP_MER <- calcOutput("iGDP_MER", aggregate = TRUE,  regionmapping = "regionmappingOPDEV5.csv")
+  getItems(GDP_MER, 3) <- "GDP|MER"
+  GDP_MER <- add_dimension(GDP_MER, dim = 3.2, add = "unit", nm = "billion US$2015/yr")
+  GDP_MER <-  GDP_MER[regions, years,]
+  return(GDP_MER)
 }
