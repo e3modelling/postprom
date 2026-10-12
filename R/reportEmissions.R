@@ -35,14 +35,22 @@ reportEmissions <- function(path, regions, years) {
     field = "l"
   )
 
+  CCS <- variables$V06CO2CaptureCCS[regions, years]
+  tableBU <- data.frame(
+    GRAN = getItems(CCS, dim = 3.1),
+    AGGR = getItems(CCS, dim = 3.1),
+    stringsAsFactors = FALSE
+  ) %>%
+    mutate(AGGR = ifelse(AGGR %in% c("BAV", "BMAR"), "BU", AGGR))
+  CCS <- toolAggregate(CCS, dim = 3.1, rel = tableBU, from = "GRAN", to = "AGGR", partrel = TRUE)
+  CCS <- CCS[, , BALEF2EFS$EF]
+  CCS <- toolAggregate(CCS, dim = 3.2, rel = BALEF2EFS, from = "EFS", to = "BALEF")
+
   grossCO2Demand <- variables$V07GrossEmissCO2Demand[regions, years]
+  grossCO2Demand <- toolAggregate(grossCO2Demand, dim = 3.1, rel = tableBU, from = "GRAN", to = "AGGR", partrel = TRUE)
   grossCO2Demand <- grossCO2Demand[c("NEN", "PCH"), invert = TRUE]
 
   grossCO2Supply <- variables$V07GrossEmissCO2Supply[regions, years, ]
-
-  CCS <- variables$V06CO2CaptureCCS[regions, years]
-  CCS <- CCS[, , BALEF2EFS$EF]
-  CCS <- toolAggregate(CCS, dim = 3.2, rel = BALEF2EFS, from = "EFS", to = "BALEF")
 
   CDR <- new.magpie(
     getRegions(CCS),
@@ -59,7 +67,9 @@ reportEmissions <- function(path, regions, years) {
   netCO2Demand <- grossCO2Demand - temp[, , getItems(grossCO2Demand, 3.1)]
   netCO2Supply <- grossCO2Supply - temp[, , getItems(grossCO2Supply, 3.1)]
   # ------------------------ Renamings --------------------------------
-  DSBSTable <- rgdx.set(path, "DSBS", te = TRUE)
+  DSBSTable <- rgdx.set(path, "DSBS", te = TRUE) %>%
+    filter(!(SBS %in% c("BAV", "BMAR"))) %>%
+    rbind(data.frame(SBS = "BU", .te = "Bunkers"))
   SSBSTable <- rgdx.set(path, "SSBS", te = TRUE)
   TotalTable <- bind_rows(DSBSTable, SSBSTable)
 
@@ -69,6 +79,7 @@ reportEmissions <- function(path, regions, years) {
     mutate(SBS = "Industry")
   DSBS_Transport <- readGDX(path, "TRANSE") %>%
     as.data.frame() %>%
+    filter(!. %in% c("BAV", "BMAR")) %>%
     mutate(SBS = "Transportation")
   DSBS_COMM <- data.frame(
     "." = c("SE", "ICT"),
