@@ -20,7 +20,7 @@
 #' @importFrom tools toTitleCase
 #' @export
 reportEnergyService <- function(path, regions, years) {
-  EnergyService <- readGDX(path, c("V12EnergyServices"), field = "l")[regions, years, ]
+  EnergyService <- readGDX(path, c("V12EnergyService"), field = "l")[regions, years, ]
   if (is.null(EnergyService)) {
     return(NULL)
   }
