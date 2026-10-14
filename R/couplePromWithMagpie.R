@@ -6,7 +6,7 @@
 #' two files for OPEN-PROM's round-2 run:
 #'   * `iPrices_magpie.csv`    : BMSWAS prices, GAMS-consumed by 08_Prices
 #'                               (`.FX`-es BMSWAS prices in round-2 preloop).
-#'   * `iEmissions_magpie.mif` : AFOLU emissions (200 vars), IAMC mif format.
+#'   * `iEmissions_magpie.mif` : AFOLU emissions (203 vars), IAMC mif format.
 #'                               Reporting / future-extension only — current
 #'                               GAMS code does not `$include` this file.
 #'
@@ -36,7 +36,7 @@
 #'     variable, broadcast within EUR is correct: a regional commodity price
 #'     applies uniformly to all 28 EU members), then broadcast to 34 SBS
 #'     subsectors. Output: `iPrices_magpie.csv`.
-#'   * Backward emissions: read 200 AFOLU emission variables from MAgPIE
+#'   * Backward emissions: read 203 AFOLU emission variables from MAgPIE
 #'     `report.mif` (curated list + per-leaf weight assignments in
 #'     `inst/extdata/magpie-afolu-emission-variables.csv`), disaggregate
 #'     12 h12 -> 39 resCy as an extensive variable:
@@ -321,10 +321,10 @@ coupleMagpieToProm <- function(reportMifPath,
   # Land by ~0.1-0.4 Mt for these gases.
   #
   # ----------------------------------------------------------------------------
-  # Extraction result: 200 variables
+  # Extraction result: 203 variables
   # ----------------------------------------------------------------------------
-  #   BC  9    CH4 16    CO  9    CO2 58    N2O 22    NH3 22
-  #   NO2 22   NO3- 15   OC  9    SO2 9     VOC 9            total 200
+  #   BC  9    CH4 16    CO  9    CO2 61    N2O 22    NH3 22
+  #   NO2 22   NO3- 15   OC  9    SO2 9     VOC 9            total 203
   #
   # Ordering: DFS (parent followed by its children). Names IAMC-standard with
   # `|+|` preserved. Units `Mt <pollutant>/yr` kept as-is. NOx reported as NO2.
@@ -409,7 +409,7 @@ coupleMagpieToProm <- function(reportMifPath,
   # └── Peatland
   #     └── Managed
   #
-  # === CO2 (58 vars) ===
+  # === CO2 (61 vars) ===
   # Emissions|CO2
   # ├── AFOLU|Agriculture                                           (zero in this scenario)
   # ├── AFOLU|Land|Fires
@@ -433,6 +433,9 @@ coupleMagpieToProm <- function(reportMifPath,
   #         ├── Forest degradation
   #         │   ├── Primary forests
   #         │   └── Secondary forests
+  #         ├── Legacy clearing
+  #         │   ├── Release
+  #         │   └── Storage
   #         ├── Other land conversion
   #         ├── Peatland
   #         │   ├── Negative
@@ -491,6 +494,18 @@ coupleMagpieToProm <- function(reportMifPath,
     ))
     emiVars <- intersect(emiVars, magclass::getNames(rep))
     emiCsv <- emiCsv[emiCsv$variable %in% emiVars, ]
+  }
+  # A `|+|` child that MAgPIE reports under a curated parent but that is absent
+  # from the csv is silently lost: the parent keeps MAgPIE's total while its
+  # curated children no longer sum to it (e.g. `Land-use Change|+|Legacy
+  # clearing`, added in newer MAgPIE versions). Flag these so the csv is updated.
+  allChildren <- .parseIamcChildren(magclass::getNames(rep))
+  uncurated <- unlist(lapply(emiVars, function(p) setdiff(allChildren[[p]], emiVars)))
+  if (length(uncurated) > 0) {
+    warning(sprintf(
+      "%d MAgPIE |+| children of curated parents are missing from magpie-afolu-emission-variables.csv; their parents will not equal the sum of children: %s",
+      length(uncurated), paste(uncurated, collapse = "; ")
+    ))
   }
   emi <- rep[, , emiVars]
 

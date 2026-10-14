@@ -104,6 +104,8 @@ reportEmissions <- function(path, regions, years) {
   #   exo     = external default sources (legacy compatibility)
   iEmissions_magpie <- file.path(dirname(path), "iEmissions_magpie.mif")
   landEmiMode <- readGDX(path, "sLandEmiMode", react = "silent")
+
+  landEmiMode <- "softmif"
   landEmiMode <- if (!is.null(landEmiMode) && length(landEmiMode))
     as.character(landEmiMode)[1]
   else if (file.exists(iEmissions_magpie)) "softmif" else "exo"  # fallback for pre-tag gdx
@@ -601,7 +603,7 @@ prepareMagpieAfolu <- function(iEmissions_magpie) {
     stop("MAgPIE formal Land CO2 validation contains missing or non-finite values")
   }
   # iEmissions_magpie.mif stores four decimal places. Independent rounding of
-  # the 33 LUC leaves and their parent can create a sub-0.002 Mt CO2/yr residual.
+  # the 35 LUC leaves and their parent can create a sub-0.002 Mt CO2/yr residual.
   lucTolerance <- 2e-3
   if (max(abs(lucResidual)) > lucTolerance) {
     stop(
@@ -975,15 +977,15 @@ getIndustrialProcesses <- function(path, magpie_object) {
   fscenario <- readGDX(path, "fscenario")
 
   # Filter REMIND_MAgPIE_SoCDR by scenario
-  if (fscenario %in% c(0)) {
-    IndustrialProcesses <- IndustrialProcesses[, , "CurrentPolicies"]
-  } else if (fscenario %in% c(1)) {
-    IndustrialProcesses <- IndustrialProcesses[, , "STEPS-LTT"]
-  } else if (fscenario %in% c(2, 5, 6, 7, 8, 9)) {
-    IndustrialProcesses <- IndustrialProcesses[, , "NT-Zero2050"]
-  } else if (fscenario == 3) {
-    IndustrialProcesses <- IndustrialProcesses[, , "STEPS-LTT"]
-  }
+  # if (fscenario %in% c(0)) {
+  #   IndustrialProcesses <- IndustrialProcesses[, , "CurrentPolicies"]
+  # } else if (fscenario %in% c(1)) {
+  #   IndustrialProcesses <- IndustrialProcesses[, , "STEPS-LTT"]
+  # } else if (fscenario %in% c(2, 5, 6, 7, 8, 9)) {
+     IndustrialProcesses <- IndustrialProcesses[, , "NT-Zero2050"]
+  # } else if (fscenario == 3) {
+  #  IndustrialProcesses <- IndustrialProcesses[, , "STEPS-LTT"]
+  # }
 
   # Check if 'RWO' exists as a region and then compute RWO as World - sum of countries
   if ("RWO" %in% getItems(magpie_object, 1)) {
