@@ -11,7 +11,7 @@
 #'
 #' @importFrom magclass getItems dimSums add_dimension mbind collapseDim
 #' @importFrom quitte as.quitte
-#' @importFrom dplyr filter left_join mutate select group_by %>% arrange ungroup rename
+#' @importFrom dplyr filter left_join mutate select group_by %>% arrange ungroup rename tribble
 #' @export
 reportIndicators <- function(reports, path, regions, years, blabla_regions) {
   
@@ -133,13 +133,15 @@ reportIndicators <- function(reports, path, regions, years, blabla_regions) {
   
   # ============ Energy intensity (TES/GDP) =============================
   Energy <- reports[,,c("GDP|PPP.billion US$2015/yr", "Primary Energy.Mtoe",
-                        "Trade|Import|Primary Energy.Mtoe", "Trade|Export|Primary Energy.Mtoe",
-                        "Trade|Import|Secondary Energy.Mtoe", "Trade|Export|Secondary Energy.Mtoe",
+                        "Trade|Net Export|Secondary Energy|Electricity.Mtoe",
+                        "Trade|Net Export|Secondary Energy|Heat.Mtoe",
+                        "Trade|Net Export|Secondary Energy|Hydrogen.Mtoe",
                         "Final Energy|Bunkers.Mtoe")]
   Energy <- collapseDim(Energy, dim = 3.2)
-  imports <- Energy[,,"Trade|Import|Primary Energy"] + Energy[,,"Trade|Import|Secondary Energy"]
-  exports <- Energy[,,"Trade|Export|Primary Energy"] + Energy[,,"Trade|Export|Secondary Energy"]
-  TES <- Energy[,,"Primary Energy"] + imports - exports - Energy[,,"Final Energy|Bunkers"]
+  # Primary Energy already includes net imports of fuels; add those of electricity, heat and hydrogen
+  netExports <- Energy[,,"Trade|Net Export|Secondary Energy|Electricity"] +
+    Energy[,,"Trade|Net Export|Secondary Energy|Heat"] + Energy[,,"Trade|Net Export|Secondary Energy|Hydrogen"]
+  TES <- Energy[,,"Primary Energy"] - netExports - Energy[,,"Final Energy|Bunkers"]
   TESEnergyIntensity  <- TES / Energy[,,"GDP|PPP"]
   getItems(TESEnergyIntensity, 3) <- "Energy Intensity"
   names(dimnames(TESEnergyIntensity))[3] <- "TESEnergyIntensity"

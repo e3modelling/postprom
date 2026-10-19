@@ -100,7 +100,14 @@ reportSE <- function(path, regions, years) {
     getItems(v, 3) <- paste0("Secondary Energy|", sectCarrier[[s]])
     prodCarriers <- mbind(prodCarriers, v)
   }
-  
+  # Refinery output of fossil liquids
+  liquidsOil <- dimSums(outTransf[, , paste0("LQD.", c("LPG", "GSL", "KRS", "GDO", "RFO", "OLQ"))], dim = 3) * MtoeToTWh
+  getItems(liquidsOil, 3) <- "Secondary Energy|Liquids|Oil"
+  # Solids transformation output of biomass
+  solidsBiomass <- dimSums(outTransf[, , "SLD.BMSWAS"], dim = 3) * MtoeToTWh
+  getItems(solidsBiomass, 3) <- "Secondary Energy|Solids|Biomass"
+  prodCarriers <- mbind(prodCarriers, liquidsOil, solidsBiomass)
+
   # ============ RES =======================================================
   RESSec  <-  magpie_object[,,c("Secondary Energy|Electricity|Hydro","Secondary Energy|Electricity|Wind",
                           "Secondary Energy|Electricity|Solar",

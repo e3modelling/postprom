@@ -57,6 +57,7 @@ importFrom(dplyr,
   case_when,
   coalesce,
   collapse,
+  distinct,
   filter,
   full_join,
   group_by,
@@ -70,6 +71,7 @@ importFrom(dplyr,
   rename,
   select,
   summarise,
+  tribble,
   ungroup
 )
 importFrom(gdx,readGDX)
@@ -125,7 +127,10 @@ importFrom(purrr,
   imap,
   map2
 )
-importFrom(quitte,as.quitte)
+importFrom(quitte,
+  as.quitte,
+  interpolate_missing_periods
+)
 importFrom(rlang,
   as_label,
   enquo

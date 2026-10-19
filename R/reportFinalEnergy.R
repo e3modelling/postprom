@@ -84,6 +84,39 @@ reportFinalEnergy <- function(path, regions, years) {
   finalPerFuelAggregated <- finalPerFuelAggregated[, , keep]
   fuelWOBunkers <- dimSums(fuel[, , c("BU"), invert = TRUE], dim = 3)
 
+  # -------------------------- Sector by carrier ------------------------------
+  sectorMap <- bind_rows(
+    DSBS_Industry, DSBS_Transport,
+    data.frame("." = c("HOU", "SE", "ICT"), "SBS" = "Residential and Commercial")
+  ) %>%
+    rename(DSBS = 1)
+  carrierMap <- data.frame(
+    EF = c(
+      "ELC", "NGS", "OGS", "BGAS", "STE", "H2F",
+      "LPG", "GSL", "KRS", "GDO", "RFO", "OLQ", "CRO", "MET", "ETH", "BGDO", "BGSL", "BKRS",
+      "HCL", "LGN", "BMSWAS", "BMSWAS", "HCL", "LGN", "SOL", "GEO"
+    ),
+    Carrier = c(
+      "Electricity", rep("Gases", 3), "Heat", "Hydrogen", rep("Liquids", 12),
+      rep("Solids", 3), "Solids|Biomass", rep("Solids|Coal", 2), rep("Other", 2)
+    )
+  )
+  sectorCarrier <- toolAggregate(fuel, dim = 3.1, rel = sectorMap, from = "DSBS", to = "SBS", partrel = TRUE)
+  sectorCarrier <- toolAggregate(sectorCarrier, dim = 3.2, rel = carrierMap, from = "EF", to = "Carrier", partrel = TRUE)
+  getItems(sectorCarrier, 3) <- paste0("Final Energy|", gsub("\\.", "|", getItems(sectorCarrier, 3)))
+
+  # domesticAviation <- dimSums(fuel[, , "PA"], dim = 3)
+  # getItems(domesticAviation, 3) <- "Final Energy|Transportation|Domestic Aviation"
+
+  # # -------------------------- Useful Energy ----------------------------------
+  # useful <- readGDX(path, "V02DemSubUsefulSubsec", field = "l")[regions, years, ] +
+  #   readGDX(path, "V02UsefulElecNonSubIndTert", field = "l")[regions, years, ]
+  # useful <- toolAggregate(useful,
+  #   dim = 3, rel = sectorMap[sectorMap$SBS != "Transportation", ],
+  #   from = "DSBS", to = "SBS", partrel = TRUE
+  # )
+  # getItems(useful, 3) <- paste0("Useful Energy|", getItems(useful, 3))
+
   # -------------------------- Rename Variables -------------------------------
   getItems(fuel, 3.1) <- DSBSTable$.te[match(getItems(fuel, 3.1), DSBSTable$SBS)]
   getItems(fuel, 3.2) <- EFSTable$.te[match(getItems(fuel, 3.2), EFSTable$EF)]
@@ -127,31 +160,33 @@ reportFinalEnergy <- function(path, regions, years) {
   resCom <- dimSums(resCom, 3)
   getItems(resCom, 3.1) <- "Final Energy|Residential and Commercial"
   # --------------------------- Agriculture --------------------------------
-  agriculture <- readGDX(path, "V12ConsFuel", field = "l")[regions, years, ]
+  agriculture <- readGDX(path, "V12ConsFuel", field = "l", react = "silent")
+  if (!is.null(agriculture)) {
+    agriculture <- agriculture[regions, years, ]
+    AGRI_MODEStoEF <- rgdx.set(path, "AGRI_MODEStoEF", te = FALSE)
+    AGRI_MODES <- rgdx.set(path, "AGRI_MODES", te = TRUE)
 
-  AGRI_MODEStoEF <- rgdx.set(path, "AGRI_MODEStoEF", te = FALSE)
-  AGRI_MODES <- rgdx.set(path, "AGRI_MODES", te = TRUE)
+    agriculture <- agriculture[, , c(paste(AGRI_MODEStoEF$AGRI_MODES, AGRI_MODEStoEF$EF, sep = "."))]
+    getItems(agriculture, 3.1) <- AGRI_MODES$.te[match(getItems(agriculture, 3.1), AGRI_MODES$i)]
+    getItems(agriculture, 3.2) <- EFSTable$.te[match(getItems(agriculture, 3.2), EFSTable$EF)]
 
-  agriculture <- agriculture[, , c(paste(AGRI_MODEStoEF$AGRI_MODES, AGRI_MODEStoEF$EF, sep = "."))]
-  getItems(agriculture, 3.1) <- AGRI_MODES$.te[match(getItems(agriculture, 3.1), AGRI_MODES$i)]
-  getItems(agriculture, 3.2) <- EFSTable$.te[match(getItems(agriculture, 3.2), EFSTable$EF)]
+    name <- gsub("\\.", "|", getItems(agriculture, dim = 3))
+    key <- str_extract(name, "^[^|]+")
+    mapped <- lookup[key]
 
-  name <- gsub("\\.", "|", getItems(agriculture, dim = 3)) # e.g., IS.HCL --> IS|HCL
-  key <- str_extract(name, "^[^|]+")
-  mapped <- lookup[key]
+    name <- if_else(
+      !is.na(mapped),
+      str_replace(name, "^[^|]+", paste0(mapped, "|\\0")),
+      name
+    )
 
-  name <- if_else(
-    !is.na(mapped),
-    str_replace(name, "^[^|]+", paste0(mapped, "|\\0")),
-    name
-  ) # prepend SBS (e.g., IS|HCL -> Industry|IS|HCL)
-
-  getItems(agriculture, 3) <- paste0("Final Energy|", DSBSTable[DSBSTable$SBS == "AG", ".te"], "|", name)
+    getItems(agriculture, 3) <- paste0("Final Energy|", DSBSTable[DSBSTable$SBS == "AG", ".te"], "|", name)
+  }
   # ============================ Add units ================================
-  magpie_object <- mbind(
-    fuel, finalPerFuel, fuelWOBunkers,
-    resCom, finalPerFuelAggregated, agriculture
-  )
+  reports <- list(fuel, finalPerFuel, fuelWOBunkers, resCom, finalPerFuelAggregated)
+  if (!is.null(agriculture)) reports <- append(reports, list(agriculture))
+  reports <- append(reports, list(sectorCarrier))
+  magpie_object <- do.call(mbind, reports)
   magpie_object <- add_dimension(magpie_object, dim = 3.2, add = "unit", nm = units)
   return(magpie_object)
 }

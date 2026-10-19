@@ -22,7 +22,7 @@
 #' @importFrom ggplot2 ggplot aes geom_area geom_bar geom_line facet_wrap scale_fill_manual
 #' @importFrom ggplot2 scale_color_manual labs theme_bw theme ggsave element_text
 #' @importFrom rlang enquo as_label
-#' @importFrom dplyr filter arrange %>% anti_join
+#' @importFrom dplyr filter arrange %>% anti_join distinct
 #' @importFrom quitte as.quitte
 #' @importFrom magclass getSets getNames getItems
 #' @importFrom grDevices dev.off pdf
