@@ -43,7 +43,7 @@ reportTransformationInput <- function(path, regions, years) {
   V03InpTotTransfagr <- V03InpTotTransfagr[, ,!grepl("\\|Total$", getItems(V03InpTotTransfagr, 3))]
   
   magpie_object <- mbind(V03InpTotTransf, V03InpTotTransfagr)
-  magpie_object <- add_dimension(V03InpTotTransf, dim = 3.2, add = "unit", nm = units)
+  magpie_object <- add_dimension(magpie_object, dim = 3.2, add = "unit", nm = units)
   
   return(magpie_object)
 }
