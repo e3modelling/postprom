@@ -21,7 +21,7 @@
 #' @importFrom dplyr filter %>%
 #' @export
 reportEnergyIndustryOwnUse <- function(path, regions, years) {
-  VmConsFiEneSec <- readGDX(path, c("VmConsFiEneSec"), field = "l")
+  VmConsFiEneSec <- readGDX(path, c("VmConsFiEneSec"), field = "l")[regions, years, ]
   units <- sub(".*\\((.*)\\).*", "\\1", VmConsFiEneSec@description)
   
   SSBSTable <- rgdx.set(path, "SSBS", te = TRUE)

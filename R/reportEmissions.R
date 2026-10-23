@@ -16,7 +16,7 @@
 #' @importFrom gdx readGDX
 #' @importFrom magclass getItems dimSums add_dimension mbind add_columns
 #' @importFrom stringr str_replace
-#' @importFrom quitte as.quitte
+#' @importFrom quitte as.quitte interpolate_missing_periods
 #' @importFrom dplyr filter left_join mutate select group_by %>%
 #' @importFrom gdxrrw rgdx.set
 #' @export

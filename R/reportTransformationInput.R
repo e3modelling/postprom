@@ -21,7 +21,7 @@
 #' @importFrom dplyr filter %>%
 #' @export
 reportTransformationInput <- function(path, regions, years) {
-  V03InpTotTransf <- readGDX(path, c("V03InpTotTransf"), field = "l")
+  V03InpTotTransf <- readGDX(path, c("V03InpTotTransf"), field = "l")[regions, years, ]
   units <- sub(".*\\((.*)\\).*", "\\1", V03InpTotTransf@description)
   
   SSBSTable <- rgdx.set(path, "SSBS", te = TRUE)
