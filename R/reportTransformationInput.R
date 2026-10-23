@@ -26,23 +26,17 @@ reportTransformationInput <- function(path, regions, years) {
   
   SSBSTable <- rgdx.set(path, "SSBS", te = TRUE)
   SSBSTable$.te[SSBSTable$.te == "Hydrogen storage and delivery"] <- "Hydrogen"
-  BALEF2EFS <- rgdx.set(path, "BALEF2EFS") %>%
-    
-    filter(BALEF %in% c("Total", "Other Fuels", "Renewables", "Solids",
-                        "Liquids", "Fossil Liquids", "Fossil",
-                        "Gases", "Biofuels"
-  ))
+  EFS <- rgdx.set(path, "EFS", te = TRUE)
   
   V03InpTotTransf <- toolAggregate(V03InpTotTransf, dim = 3.1, rel = SSBSTable, from = "SBS", to = ".te")
-  V03InpTotTransf <- toolAggregate(V03InpTotTransf, dim = 3.2, rel = BALEF2EFS, from = "EFS", to = "BALEF")
+  V03InpTotTransf <- toolAggregate(V03InpTotTransf, dim = 3.2, rel = EFS, from = "EF", to = ".te")
   
   getItems(V03InpTotTransf, 3) <- gsub("\\.", "|", getItems(V03InpTotTransf, dim = 3))
   getItems(V03InpTotTransf, 3) <- paste0("Transformation Input|", getItems(V03InpTotTransf, 3))
   
-  V03InpTotTransfagr <- helperAggregateLevel(V03InpTotTransf[,,grep("\\|Total$", getItems(V03InpTotTransf, 3))], level = 1, recursive = TRUE)
-  V03InpTotTransfagr <- V03InpTotTransfagr[, ,!grepl("\\|Total$", getItems(V03InpTotTransfagr, 3))]
+  V03InpTotTransf <- helperAggregateLevel(V03InpTotTransf, level = 1, recursive = TRUE)
   
-  magpie_object <- mbind(V03InpTotTransf, V03InpTotTransfagr)
+  magpie_object <- mbind(V03InpTotTransf)
   magpie_object <- add_dimension(magpie_object, dim = 3.2, add = "unit", nm = units)
   
   return(magpie_object)

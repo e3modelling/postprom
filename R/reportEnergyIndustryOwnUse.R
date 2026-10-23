@@ -26,23 +26,17 @@ reportEnergyIndustryOwnUse <- function(path, regions, years) {
   
   SSBSTable <- rgdx.set(path, "SSBS", te = TRUE)
   SSBSTable$.te[SSBSTable$.te == "Hydrogen storage and delivery"] <- "Hydrogen"
-  BALEF2EFS <- rgdx.set(path, "BALEF2EFS") %>%
-    
-    filter(BALEF %in% c("Total", "Other Fuels", "Renewables", "Solids",
-                        "Liquids", "Fossil Liquids", "Fossil",
-                        "Gases", "Biofuels"
-    ))
+  EFS <- rgdx.set(path, "EFS", te = TRUE)
   
   VmConsFiEneSec <- toolAggregate(VmConsFiEneSec, dim = 3.1, rel = SSBSTable, from = "SBS", to = ".te")
-  VmConsFiEneSec <- toolAggregate(VmConsFiEneSec, dim = 3.2, rel = BALEF2EFS, from = "EFS", to = "BALEF")
+  VmConsFiEneSec <- toolAggregate(VmConsFiEneSec, dim = 3.2, rel = EFS, from = "EF", to = ".te")
   
   getItems(VmConsFiEneSec, 3) <- gsub("\\.", "|", getItems(VmConsFiEneSec, dim = 3))
   getItems(VmConsFiEneSec, 3) <- paste0("Energy Industry Own Use|", getItems(VmConsFiEneSec, 3))
   
-  VmConsFiEneSecagr <- helperAggregateLevel(VmConsFiEneSec[,,grep("\\|Total$", getItems(VmConsFiEneSec, 3))], level = 1, recursive = TRUE)
-  VmConsFiEneSecagr <- VmConsFiEneSecagr[, ,!grepl("\\|Total$", getItems(VmConsFiEneSecagr, 3))]
+  VmConsFiEneSec <- helperAggregateLevel(VmConsFiEneSec, level = 1, recursive = TRUE)
   
-  magpie_object <- mbind(VmConsFiEneSec, VmConsFiEneSecagr)
+  magpie_object <- mbind(VmConsFiEneSec)
   magpie_object <- add_dimension(magpie_object, dim = 3.2, add = "unit", nm = units)
   
   return(magpie_object)
