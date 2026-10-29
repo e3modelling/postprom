@@ -34,6 +34,27 @@ reportCapacityAdditions <- function(path, regions, years) {
   VNewCapElec <- readGDX(path, "V04NewCapElec", field = "l")[regions, years, ]
   VNetNewCapElec <- readGDX(path, "V04NetNewCapElec", field = "l")[regions, years, ]
   sharesTech <- readGDX(path, "i04ShareFuels", field = "l")[regions, , ]
+  V09GapShareSte <- readGDX(path, "V09GapShareSte", field = "l")[regions, years, ]
+  V09DemGapSte <- readGDX(path, "V09DemGapSte", field = "l")[regions, years, ]
+  i09CostInvCostSteProd <- readGDX(path, "i09CostInvCostSteProd", field = "l")[, years, ] #(US$2015/(KWe or KWThrm)
+  TSTEAM <- rgdx.set(path, "TSTEAM", te = TRUE)
+  
+  TSTEAM$.te <- c(
+    "Lignite powered advanced CHP",
+    "Hard Coal, Coke and Other Solids powered advanced CHP",
+    "Diesel Oil powered advanced CHP",
+    "Natural Gas powered advanced CHP",
+    "Biomass and Waste powered advanced CHP",
+    "Hydrogen powered fuel cell CHP",
+    "Lignite powered DH",
+    "Hard Coal, Coke and Other Solids powered DH",
+    "Diesel Oil powered DH",
+    "Natural Gas powered DH",
+    "Biomass and Waste powered DH",
+    "Geothermal and other renewable sources powered DH",
+    "Other powered DH"
+  )
+  
   TECHtoEF <- readGDX(path, "PGALLtoEF") %>%
     rename(TECH = PGALL, EF = EFS)
   CCS <- readGDX(path, "CCS")
@@ -43,9 +64,31 @@ reportCapacityAdditions <- function(path, regions, years) {
   netCapacityAdditions <- getCapacityAddditions(TECHtoEF, VNetNewCapElec, CCS, NOCCS, sharesTech)
   getItems(netCapacityAdditions, 3) <- paste0("Net Capacity Additions|Electricity|", getItems(netCapacityAdditions, 3))
   
-  magpie_object <- mbind(capacityAdditions, netCapacityAdditions)
-  magpie_object <- helperAggregateLevel(magpie_object, level = 2, recursive = TRUE)
-  magpie_object <- add_dimension(magpie_object, dim = 3.2, add = "unit", nm = "GW/yr")
+  capacityAdditionselec <- mbind(capacityAdditions, netCapacityAdditions)
+  capacityAdditionselec <- helperAggregateLevel(capacityAdditionselec, level = 2, recursive = TRUE)
+  capacityAdditionselec <- add_dimension(capacityAdditionselec, dim = 3.2, add = "unit", nm = "GW/yr")
+  
+  #### HEAT
+  capacityAdditionsSterow <- V09DemGapSte * V09GapShareSte
+  capacityAdditionsSte <- toolAggregate(capacityAdditionsSterow, dim = 3, rel = TSTEAM, from = "i", to = ".te")
+  getItems(capacityAdditionsSte, 3) <- paste0("Capacity Additions|Heat|", getItems(capacityAdditionsSte, 3))
+  
+  
+  #  Investment|Energy Supply|Heat
+  investmentHEAT <- capacityAdditionsSterow * i09CostInvCostSteProd
+  i09AvailRateSteProd <- readGDX(path, "i09AvailRateSteProd", field = "l")[, years, ]#"Availability rate of STEAM Plants ()"
+  smGwToTwhPerYear <- readGDX(path, "smGwToTwhPerYear", field = "l")[, years, ]#convert GW mean power into TWh/y, depending on whether it's a leap year
+  smTWhToMtoe <- readGDX(path, "smTWhToMtoe", field = "l")#TWh to Mtoe conversion factor
+  investmentHEAT <- investmentHEAT / (i09AvailRateSteProd * smGwToTwhPerYear * smTWhToMtoe)#million US$2015/yr
+  investmentHEAT <- toolAggregate(investmentHEAT, dim = 3, rel = TSTEAM, from = "i", to = ".te")
+  getItems(investmentHEAT, 3) <- paste0("Investment|Energy Supply|Heat|", getItems(investmentHEAT, 3))
+  investmentHEAT <- add_dimension(investmentHEAT, dim = 3.2, add = "unit", nm = "million US$2015/yr")
+  #############
+  
+  capacityAdditionsSte <- helperAggregateLevel(capacityAdditionsSte, level = 2, recursive = TRUE)
+  capacityAdditionsSte <- add_dimension(capacityAdditionsSte, dim = 3.2, add = "unit", nm = "Mtoe/yr")
+  
+  magpie_object <- mbind(capacityAdditionselec, capacityAdditionsSte, investmentHEAT)
   return(magpie_object)
 }
 

@@ -153,6 +153,8 @@ convertGDXtoMIF_single <- function(.path, path_mif, append, regions = NULL,
   reports <- mbind(reports, reportEquipmentCapacityShare(path_gdx, regions, years))
   reports <- mbind(reports, reportTrade(path_gdx, regions, years))
   reports <- mbind(reports, reportEnergyService(path_gdx, regions, years))
+  reports <- mbind(reports, reportTransformationInput(path_gdx, regions, years))
+  reports <- mbind(reports, reportEnergyIndustryOwnUse(path_gdx, regions, years))
 
 
   # reportLearningCurve <- reportLearningCurve(path_gdx, regions, years)

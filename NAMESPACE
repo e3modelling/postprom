@@ -29,6 +29,7 @@ export(reportBudget)
 export(reportCapacityAdditions)
 export(reportCapacityElectricity)
 export(reportEmissions)
+export(reportEnergyIndustryOwnUse)
 export(reportEnergyService)
 export(reportEnergySystemCosts)
 export(reportEquipmentCapacityShare)
@@ -46,6 +47,7 @@ export(reportPrice)
 export(reportPriceCarbon)
 export(reportSE)
 export(reportTrade)
+export(reportTransformationInput)
 export(reportVehicles)
 export(validateResults)
 export(validationPdfReport)
@@ -126,7 +128,10 @@ importFrom(purrr,
   imap,
   map2
 )
-importFrom(quitte,as.quitte)
+importFrom(quitte,
+  as.quitte,
+  interpolate_missing_periods
+)
 importFrom(rlang,
   as_label,
   enquo
