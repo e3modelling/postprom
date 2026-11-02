@@ -56,8 +56,20 @@ reportEmissions <- function(path, regions, years) {
   CDR[, , "EW"] <- dimSums(variables$V06CapCDR[regions, years][, , "TEW"], 3.1) * 1e-6
 
   temp <- dimSums(CCS, 3.2) + CDR
+  
   netCO2Demand <- grossCO2Demand - temp[, , getItems(grossCO2Demand, 3.1)]
   netCO2Supply <- grossCO2Supply - temp[, , getItems(grossCO2Supply, 3.1)]
+  
+  # =============================== CO2 ETS ============================
+  ETS <- toolGetMapping("ets-sbs-mapping.csv",
+                        type = "sectoral",
+                        where = "postprom")
+  ETS1 <- filter(ETS, ets == "ETS1")
+  ETS2 <- filter(ETS, ets == "ETS2")
+  netCO2ETS <- mbind(netCO2Demand, netCO2Supply)
+  netCO2ETS1 <- netCO2ETS[,,ETS1[,"sbs"]]
+  netCO2ETS2 <- netCO2ETS[,,ETS2[,"sbs"]]
+  # =========================================================
   # ------------------------ Renamings --------------------------------
   DSBSTable <- rgdx.set(path, "DSBS", te = TRUE)
   SSBSTable <- rgdx.set(path, "SSBS", te = TRUE)
