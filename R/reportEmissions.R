@@ -67,7 +67,6 @@ reportEmissions <- function(path, regions, years) {
   
   netCO2Demand <- grossCO2Demand - temp[, , getItems(grossCO2Demand, 3.1)]
   netCO2Supply <- grossCO2Supply - temp[, , getItems(grossCO2Supply, 3.1)]
-  
   # =============================== CO2 ETS ============================
   ETS <- toolGetMapping("ets-sbs-mapping.csv",
                         type = "sectoral",
@@ -77,6 +76,11 @@ reportEmissions <- function(path, regions, years) {
   netCO2ETS <- mbind(netCO2Demand, netCO2Supply)
   netCO2ETS1 <- netCO2ETS[,,ETS1[,"sbs"]]
   netCO2ETS2 <- netCO2ETS[,,ETS2[,"sbs"]]
+  netCO2ETS1 <- dimSums(netCO2ETS1, 3)
+  netCO2ETS2 <- dimSums(netCO2ETS2, 3)
+  getItems(netCO2ETS1, 3.1) <- "Emissions|CO2|ETS1"
+  getItems(netCO2ETS2, 3.1) <- "Emissions|CO2|ETS2"
+  netCO2ETStotal <- mbind(netCO2ETS1, netCO2ETS2)
   # =========================================================
   # ------------------------ Renamings --------------------------------
   DSBSTable <- rgdx.set(path, "DSBS", te = TRUE) %>%
@@ -340,12 +344,13 @@ reportEmissions <- function(path, regions, years) {
   FgasAgg <- add_dimension(FgasAgg, dim = 3.2, add = "unit", nm = "Mt CO2-equiv/yr")
   emissionsCO2woBunkers <- add_dimension(emissionsCO2woBunkers, dim = 3.2, add = "unit", nm = unitsCO2)
   emissionsKyotowoBunkers <- add_dimension(emissionsKyotowoBunkers, dim = 3.2, add = "unit", nm =  "Mt CO2-equiv/yr")
-
+  netCO2ETStotal <- add_dimension(netCO2ETStotal, dim = 3.2, add = "unit", nm = unitsCO2)
+  
   magpie_object <- mbind(
     emissionsNonCO2, EmissionsCo2, kyotoGases,
     Cumulated, sumIPEnergy, resCom, captured, captureGeoStorage,
     TRANP, TRANG, OtherFuelTransformation, HFCAgg, PFCAgg, FgasAgg,
-    emissionsCO2woBunkers, emissionsKyotowoBunkers
+    emissionsCO2woBunkers, emissionsKyotowoBunkers, netCO2ETStotal
   )
   # Add other emissions from magpie run if they are available
   if (!is.null(extraAFOLU)) {
