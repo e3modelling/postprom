@@ -320,6 +320,9 @@ reportEmissions <- function(path, regions, years) {
   emissionsKyotowoBunkers <- kyotoGases[, , "Emissions|Kyoto Gases"] - EmissionsCo2[, , "Emissions|CO2|Energy|Demand|Bunkers"]
   getItems(emissionsKyotowoBunkers, dim = 3) <- "Emissions|Kyoto Gases-(w/o bunkers)"
   getSets(emissionsKyotowoBunkers)[3] <- "DSBS"
+  # =============================== Gross Removals|CO2 equal with Carbon Removal
+  captured <- add_columns(captured, addnm = "Gross Removals|CO2", dim = 3, fill = 0)
+  captured[,,"Gross Removals|CO2"] <- captured[,,"Carbon Removal"]
   # =============================== Add Dimensions ============================
   emissionsNonCO2 <- add_dimension(
     emissionsNonCO2,
