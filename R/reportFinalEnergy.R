@@ -83,7 +83,17 @@ reportFinalEnergy <- function(path, regions, years) {
   keep <- setdiff(unique(BALEFtoEF$BALEF), EFSTable$.te[match(getItems(finalPerFuel, 3.1), EFSTable$EF)])
   finalPerFuelAggregated <- finalPerFuelAggregated[, , keep]
   fuelWOBunkers <- dimSums(fuel[, , c("BU"), invert = TRUE], dim = 3)
-
+  
+  ######## Requested from UPTAKE
+  ######## Final Energy|Solids|Biomass, Final Energy|Liquids|Biomass - Final Energy|Liquids|Gas
+  Solids_Biomass <- finalPerFuel[,,"BMSWAS"]
+  getItems(Solids_Biomass, 3) <- "Final Energy|Solids|Biomass"
+  Liquids_Biomass <- finalPerFuel[,,c("BGDO","BGSL","BKRS")]
+  Liquids_Biomass <- dimSums(Liquids_Biomass, 3)
+  getItems(Liquids_Biomass, 3) <- "Final Energy|Liquids|Biomass"
+  Gas_Biomass <- finalPerFuel[,,"BGAS"]
+  getItems(Gas_Biomass, 3) <- "Final Energy|Gas|Biomass"
+  Biofuels <- mbind(Solids_Biomass, Liquids_Biomass, Gas_Biomass)
   # -------------------------- Rename Variables -------------------------------
   getItems(fuel, 3.1) <- DSBSTable$.te[match(getItems(fuel, 3.1), DSBSTable$SBS)]
   getItems(fuel, 3.2) <- EFSTable$.te[match(getItems(fuel, 3.2), EFSTable$EF)]
@@ -150,7 +160,7 @@ reportFinalEnergy <- function(path, regions, years) {
   # ============================ Add units ================================
   magpie_object <- mbind(
     fuel, finalPerFuel, fuelWOBunkers,
-    resCom, finalPerFuelAggregated, agriculture
+    resCom, finalPerFuelAggregated, agriculture, Biofuels
   )
   magpie_object <- add_dimension(magpie_object, dim = 3.2, add = "unit", nm = units)
   return(magpie_object)
