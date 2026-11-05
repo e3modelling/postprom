@@ -220,15 +220,17 @@ reportEmissions <- function(path, regions, years) {
   # ------------ Carbon Capture|Geological Storage|Direct Air Capture -------
   captureGeoStorage <- CDR[, , grepl("Geological Storage", getItems(CDR, dim = 3))]
   getItems(captureGeoStorage, dim = 3) <- gsub("Carbon Removal", "Carbon Capture", getItems(captureGeoStorage, dim = 3))
-  CCS <- mbind(CCS, CCSwithoutBIO, captureGeoStorage)
+  captureGeoStorage <- mbind(CCSwithoutBIO, captureGeoStorage)
+  captureGeoStorage <- helperAggregateLevel(captureGeoStorage, level = 1, recursive = TRUE)
   
   captured <- mbind(CDR, CCS, CDRCO2)
   captured <- helperAggregateLevel(captured, level = 1, recursive = TRUE)
-  # =============================== Non-CO2===================================
+  captured <- mbind(captured, captureGeoStorage[,,setdiff(getItems(captureGeoStorage,3),getItems(captured,3))])
   # =============================== Gross Removals|CO2 equal with Carbon Removal
   captured <- add_columns(captured, addnm = "Gross Removals|CO2", dim = 3, fill = 0)
   captured[,,"Gross Removals|CO2"] <- captured[,,"Carbon Removal"]
   # ==============================================================
+  # =============================== Non-CO2===================================
   emissionsNonCO2 <- readGDX(path, "V07EmiActBySrcRegTim", field = "l")[regions, years, ]
   if (is.null(emissionsNonCO2)) {
     message("V07EmiActBySrcRegTim not found – creating empty emissionsNonCO2 placeholder")
