@@ -88,7 +88,7 @@ reportEmissions <- function(path, regions, years) {
   nonEu27 <- setdiff(getItems(netCO2ETStotal, 1), regionsEu27)
   
   if (length(nonEu27) > 0) {
-    netCO2ETStotal[nonEu27, , ] <- 0
+    netCO2ETStotal[nonEu27, , ] <- NA
   }
   # =========================================================
   # ------------------------ Renamings --------------------------------
