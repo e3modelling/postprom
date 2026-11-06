@@ -36,7 +36,6 @@ reportEmissions <- function(path, regions, years) {
   )
 
   CCS <- variables$V06CO2CaptureCCS[regions, years]
-  CCSwithoutBIO <- CCS
   tableBU <- data.frame(
     GRAN = getItems(CCS, dim = 3.1),
     AGGR = getItems(CCS, dim = 3.1),
@@ -132,10 +131,12 @@ reportEmissions <- function(path, regions, years) {
   #   exo     = external default sources (legacy compatibility)
   iEmissions_magpie <- file.path(dirname(path), "iEmissions_magpie.mif")
   landEmiMode <- readGDX(path, "sLandEmiMode", react = "silent")
-  landEmiMode <- if (!is.null(landEmiMode) && length(landEmiMode))
-    as.character(landEmiMode)[1]
-  else if (file.exists(iEmissions_magpie)) "softmif" else "exo"  # fallback for pre-tag gdx
+  # landEmiMode <- if (!is.null(landEmiMode) && length(landEmiMode))
+  #   as.character(landEmiMode)[1]
+  # else if (file.exists(iEmissions_magpie)) "softmif" else "exo"  # fallback for pre-tag gdx
 
+  landEmiMode <- as.character(landEmiMode)[1]
+  
   AFOLUCh4N2o <- NULL; extraAFOLU <- NULL; kyotoAfolu <- NULL
 
   if (landEmiMode == "softmif") {
@@ -181,9 +182,6 @@ reportEmissions <- function(path, regions, years) {
   )
   EmissionsCo2 <- helperAggregateLevel(EmissionsCo2, level = 2, recursive = TRUE)
   # ------------------------ Carbon Capture & Removal --------------------------
-  CCSwithoutBIO <- CCSwithoutBIO[,,c("BMSWAS"), invert = TRUE]
-  CCSwithoutBIO <- dimSums(CCSwithoutBIO, 3)
-  getItems(CCSwithoutBIO, 3) <- "Carbon Capture|Geological Storage|-(w/o Biomass)"
   CCS <- CCS[, , c("DAC", "EW"), invert = TRUE]
   side <- ifelse(getItems(CCS, 3.1) %in% SSBSTable$SBS, "Supply", "Demand")
   name <- TotalTable$.te[match(getItems(CCS, 3.1), TotalTable$SBS)]
@@ -210,17 +208,14 @@ reportEmissions <- function(path, regions, years) {
   )
   
   CDR[, , "Carbon Removal|Geological Storage|Biomass"] <- dimSums(CCS[, , getItems(CCS, 3)[grepl("\\|Biofuels$", getItems(CCS, 3))]], 3.1)
-  # CDR <- add_columns(CDR, addnm = "Carbon Removal|Land Use|Re/Afforestation", dim = 3, fill = 0)
-  # 
-  # # keep only negative and make it possitive because CDRCO2 is 0, does not take
-  # # AFOLUCO2 <- AFOLU_CDR[, , "Emissions|CO2|AFOLU"] but takes
-  # # CDRCO2 <- AFOLU_CDR[, , "Carbon Removal|Land Use"]
-  # CDR[,,"Carbon Removal|Land Use|Re/Afforestation"] <- - pmin(EmissionsCo2[,,"Emissions|CO2|AFOLU"], 0)
   
   # ------------ Carbon Capture|Geological Storage|Direct Air Capture -------
   captureGeoStorage <- CDR[, , grepl("Geological Storage", getItems(CDR, dim = 3))]
   getItems(captureGeoStorage, dim = 3) <- gsub("Carbon Removal", "Carbon Capture", getItems(captureGeoStorage, dim = 3))
-  captureGeoStorage <- mbind(CCSwithoutBIO, captureGeoStorage)
+  
+  captureGeoStorage <- add_columns(captureGeoStorage, addnm = "Carbon Capture|Geological Storage|Fossil", dim = 3, fill = 0)
+  
+  captureGeoStorage[, , "Carbon Capture|Geological Storage|Fossil"] <- dimSums(CCS[, , getItems(CCS, 3)[grepl("\\|Fossil$", getItems(CCS, 3))]], 3.1)
   captureGeoStorage <- helperAggregateLevel(captureGeoStorage, level = 1, recursive = TRUE)
   
   captured <- mbind(CDR, CCS, CDRCO2)
