@@ -208,9 +208,7 @@ reportEmissions <- function(path, regions, years) {
   CDR[, , "Carbon Removal|Geological Storage|Biomass"] <- dimSums(CCS[, , getItems(CCS, 3)[grepl("\\|Biofuels$", getItems(CCS, 3))]], 3.1)
   
   # ------------ Carbon Capture|Geological Storage|Direct Air Capture -------
-  captureGeoStorage <- CDR[, , c("Carbon Removal|Geological Storage|Direct Air Capture",
-                                 "Carbon Removal|Enhanced Weathering",
-                                 "Carbon Removal|Geological Storage|Other Sources")]
+  captureGeoStorage <- CDR[, , grepl("Geological Storage", getItems(CDR, dim = 3))]
   
   getItems(captureGeoStorage, dim = 3) <- gsub("Carbon Removal", "Carbon Capture", getItems(captureGeoStorage, dim = 3))
   
