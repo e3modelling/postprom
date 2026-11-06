@@ -81,6 +81,15 @@ reportEmissions <- function(path, regions, years) {
   getItems(netCO2ETS1, 3.1) <- "Emissions|CO2|ETS1"
   getItems(netCO2ETS2, 3.1) <- "Emissions|CO2|ETS2"
   netCO2ETStotal <- mbind(netCO2ETS1, netCO2ETS2)
+  
+  regionMapping <- toolGetMapping(name = "EU28.csv", type = "regional", where = "mrprom")
+  regionsEu27 <- regionMapping$ISO3.Code[regionMapping$ISO3.Code != "GBR"]
+  
+  nonEu27 <- setdiff(getItems(netCO2ETStotal, 1), regionsEu27)
+  
+  if (length(nonEu27) > 0) {
+    netCO2ETStotal[nonEu27, , ] <- NA
+  }
   # =========================================================
   # ------------------------ Renamings --------------------------------
   DSBSTable <- rgdx.set(path, "DSBS", te = TRUE) %>%
