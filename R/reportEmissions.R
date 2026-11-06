@@ -131,11 +131,9 @@ reportEmissions <- function(path, regions, years) {
   #   exo     = external default sources (legacy compatibility)
   iEmissions_magpie <- file.path(dirname(path), "iEmissions_magpie.mif")
   landEmiMode <- readGDX(path, "sLandEmiMode", react = "silent")
-  # landEmiMode <- if (!is.null(landEmiMode) && length(landEmiMode))
-  #   as.character(landEmiMode)[1]
-  # else if (file.exists(iEmissions_magpie)) "softmif" else "exo"  # fallback for pre-tag gdx
-
-  landEmiMode <- as.character(landEmiMode)[1]
+  landEmiMode <- if (!is.null(landEmiMode) && length(landEmiMode))
+    as.character(landEmiMode)[1]
+  else if (file.exists(iEmissions_magpie)) "softmif" else "exo"  # fallback for pre-tag gdx
   
   AFOLUCh4N2o <- NULL; extraAFOLU <- NULL; kyotoAfolu <- NULL
 
