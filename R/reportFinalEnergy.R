@@ -84,8 +84,7 @@ reportFinalEnergy <- function(path, regions, years) {
   finalPerFuelAggregated <- finalPerFuelAggregated[, , keep]
   fuelWOBunkers <- dimSums(fuel[, , c("BU"), invert = TRUE], dim = 3)
   
-  ######## Requested from UPTAKE
-  ######## Final Energy|Solids|Biomass, Final Energy|Liquids|Biomass - Final Energy|Liquids|Gas
+  # Report final bioenergy by solid, liquid, and gaseous carrier.
   Solids_Biomass <- finalPerFuel[,,"BMSWAS"]
   getItems(Solids_Biomass, 3) <- "Final Energy|Solids|Biomass"
   Liquids_Biomass <- finalPerFuel[,,c("BGDO","BGSL","BKRS")]
