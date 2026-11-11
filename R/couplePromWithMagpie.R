@@ -118,6 +118,25 @@ NULL
 
 # ========================================================== forward: prom -> magpie
 
+# GDX can omit entire zero years or fuels, including every TRADE record of
+# the zero-price baseline. Restore levels on the run's full region-year grid.
+.readCouplingLevels <- function(gdxPath, symbol, weights, regions, years) {
+  x <- gdx::readGDX(gdxPath, symbol, field = "l", format = "raw", react = "error")[[1]]
+  regDim <- match("allcy", tolower(x$domains))
+  yearDim <- match("ytime", tolower(x$domains))
+  stopifnot(length(x$domains) == 3L, !anyNA(c(regDim, yearDim)))
+  itemDim <- setdiff(seq_along(x$domains), c(regDim, yearDim))
+  region <- match(x$uels[[regDim]][x$val[, regDim]], regions)
+  year <- match(x$uels[[yearDim]][x$val[, yearDim]], years)
+  item <- match(x$uels[[itemDim]][x$val[, itemDim]], names(weights))
+  grid <- array(0, c(length(regions), length(years), length(weights)))
+  keep <- complete.cases(region, year, item)
+  grid[cbind(region, year, item)[keep, , drop = FALSE]] <- x$val[keep, 4] * weights[item[keep]]
+  out <- magclass::new.magpie(regions, paste0("y", years), "value", fill = 0)
+  out[, , 1] <- apply(grid, c(1, 2), sum)
+  magclass::collapseDim(out, dim = 3)
+}
+
 #' @param gdxPath       Absolute path to OPEN-PROM `blabla.gdx`.
 #' @param outMifPath    Absolute path to write the REMIND-style mif.
 #' @param scenario      Scenario label to embed in the mif (must match MAgPIE side).
@@ -133,23 +152,12 @@ couplePromToMagpie <- function(gdxPath,
 
   nonCo2Mode <- match.arg(nonCo2Mode)
 
-  # ---- 1. read gdx
-  co2   <- gdx::readGDX(gdxPath, "VmCarVal",        field = "l", restore_zeros = FALSE)
-  bio   <- gdx::readGDX(gdxPath, "V03ProdPrimary", field = "l", restore_zeros = FALSE)
-
-  # CO2 price: read TRADE-context exogenous CO2 value (US$2015/t CO2).
-  co2 <- co2[, , "TRADE"]                    # 39 x 91 x 1
-  # Bioenergy demand: weighted blend of 4 V03ProdPrimary fuel slices in Mtoe/yr.
-  # See header docstring (Scope > Forward bioenergy demand) for the rationale
-  # of the 0.4 / 0.6 / 0.6 / 0.6 weights and what the four carriers represent.
-  bio <- bio[, , "BMSWAS"] * 0.4 +
-         bio[, , "BGSL"]   * 0.6 +
-         bio[, , "BKRS"]   * 0.6 +             # 39 x 91 x 1
-         bio[, , "BGAS"]   * 0.6
-  
-  # Collapse the 3rd dim naming.
-  co2 <- magclass::collapseDim(co2, dim = 3)
-  bio <- magclass::collapseDim(bio, dim = 3)
+  # ---- 1. Read levels on the run's full grid
+  regions <- as.character(gdx::readGDX(gdxPath, "runCyL", react = "error"))
+  years <- as.character(gdx::readGDX(gdxPath, "YTIME", react = "error"))
+  co2 <- .readCouplingLevels(gdxPath, "VmCarVal", c(TRADE = 1), regions, years)  # US$2015/t CO2
+  weights <- c(BMSWAS = 0.4, BGSL = 0.6, BKRS = 0.6, BGAS = 0.6)
+  bio <- .readCouplingLevels(gdxPath, "V03ProdPrimary", weights, regions, years)  # Mtoe/yr
 
   # ---- 2. aggregate prom countries -> h12
   co2H12 <- .aggregateToH12Price(co2, bio)   # weight by bioenergy
