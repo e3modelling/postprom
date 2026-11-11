@@ -51,6 +51,7 @@ export(reportTransformationInput)
 export(reportVehicles)
 export(validateResults)
 export(validationPdfReport)
+export(writeMagpieLandCover)
 import(rmarkdown)
 importFrom(dplyr,
   "%>%",

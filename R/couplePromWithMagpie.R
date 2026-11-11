@@ -728,7 +728,7 @@ coupleMagpieToProm <- function(reportMifPath,
 #          dim 2 = years from the source cell file (5-yearly typically)
 #          dim 3 = singleton (one driver per object)
 #
-.buildCellLevelWeights <- function(outputdir, EU28) {
+.buildCellLevelWeights <- function(outputdir, EU28, weightSources = NULL) {
   cmFiles <- list.files(outputdir, pattern = "^clustermap_.*\\.rds$",
                         full.names = TRUE)
   if (length(cmFiles) == 0) {
@@ -745,19 +745,6 @@ coupleMagpieToProm <- function(reportMifPath,
     land_split = file.path(outputdir, "cell.land_split_0.5.mz"),
     peatland   = file.path(outputdir, "cell.peatland_0.5.mz")
   )
-  for (f in cellFiles) {
-    if (!file.exists(f)) {
-      stop("[buildCellLevelWeights] missing cell-level file: ", f, "\n",
-           "  Did MAgPIE's extra/disaggregation.R postprocessor run after ",
-           "the main run?")
-    }
-  }
-  cells <- list(
-    land       = magclass::read.magpie(cellFiles$land),
-    land_split = magclass::read.magpie(cellFiles$land_split),
-    peatland   = magclass::read.magpie(cellFiles$peatland)
-  )
-
   drivers <- list(
     magpie_peatland_drained       = list(file = "peatland",
                                          cats = c("crop", "past",
@@ -778,6 +765,21 @@ coupleMagpieToProm <- function(reportMifPath,
     magpie_cropland_tree          = list(file = "land_split",
                                          cats = "crop_treecover")
   )
+  # The emissions callers keep the same drivers. Land reporting also uses
+  # absolute areas of rainfed and irrigated second-generation energy crops.
+  if (is.null(weightSources)) weightSources <- names(drivers)
+  drivers$magpie_energy_crops <- list(file = "land_split",
+                                      cats = c("crop_kbe_rf", "crop_kbe_ir"))
+  drivers <- drivers[weightSources]
+  files <- unique(vapply(drivers, `[[`, character(1), "file"))
+  cells <- lapply(cellFiles[files], function(f) {
+    if (!file.exists(f)) {
+      stop("[buildCellLevelWeights] missing cell-level file: ", f, "\n",
+           "  Did MAgPIE's extra/disaggregation.R postprocessor run after ",
+           "the main run?")
+    }
+    magclass::read.magpie(f)
+  })
 
   lapply(drivers, function(d) {
     .aggCellsToCountry(cells[[d$file]], d$cats, cellMap, EU28)
@@ -1267,7 +1269,8 @@ coupleMagpieToProm <- function(reportMifPath,
 .disaggregateToResCy <- function(m, resCy, h12For, emiCsv,
                                  cellWeights, cwWeights,
                                  clusterEmi = NULL,
-                                 clusterWeights = NULL) {
+                                 clusterWeights = NULL,
+                                 requireAreaWeights = FALSE) {
   years <- magclass::getYears(m)
   vars  <- magclass::getNames(m)
   if (is.null(vars)) vars <- "value"
@@ -1425,11 +1428,18 @@ coupleMagpieToProm <- function(reportMifPath,
       wArr <- matrix(wArr, ncol = 1, dimnames = list(names(wArr), years[1]))
     }
     wEu <- wArr[euCy, , drop = FALSE]
+    if (requireAreaWeights && any(!is.finite(wEu) | wEu < 0)) {
+      stop("Invalid country-level area weights for ", v)
+    }
 
     for (t in seq_len(nYears)) {
       wYr  <- wEu[, t]
       Wtot <- sum(wYr, na.rm = TRUE)
       if (!is.finite(Wtot) || Wtot < 1e-9) {
+        if (requireAreaWeights && h12Eur[t] > 0) {
+          stop("Positive MAgPIE EUR area has no country-level weights for ",
+               v, " in ", years[t])
+        }
         shareYr <- rep(1 / nEu, nEu)                     # zero-driver fallback
       } else {
         shareYr <- wYr / Wtot

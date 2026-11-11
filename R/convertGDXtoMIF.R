@@ -137,6 +137,8 @@ convertGDXtoMIF_single <- function(.path, path_mif, append, regions = NULL,
 
   reports <- reportFinalEnergy(path_gdx, regions, years)
   reports <- mbind(reports, reportEmissions(path_gdx, regions, years))
+  landCover <- reportLandCover(path_gdx, regions, years)
+  if (!is.null(landCover)) reports <- mbind(reports, landCover)
   reports <- mbind(reports, reportSE(path_gdx, regions, years))
   reports <- mbind(reports, reportPE(path_gdx, regions, years))
   reports <- mbind(reports, reportGDP(path_gdx, regions, years))
