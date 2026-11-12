@@ -1,0 +1,6 @@
+variable,source,alternate_source,weight_source
+Land Cover|Cropland|Energy Crops,Resources|Land Cover|Cropland|Croparea|+|Bioenergy crops,,magpie_energy_crops
+Land Cover|Forest|Planted|Plantation|Re/Afforestation,Resources|Land Cover|Forest|Planted Forest|Plantations|+|CO2-price AR,Resources|Land Cover|Forest|Planted Forest|CO2-price AR|+|Plantation,magpie_afforestation_co2price
+Land Cover|Forest|Planted|Natural|Re/Afforestation,Resources|Land Cover|Forest|Planted Forest|Natural|+|CO2-price AR,Resources|Land Cover|Forest|Planted Forest|CO2-price AR|+|Natural,magpie_afforestation_co2price
+Land Cover|Cropland,Resources|Land Cover|+|Cropland,,magpie_cropland
+Land Cover|Pasture,Resources|Land Cover|+|Pastures and Rangelands,,magpie_pasture

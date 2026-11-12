@@ -143,7 +143,7 @@ reportEmissions <- function(path, regions, years) {
   landEmiMode <- if (!is.null(landEmiMode) && length(landEmiMode))
     as.character(landEmiMode)[1]
   else if (file.exists(iEmissions_magpie)) "softmif" else "exo"  # fallback for pre-tag gdx
-
+  
   AFOLUCh4N2o <- NULL; extraAFOLU <- NULL; kyotoAfolu <- NULL
 
   if (landEmiMode == "softmif") {
@@ -216,8 +216,23 @@ reportEmissions <- function(path, regions, years) {
   
   CDR[, , "Carbon Removal|Geological Storage|Biomass"] <- dimSums(CCS[, , getItems(CCS, 3)[grepl("\\|Biofuels$", getItems(CCS, 3))]], 3.1)
   
+  # ------------ Carbon Capture|Geological Storage|Direct Air Capture -------
+  captureGeoStorage <- CDR[, , grepl("Geological Storage", getItems(CDR, dim = 3))]
+  
+  getItems(captureGeoStorage, dim = 3) <- gsub("Carbon Removal", "Carbon Capture", getItems(captureGeoStorage, dim = 3))
+  
+  captureGeoStorage <- add_columns(captureGeoStorage, addnm = "Carbon Capture|Geological Storage|Fossil", dim = 3, fill = 0)
+  
+  captureGeoStorage[, , "Carbon Capture|Geological Storage|Fossil"] <- dimSums(CCS[, , getItems(CCS, 3)[grepl("\\|Fossil$", getItems(CCS, 3))]], 3.1)
+  captureGeoStorage <- helperAggregateLevel(captureGeoStorage, level = 1, recursive = TRUE)
+  
   captured <- mbind(CDR, CCS, CDRCO2)
   captured <- helperAggregateLevel(captured, level = 1, recursive = TRUE)
+  captured <- mbind(captured, captureGeoStorage[,,setdiff(getItems(captureGeoStorage,3),getItems(captured,3))])
+  # =============================== Gross Removals|CO2 equal with Carbon Removal
+  captured <- add_columns(captured, addnm = "Gross Removals|CO2", dim = 3, fill = 0)
+  captured[,,"Gross Removals|CO2"] <- captured[,,"Carbon Removal"]
+  # ==============================================================
   # =============================== Non-CO2===================================
   emissionsNonCO2 <- readGDX(path, "V07EmiActBySrcRegTim", field = "l")[regions, years, ]
   if (is.null(emissionsNonCO2)) {
@@ -284,9 +299,6 @@ reportEmissions <- function(path, regions, years) {
   resCom <- EmissionsCo2[, , c("Emissions|CO2|Energy|Demand|Residential", "Emissions|CO2|Energy|Demand|Commercial", "Emissions|CO2|Energy|Demand|Agriculture, Fishing, Forestry")]
   resCom <- dimSums(resCom, 3)
   getItems(resCom, 3.1) <- "Emissions|CO2|Energy|Demand|Residential and Commercial"
-  # ------------ Carbon Capture|Geological Storage|Direct Air Capture -------
-  captureGeoStorage <- captured[, , grepl("Geological Storage", getItems(captured, dim = 3))]
-  getItems(captureGeoStorage, dim = 3) <- gsub("Carbon Removal", "Carbon Capture", getItems(captureGeoStorage, dim = 3))
   # -------------------------- Transport Passenger -------
   TRANP <- EmissionsCo2[, , c("Emissions|CO2|Energy|Demand|Transportation|Passenger Transport - Cars",
                               "Emissions|CO2|Energy|Demand|Transportation|Passenger Transport - Busses",
@@ -343,8 +355,7 @@ reportEmissions <- function(path, regions, years) {
   kyotoGases <- add_dimension(kyotoGases, dim = 3.2, add = "unit", nm = "Mt CO2-equiv/yr")
   Cumulated <- add_dimension(Cumulated, dim = 3.2, add = "unit", nm = "Gt CO2")
   sumIPEnergy <- add_dimension(sumIPEnergy, dim = 3.2, add = "unit", nm = unitsCO2)
-  resCom <- add_dimension(resCom, dim = 3.2, add = "unit", nm = unitsCO2)
-  captureGeoStorage <- add_dimension(captureGeoStorage, dim = 3.2, add = "unit", nm = unitsCO2)  
+  resCom <- add_dimension(resCom, dim = 3.2, add = "unit", nm = unitsCO2) 
   TRANP <- add_dimension(TRANP, dim = 3.2, add = "unit", nm = unitsCO2)
   TRANG <- add_dimension(TRANG, dim = 3.2, add = "unit", nm = unitsCO2)
   OtherFuelTransformation <- add_dimension(OtherFuelTransformation, dim = 3.2, add = "unit", nm = unitsCO2)
@@ -357,7 +368,7 @@ reportEmissions <- function(path, regions, years) {
   
   magpie_object <- mbind(
     emissionsNonCO2, EmissionsCo2, kyotoGases,
-    Cumulated, sumIPEnergy, resCom, captured, captureGeoStorage,
+    Cumulated, sumIPEnergy, resCom, captured,
     TRANP, TRANG, OtherFuelTransformation, HFCAgg, PFCAgg, FgasAgg,
     emissionsCO2woBunkers, emissionsKyotowoBunkers, netCO2ETStotal
   )
