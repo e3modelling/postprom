@@ -550,7 +550,7 @@ escFuel <- function(inp, regs, yrs, map) {
 # --- put it together ------------------------------------------------------------------------------
 
 # Returns a magpie object: every energy system cost row, the sector totals and the overall total
-# "Energy System Cost", in million US$2015/yr.
+# "Energy System Cost", in billion US$2015/yr.
 escCompute <- function(inp, path, regions, years) {
   map <- escSectorMap(path)
   indse <- readGDX(path, "INDSE")
@@ -567,5 +567,6 @@ escCompute <- function(inp, path, regions, years) {
   dup <- names(rows)[duplicated(names(rows))]
   if (length(dup) > 0) stop("Energy system cost: duplicate row names: ", paste(dup, collapse = ", "))
   total <- helperAggregateLevel(escRows(rows), level = 1, recursive = TRUE)
-  add_dimension(total, dim = 3.2, add = "unit", nm = "million US$2015/yr")
+  total <- total / 1000
+  add_dimension(total, dim = 3.2, add = "unit", nm = "billion US$2015/yr")
 }
