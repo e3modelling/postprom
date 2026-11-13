@@ -74,8 +74,8 @@ reportEnergySystemCosts <- function(path, regions, years) {
   
   xa <- add_dimension(xa, dim = 3.2, add = "unit", nm = "billion US$2015/yr")
   xb <- add_dimension(xb, dim = 3.2, add = "unit", nm = "billion US$2015/yr")
-  xaGDP <- add_dimension(xaGDP, dim = 3.2, add = "unit", nm = "(1)")
-  xbGDP <- add_dimension(xbGDP, dim = 3.2, add = "unit", nm = "(1)")
+  xaGDP <- add_dimension(xaGDP, dim = 3.2, add = "unit", nm = "1")
+  xbGDP <- add_dimension(xbGDP, dim = 3.2, add = "unit", nm = "1")
   
   final <- mbind(xa, xb, xaGDP, xbGDP)
 
