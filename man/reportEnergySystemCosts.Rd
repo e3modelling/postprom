@@ -4,7 +4,7 @@
 \alias{reportEnergySystemCosts}
 \title{Report PRISMA-style energy system costs}
 \usage{
-reportEnergySystemCosts(path, regions, years)
+reportEnergySystemCosts(path, regions, years, Aggrregions)
 }
 \arguments{
 \item{path}{Character string specifying the file path to the GDX data file.}
