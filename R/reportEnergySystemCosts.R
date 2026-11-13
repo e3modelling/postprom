@@ -81,7 +81,7 @@ reportEnergySystemCosts <- function(path, regions, years, Aggrregions) {
     # --- Calculate EU-27 Aggregation ---
     regionMapping <- toolGetMapping(name = "EU28.csv", type = "regional", where = "mrprom")
     regionsEu27 <- regionMapping$ISO3.Code[regionMapping$ISO3.Code != "GBR"]
-    regionsEu27 <- regionsEu27[regionsEu27 %in% blabla_regions] # Ensure only regions present in the data are included
+    regionsEu27 <- regionsEu27[regionsEu27 %in% regions] # Ensure only regions present in the data are included
     
     if (length(regionsEu27) != 0) {
       add_region_EU_x <- dimSums(x[regionsEu27,,], 1, na.rm = TRUE)
