@@ -22,9 +22,10 @@
 #' }
 #'
 #' @importFrom gdx readGDX
-#' @importFrom magclass getItems add_dimension mbind
-#' @importFrom dplyr %>% rename
+#' @importFrom magclass getItems add_dimension mbind collapseDim dimSums
+#' @importFrom dplyr %>% rename filter
 #' @importFrom gdxrrw rgdx.set
+#' @importFrom madrat calcOutput toolAggregate
 #' @export
 reportEnergySystemCosts <- function(path, regions, years) {
   DSBSTable <- rgdx.set(path, "DSBS", te = TRUE) %>%
