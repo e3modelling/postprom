@@ -147,7 +147,6 @@ convertGDXtoMIF_single <- function(.path, path_mif, append, regions = NULL,
   reports <- mbind(reports, reportCapacityElectricity(path_gdx, regions, years))
   reports <- mbind(reports, reportACTV(path_gdx, regions, years))
   reports <- mbind(reports, reportCapacityAdditions(path_gdx, regions, years))
-  reports <- mbind(reports, reportEnergySystemCosts(path_gdx, regions, years))
   reports <- mbind(reports, reportVehicles(path_gdx, regions, years))
   reports <- mbind(reports, reportGrossInlandConsumption(path_gdx, regions, years))
   reports <- mbind(reports, reportEquipmentCapacityShare(path_gdx, regions, years))
@@ -169,6 +168,7 @@ convertGDXtoMIF_single <- function(.path, path_mif, append, regions = NULL,
   ))
   # reports <- mbind(reports, reportGrowthRates(reports))
   reports <- mbind(reports, reportIndicators(reports, path_gdx, getRegions(reports), years, regions))
+  reports <- mbind(reports, reportEnergySystemCosts(path_gdx, regions, years, getRegions(reports)))
   
   if (emissions == TRUE) generateEmissionsFile(.path, reports, years, scenario_name)
 
@@ -203,8 +203,8 @@ aggregateMIF <- function(report) {
   
   # Energy System Cost variables to exclude from sum
   energyCostItems <- c(
-    "Energy System Cost w/o Carbon Price (% GDP|MER).(1)",
-    "Energy System Cost with Carbon Price (% GDP|MER).(1)"
+    "Energy System Cost w/o Carbon Price % GDP|MER.1",
+    "Energy System Cost with Carbon Price % GDP|MER.1"
   )
 
   # --- Define Item Categories ---
