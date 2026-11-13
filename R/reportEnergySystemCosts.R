@@ -28,9 +28,7 @@
 #' @importFrom madrat calcOutput toolAggregate
 #' @export
 reportEnergySystemCosts <- function(path, regions, years, Aggrregions) {
-  DSBSTable <- rgdx.set(path, "DSBS", te = TRUE) %>%
-    filter(!(SBS %in% c("BAV", "BMAR"))) %>%
-    rbind(data.frame(SBS = "BU", .te = "Bunkers"))
+  DSBSTable <- rgdx.set(path, "DSBS", te = TRUE) 
   
   finalEnergy <- readGDX(path, "VmFinalEnergy", field = "l")[regions, years, ]           # Mtoe
   fuelPrice <- readGDX(path, "VmPriceFuelSubsecCarVal", field = "l")[regions, years, ]   # k$2015/toe
@@ -44,17 +42,9 @@ reportEnergySystemCosts <- function(path, regions, years, Aggrregions) {
   
   xa <- finalEnergy * fuelPrice
   xb <- finalEnergy * (fuelPrice - carbonPrice)
-  
-  xaBU <- dimSums(xa[,,c("BAV", "BMAR")], 3)
-  getItems(xaBU, 3) <- "BU"
-  xbBU <- dimSums(xb[,,c("BAV", "BMAR")], 3)
-  getItems(xbBU, 3) <- "BU"
-  
+    
   xa <- dimSums(xa, 3.2)
   xb <- dimSums(xb, 3.2)
-  
-  xa <- mbind(xa[,,c("BAV", "BMAR"), invert = T], xaBU)
-  xb <- mbind(xb[,,c("BAV", "BMAR"), invert = T], xbBU)
   
   xa <- toolAggregate(xa, dim = 3, rel = DSBSTable, from = "SBS", to = ".te")
   xb <- toolAggregate(xb, dim = 3, rel = DSBSTable, from = "SBS", to = ".te")
