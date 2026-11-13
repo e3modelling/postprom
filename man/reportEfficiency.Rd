@@ -11,7 +11,7 @@ reportEfficiency(reports, path, regions, years, blabla_regions)
 \item{reports}{Magpie object created from postprom.}
 }
 \value{
-A magpie object containing Efficiency.
+A magpie object containing Indicators
 }
 \description{
 Energy Efficiency (GDP/TFC) 

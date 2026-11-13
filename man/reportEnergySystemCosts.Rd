@@ -2,9 +2,9 @@
 % Please edit documentation in R/reportEnergySystemCosts.R
 \name{reportEnergySystemCosts}
 \alias{reportEnergySystemCosts}
-\title{Report energy system costs and demand-side fuel prices}
+\title{Report PRISMA-style energy system costs}
 \usage{
-reportEnergySystemCosts(path, regions, years)
+reportEnergySystemCosts(path, regions, years, Aggrregions)
 }
 \arguments{
 \item{path}{Character string specifying the file path to the GDX data file.}
@@ -14,25 +14,14 @@ reportEnergySystemCosts(path, regions, years)
 \item{years}{Character vector of years to include in the report.}
 }
 \value{
-A magpie object with energy-system-cost totals, sector and subsector
-breakdowns, and fuel-price variables.
+A magpie object with IAMC-style investment, capital-cost, and policy-cost variables.
 }
 \description{
-Reports demand-side fuel costs from an OPEN-PROM GDX in two alternative
-variants (do not add them together):
-\itemize{
-  \item including carbon price: VmFinalEnergy * VmPriceFuelSubsecCarVal
-  \item excluding carbon price: VmFinalEnergy * (VmPriceFuelSubsecCarVal - VmPriceCarbon)
-}
-Mtoe * k$2015/toe = billion US$2015/yr. Each variant is reported as a total,
-per sector (e.g. Industry), and per subsector (e.g. Industry|Chemicals).
-Fuel prices per demand subsector and fuel are also reported in k$2015/toe:
-VmPriceFuelSubsecCarVal (including carbon tax), VmPriceCarbon (fuel carbon
-tax), and their difference (excluding carbon tax).
-}
-\details{
-Variable names must not contain "." because magclass uses it as the
-sub-dimension separator; "incl" and "excl" are written without periods.
+This function reports a first electricity-focused set of energy system cost
+variables from OPEN-PROM output. Investment is calculated from gross new
+nominal electricity capacity additions and overnight power generation capital
+cost. Capital cost reuses the model's annualized CAPEX and fixed-cost variable.
+Policy cost reports active economy-module subsidy spending.
 }
 \examples{
 \dontrun{

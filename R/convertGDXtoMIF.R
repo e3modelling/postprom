@@ -149,11 +149,11 @@ convertGDXtoMIF_single <- function(.path, path_mif, append, regions = NULL,
   reports <- mbind(reports, reportACTV(path_gdx, regions, years))
   reports <- mbind(reports, reportCapacityAdditions(path_gdx, regions, years))
   reports <- mbind(reports, reportCostsPGtechnologies(path_gdx, regions, years))
-  reports <- mbind(reports, reportEnergySystemCosts(path_gdx, regions, years))
   reports <- mbind(reports, reportVehicles(path_gdx, regions, years))
   reports <- mbind(reports, reportGrossInlandConsumption(path_gdx, regions, years))
   reports <- mbind(reports, reportEquipmentCapacityShare(path_gdx, regions, years))
   reports <- mbind(reports, reportTrade(path_gdx, regions, years))
+  reports <- mbind(reports, reportInvestments(path_gdx, regions, years))
 
 
   # reportLearningCurve <- reportLearningCurve(path_gdx, regions, years)
@@ -168,6 +168,9 @@ convertGDXtoMIF_single <- function(.path, path_mif, append, regions = NULL,
   ))
   # reports <- mbind(reports, reportGrowthRates(reports))
   reports <- mbind(reports, reportEfficiency(reports, path_gdx, getRegions(reports), years, regions))
+  reports <- mbind(reports, reportEnergySystemCosts(path_gdx, regions, years, getRegions(reports)))
+
+
   
   if (emissions == TRUE) generateEmissionsFile(.path, reports, years, scenario_name)
 
