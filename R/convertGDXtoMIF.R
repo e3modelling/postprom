@@ -200,13 +200,21 @@ aggregateMIF <- function(report) {
   reportData <- report
   items <- getItems(reportData, 3)
   worldCodes <- getRegions(reportData)
+  
+  # Energy System Cost variables to exclude from sum
+  energyCostItems <- c(
+    "Energy System Cost w/o Carbon Price (% GDP|MER).(1)",
+    "Energy System Cost with Carbon Price (% GDP|MER).(1)"
+  )
 
   # --- Define Item Categories ---
   # Exclude Price|Final Energy, Price|Carbon, Activity growth rate
-  itemsToSum <- items[!grepl("^Price|^Activity growth rate|^Capital Cost|^Investment|^Policy Cost", items)]
+  itemsToSum <- items[!grepl("^Price|^Activity growth rate|^Capital Cost|^Investment|^Policy Cost", items) &
+                        !items %in% energyCostItems]
 
   # Take Price|Final Energy, Activity growth rate (excluding Carbon)
-  itemsWeightedGdp <- items[grep("^(Price|Activity growth rate)", items, perl = TRUE)]
+  itemsWeightedGdp <- items[grep("^(Price|Activity growth rate)", items, perl = TRUE) |
+                              items %in% energyCostItems]
   itemsWeightedGdp <- setdiff(itemsWeightedGdp, "Price|Carbon.US$2015/tn CO2")
   itemPriceCarbon <- "Price|Carbon"
   itemCost <- items[grepl("^Capital Cost|^Investment|^Policy Cost", items)]

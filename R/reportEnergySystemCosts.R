@@ -27,50 +27,58 @@
 #' @importFrom gdxrrw rgdx.set
 #' @export
 reportEnergySystemCosts <- function(path, regions, years) {
-  newCapacity <- readGDX(path, "V04NewCapElec", field = "l")[regions, years, ]
-  availability <- readGDX(path, "i04AvailRate", field = "l")[regions, years, ]
-  overnightCost <- readGDX(path, "i04GrossCapCosSubRen", field = "l")[regions, years, ]
-  capitalCost <- readGDX(path, "i04GrossCapCosSubRen", field = "l")[regions, years, ] * 1000 #kUS$2015 to US$2015
-
-  nominalNewCapacity <- newCapacity / availability
-  nominalNewCapacity[!is.finite(nominalNewCapacity)] <- 0
-
-  investment <- nominalNewCapacity * overnightCost
-  imCGI <- try(readGDX(path, "imCGI", field = "l")[regions, years, ], silent = TRUE)
-  if (!inherits(imCGI, "try-error")) {
-    investment <- investment * imCGI
-  }
-  investment[!is.finite(investment)] <- 0
-  investment <- RenametoTECH(path, investment)
-  getItems(investment, 3) <- paste0("Investment|Energy Supply|Electricity|", getItems(investment, 3))
-  investment <- add_dimension(investment, dim = 3.2, add = "unit", nm = "billion US$2015/yr")
-
-  capitalCost <- RenametoTECH(path, capitalCost)
-  getItems(capitalCost, 3) <- paste0("Capital Cost|Electricity|", getItems(capitalCost, 3))
-  capitalCost <- add_dimension(capitalCost, dim = 3.2, add = "unit", nm = "US$2015/kW")
-
-  subsidyTotal <- readGDX(path, "V11SubsiTot", field = "l")[regions, years, ]
-  netSubsidyTax <- readGDX(path, "VmNetSubsiTax", field = "l")[regions, years, ]
-  policyCost <- subsidyTotal - netSubsidyTax
-  policyCost[!is.finite(policyCost)] <- 0
-  getItems(policyCost, 3) <- "Policy Cost|Energy System"
-  policyCost <- add_dimension(policyCost, dim = 3.2, add = "unit", nm = "million US$2015/yr")
-
-  return(mbind(investment, capitalCost, policyCost))
-}
-
-# Helper ----------------------------------------------------------------------------------------
-RenametoTECH <- function(path, prod) {
-  mapSEC <- data.frame(
-    i = c("ATHLGN", "ATHCOAL", "ATHGAS", "ATHBMSWAS", "ATHBMSCCS", "ATHOIL",
-          "PGLHYD", "PGSHYD", "PGAWND", "PGSOL", "PGCSP", "PGOTHREN",
-          "PGANUC", "ATHCOALCCS", "ATHLGNCCS", "ATHGASCCS", "PGAWNO", "PGH2F"),
-    
-    te = c("Lignite|w/o CCS", "Coal|w/o CCS","Gas|w/o CCS", "Biomass|w/o CCS","Biomass|w/ CCS", "Oil",
-           "Hydro|Large", "Hydro|Small", "Wind|Onshore", "Solar|PV","Solar|CSP", "Geothermal",
-           "Nuclear","Coal|w/ CCS", "Lignite|w/ CCS","Gas|w/ CCS", "Wind|Offshore","Hydrogen"))
+  DSBSTable <- rgdx.set(path, "DSBS", te = TRUE) %>%
+    filter(!(SBS %in% c("BAV", "BMAR"))) %>%
+    rbind(data.frame(SBS = "BU", .te = "Bunkers"))
   
-  prod <- toolAggregate(prod, dim = 3, rel = mapSEC, from = "i", to = "te")
-  return(prod)
+  finalEnergy <- readGDX(path, "VmFinalEnergy", field = "l")[regions, years, ]           # Mtoe
+  fuelPrice <- readGDX(path, "VmPriceFuelSubsecCarVal", field = "l")[regions, years, ]   # k$2015/toe
+  carbonPrice <- readGDX(path, "VmPriceCarbon", field = "l")[regions, years, ]           # k$2015/toe
+  iGDP <- calcOutput("iGDP_MER", aggregate = TRUE,  regionmapping = "regionmappingOPDEV5.csv")
+  iGDP <- collapseDim(iGDP,3)
+  iGDP <- iGDP[regions, years,]
+  
+  fuelPrice <- fuelPrice[,,getItems(finalEnergy, 3.1)]
+  carbonPrice <- carbonPrice[,,getItems(finalEnergy, 3.1)]
+  
+  xa <- finalEnergy * fuelPrice
+  xb <- finalEnergy * (fuelPrice - carbonPrice)
+  
+  xaBU <- dimSums(xa[,,c("BAV", "BMAR")], 3)
+  getItems(xaBU, 3) <- "BU"
+  xbBU <- dimSums(xb[,,c("BAV", "BMAR")], 3)
+  getItems(xbBU, 3) <- "BU"
+  
+  xa <- dimSums(xa, 3.2)
+  xb <- dimSums(xb, 3.2)
+  
+  xa <- mbind(xa[,,c("BAV", "BMAR"), invert = T], xaBU)
+  xb <- mbind(xb[,,c("BAV", "BMAR"), invert = T], xbBU)
+  
+  xa <- toolAggregate(xa, dim = 3, rel = DSBSTable, from = "SBS", to = ".te")
+  xb <- toolAggregate(xb, dim = 3, rel = DSBSTable, from = "SBS", to = ".te")
+  
+  getItems(xa, 3) <- paste0("Energy System Cost w/o Carbon Price|", getItems(xa, 3))
+  getItems(xb, 3) <- paste0("Energy System Cost with Carbon Price|", getItems(xb, 3))
+  
+  xa <- helperAggregateLevel(xa, level = 1, recursive = TRUE)
+  xb <- helperAggregateLevel(xb, level = 1, recursive = TRUE)
+  
+  xaGDP <- xa[,,"Energy System Cost w/o Carbon Price"] / iGDP * 100
+  getItems(xaGDP, 3) <- "Energy System Cost w/o Carbon Price (% GDP|MER)"
+  
+  xbGDP <- xb[,,"Energy System Cost with Carbon Price"] / iGDP * 100
+  getItems(xbGDP, 3) <- "Energy System Cost with Carbon Price (% GDP|MER)"
+  
+  
+  xa <- add_dimension(xa, dim = 3.2, add = "unit", nm = "billion US$2015/yr")
+  xb <- add_dimension(xb, dim = 3.2, add = "unit", nm = "billion US$2015/yr")
+  xaGDP <- add_dimension(xaGDP, dim = 3.2, add = "unit", nm = "(1)")
+  xbGDP <- add_dimension(xbGDP, dim = 3.2, add = "unit", nm = "(1)")
+  
+  final <- mbind(xa, xb, xaGDP, xbGDP)
+
+  return(final)
+
 }
 
