@@ -213,7 +213,7 @@ aggregateMIF <- function(report) {
                         !items %in% energyCostItems]
 
   # Take Price|Final Energy, Activity growth rate (excluding Carbon)
-  itemsWeightedGdp <- items[grep("^(Price|Activity growth rate)", items, perl = TRUE) |
+  itemsWeightedGdp <- items[grepl("^(Price|Activity growth rate)", items, perl = TRUE) |
                               items %in% energyCostItems]
   itemsWeightedGdp <- setdiff(itemsWeightedGdp, "Price|Carbon.US$2015/tn CO2")
   itemPriceCarbon <- "Price|Carbon"

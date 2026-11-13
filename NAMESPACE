@@ -101,6 +101,7 @@ importFrom(knitr,
   opts_knit
 )
 importFrom(madrat,
+  calcOutput,
   toolAggregate,
   toolGetMapping
 )
