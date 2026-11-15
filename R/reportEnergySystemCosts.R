@@ -49,8 +49,8 @@ reportEnergySystemCosts <- function(path, regions, years, Aggrregions) {
   xa <- toolAggregate(xa, dim = 3, rel = DSBSTable, from = "SBS", to = ".te")
   xb <- toolAggregate(xb, dim = 3, rel = DSBSTable, from = "SBS", to = ".te")
   
-  getItems(xa, 3) <- paste0("Energy System Cost w/o Carbon Price|", getItems(xa, 3))
-  getItems(xb, 3) <- paste0("Energy System Cost with Carbon Price|", getItems(xb, 3))
+  getItems(xa, 3) <- paste0("Energy System Cost with Carbon Price|", getItems(xa, 3))
+  getItems(xb, 3) <- paste0("Energy System Cost w/o Carbon Price|", getItems(xb, 3))
   
   xa <- helperAggregateLevel(xa, level = 1, recursive = TRUE)
   xb <- helperAggregateLevel(xb, level = 1, recursive = TRUE)
