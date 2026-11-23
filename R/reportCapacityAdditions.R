@@ -108,7 +108,7 @@ reportCapacityAdditions <- function(path, regions, years) {
   capacityAdditionsTRNS <- helperAggregateLevel(capacityAdditionsTRNS, level = 2, recursive = TRUE)
   
   actv_units <- list(
-    "Passenger Transport - Cars" = "km/vehicle",
+    "Passenger Transport - Cars" = "vehicles",
     "Passenger Transport - Rail" = "GPKM",
     "Passenger Transport - Aviation" = "million passengers carried",
     "Passenger Transport - Busses" = "billion pKm/yr",
