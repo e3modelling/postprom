@@ -62,7 +62,8 @@ reportIndicators <- function(reports, path, regions, years, blabla_regions) {
     "Final Energy|Commercial|Services", "SE",
     "Final Energy|Agriculture, Fishing, Forestry", "AG",
     "Final Energy|Residential", "HOU",
-    "Final Energy|Bunkers", "BU",
+    "Final Energy|Bunkers|Bunkers aviation", "BAV",
+    "Final Energy|Bunkers|Bunkers maritime", "BMAR",
     "Final Energy|Non-Energy Use|Petrochemicals Industry", "PCH",
     "Final Energy|Non-Energy Use|Other Non Energy Uses", "NEN")
   
@@ -90,10 +91,6 @@ reportIndicators <- function(reports, path, regions, years, blabla_regions) {
   ################
   
   FEACTV <- NULL
-  
-  BUFullACTV <- dimSums(IFullACTV[,,c("BAV", "BMAR")], 3)
-  getItems(BUFullACTV, 3) <- "BU"
-  IFullACTV <- mbind(IFullACTV, BUFullACTV)
   
   for (i in seq_len(nrow(mappingACTV))) {
     

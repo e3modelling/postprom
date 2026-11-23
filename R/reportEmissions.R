@@ -94,7 +94,6 @@ reportEmissions <- function(path, regions, years) {
   # =========================================================
   # ------------------------ Renamings --------------------------------
   DSBSTable <- rgdx.set(path, "DSBS", te = TRUE) %>%
-    # filter(!(SBS %in% c("BAV", "BMAR"))) %>%
     rbind(data.frame(SBS = "BU", .te = "Bunkers"))
   SSBSTable <- rgdx.set(path, "SSBS", te = TRUE)
   TotalTable <- bind_rows(DSBSTable, SSBSTable)
@@ -105,7 +104,6 @@ reportEmissions <- function(path, regions, years) {
     mutate(SBS = "Industry")
   DSBS_Transport <- readGDX(path, "TRANSE") %>%
     as.data.frame() %>%
-    # filter(!. %in% c("BAV", "BMAR")) %>%
     mutate(SBS = "Transportation")
   DSBS_COMM <- data.frame(
     "." = c("SE", "ICT"),
