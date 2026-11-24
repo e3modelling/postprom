@@ -149,7 +149,6 @@ convertGDXtoMIF_single <- function(.path, path_mif, append, regions = NULL,
   reports <- mbind(reports, reportCapacityElectricity(path_gdx, regions, years))
   reports <- mbind(reports, reportACTV(path_gdx, regions, years))
   reports <- mbind(reports, reportCapacityAdditions(path_gdx, regions, years))
-  reports <- mbind(reports, reportEnergySystemCosts(path_gdx, regions, years))
   reports <- mbind(reports, reportVehicles(path_gdx, regions, years))
   reports <- mbind(reports, reportGrossInlandConsumption(path_gdx, regions, years))
   reports <- mbind(reports, reportEquipmentCapacityShare(path_gdx, regions, years))
@@ -157,6 +156,7 @@ convertGDXtoMIF_single <- function(.path, path_mif, append, regions = NULL,
   reports <- mbind(reports, reportEnergyService(path_gdx, regions, years))
   reports <- mbind(reports, reportTransformationInput(path_gdx, regions, years))
   reports <- mbind(reports, reportEnergyIndustryOwnUse(path_gdx, regions, years))
+  reports <- mbind(reports, reportInvestments(path_gdx, regions, years))
 
 
   # reportLearningCurve <- reportLearningCurve(path_gdx, regions, years)
@@ -171,6 +171,7 @@ convertGDXtoMIF_single <- function(.path, path_mif, append, regions = NULL,
   ))
   # reports <- mbind(reports, reportGrowthRates(reports))
   reports <- mbind(reports, reportIndicators(reports, path_gdx, getRegions(reports), years, regions))
+  reports <- mbind(reports, reportEnergySystemCosts(path_gdx, regions, years, getRegions(reports)))
   
   if (emissions == TRUE) generateEmissionsFile(.path, reports, years, scenario_name)
 
@@ -202,13 +203,21 @@ aggregateMIF <- function(report) {
   reportData <- report
   items <- getItems(reportData, 3)
   worldCodes <- getRegions(reportData)
+  
+  # exclude from sum
+  exclude <- c(
+    "Energy System Cost w/o Carbon Price % GDP|MER.1",
+    "Energy System Cost with Carbon Price % GDP|MER.1"
+  )
 
   # --- Define Item Categories ---
-  # Exclude Price|Final Energy, Price|Carbon, Activity growth rate
-  itemsToSum <- items[!grepl("^Price|^Activity growth rate|^Capital Cost|^Investment|^Policy Cost", items)]
-
+  itemsToSum <- items[!grepl("^Price|^Activity growth rate|^Capital Cost|^Investment|^Policy Cost", items) &
+                        !items %in% exclude]
+  
   # Take Price|Final Energy, Activity growth rate (excluding Carbon)
-  itemsWeightedGdp <- items[grep("^(Price|Activity growth rate)", items, perl = TRUE)]
+  itemsWeightedGdp <- items[grepl("^(Price|Activity growth rate)", items, perl = TRUE) |
+                              items %in% exclude]
+  
   itemsWeightedGdp <- setdiff(itemsWeightedGdp, "Price|Carbon.US$2015/tn CO2")
   itemPriceCarbon <- "Price|Carbon"
   itemCost <- items[grepl("^Capital Cost|^Investment|^Policy Cost", items)]

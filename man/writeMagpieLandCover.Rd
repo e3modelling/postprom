@@ -7,10 +7,10 @@
 writeMagpieLandCover(reportMifPath, outMifPath, scenario)
 }
 \arguments{
-\item{reportMifPath}{The selected MAgPIE round's \code{report.mif}. Its directory
+\item{reportMifPath}{The selected MAgPIE round's `report.mif`. Its directory
 must contain the matching spatial outputs and cluster map.}
 
-\item{outMifPath}{Destination for the OPEN-PROM \code{iLandCover_magpie.mif}.}
+\item{outMifPath}{Destination for the OPEN-PROM `iLandCover_magpie.mif`.}
 
 \item{scenario}{Scenario label for the exchange file.}
 }
@@ -18,5 +18,5 @@ must contain the matching spatial outputs and cluster map.}
 The written path, invisibly.
 }
 \description{
-Prepare MAgPIE land-cover areas for OPEN-PROM reporting.
+Prepare MAgPIE land-cover areas for OPEN-PROM reporting
 }
