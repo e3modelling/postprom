@@ -45,6 +45,18 @@ reportEnergySystemCosts <- function(path, regions, years, Aggrregions) {
   xa <- finalEnergy * fuelPrice
   xb <- finalEnergy * (fuelPrice - carbonPrice)
   
+  ########BAV_BMAR
+  BAV_BMAR_xa <- mbind(xa[,,c("BAV", "BMAR")])
+  BAV_BMAR_xa <- dimSums(BAV_BMAR_xa, 3.2)
+  BAV_BMAR_xb <- mbind(xb[,,c("BAV", "BMAR")])
+  BAV_BMAR_xb <- dimSums(BAV_BMAR_xb, 3.2)
+  getItems(BAV_BMAR_xa,3) <- c("Bunkers aviation", "Bunkers maritime")
+  getItems(BAV_BMAR_xb,3) <- c("Bunkers aviation", "Bunkers maritime")
+  getItems(BAV_BMAR_xa, 3) <- paste0("Energy System Cost with Carbon Price|", getItems(BAV_BMAR_xa, 3))
+  getItems(BAV_BMAR_xb, 3) <- paste0("Energy System Cost w/o Carbon Price|", getItems(BAV_BMAR_xb, 3))
+  BAV_BMAR <- mbind(BAV_BMAR_xa, BAV_BMAR_xb)
+  ########
+  
   xaBU <- dimSums(xa[,,c("BAV", "BMAR")], 3)
   getItems(xaBU, 3) <- "BU"
   xbBU <- dimSums(xb[,,c("BAV", "BMAR")], 3)
@@ -65,7 +77,7 @@ reportEnergySystemCosts <- function(path, regions, years, Aggrregions) {
   xa <- helperAggregateLevel(xa, level = 1, recursive = TRUE)
   xb <- helperAggregateLevel(xb, level = 1, recursive = TRUE)
   
-  x <- mbind(xa, xb)
+  x <- mbind(xa, xb, BAV_BMAR)
   
   if ("World" %in% Aggrregions) {
     # Calculate the sum, World
