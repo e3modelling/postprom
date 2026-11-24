@@ -83,12 +83,83 @@ reportCapacityAdditions <- function(path, regions, years) {
   investmentHEAT <- toolAggregate(investmentHEAT, dim = 3, rel = TSTEAM, from = "i", to = ".te")
   getItems(investmentHEAT, 3) <- paste0("Investment|Energy Supply|Heat|", getItems(investmentHEAT, 3))
   investmentHEAT <- add_dimension(investmentHEAT, dim = 3.2, add = "unit", nm = "million US$2015/yr")
-  #############
+  
+  ############### TRANSPORT
+  V01ShareTechTr <- readGDX(path, "V01ShareTechTr", field = "l")[regions, years, ]
+  V01GapTranspActiv <- readGDX(path, "V01GapTranspActiv", field = "l")[regions, years, ]
+  capacityAdditionsTRNS <- V01ShareTechTr *  V01GapTranspActiv
+  TECH <- rgdx.set(path, "TECH", te = TRUE)
+  # capacityAdditionsTRNS <- as.quitte(capacityAdditionsTRNS) %>%
+  #   dplyr::filter(value != 0)
+  # capacityAdditionsTRNS <- as.magpie(capacityAdditionsTRNS)
+  
+  TECH <- TECH %>% dplyr::filter(i %in% getItems(capacityAdditionsTRNS,3.2))
+  TECH <- TECH %>% mutate(.te = coalesce(.te, i))
+  capacityAdditionsTRNS <- toolAggregate(capacityAdditionsTRNS, dim = 3.2, rel = TECH, from = "i", to = ".te")
+  
+  DSBSTable <- rgdx.set(path, "DSBS", te = TRUE) %>% dplyr::filter(SBS %in% getItems(capacityAdditionsTRNS,3.1))
+  DSBSTable <- DSBSTable  %>% dplyr::filter(!SBS %in%  c("BMAR", "BAV"))
+  capacityAdditionsTRNS <- toolAggregate(capacityAdditionsTRNS[,,DSBSTable[,"SBS"]], dim = 3.1, rel = DSBSTable, from = "SBS", to = ".te")
+  
+  # Replace sep in dimensions and prepend the sector
+  name <- gsub("\\.", "|", getItems(capacityAdditionsTRNS, dim = 3)) # e.g., IS.HCL --> IS|HCL
+
+  getItems(capacityAdditionsTRNS, 3) <- paste0("Capacity Additions|", name)
+  capacityAdditionsTRNS <- helperAggregateLevel(capacityAdditionsTRNS, level = 2, recursive = TRUE)
+  
+  actv_units <- list(
+    "Passenger Transport - Cars" = "vehicles",
+    "Passenger Transport - Rail" = "GPKM",
+    "Passenger Transport - Aviation" = "million passengers carried",
+    "Passenger Transport - Busses" = "billion pKm/yr",
+    "Passenger Transport - Inland Navigation" = "billion pKm/yr",
+    "Goods Transport - Trucks" = "GTKM",
+    "Goods Transport - Rail" = "GTKM",
+    "Goods Transport - Inland Navigation" = "GTKM"
+  )
+  
+  capacityAdditionsTRNS <- add_dimension(capacityAdditionsTRNS, dim = 3.2, add = "unit")
+  
+  # Extract transport category from dimension 3.1
+  transport_category <- sub(
+    "^Capacity Additions\\|([^|.]+).*",
+    "\\1",
+    getItems(capacityAdditionsTRNS, 3.1)
+  )
+  
+  getItems(capacityAdditionsTRNS, 3.2) <- unname(actv_units[transport_category])
+  
+  ############################ V01CapacityTransport
+  V01CapacityTransport <- readGDX(path, "V01CapacityTransport", field = "l")[regions, years, ]
+  V01CapacityTransport <- toolAggregate(V01CapacityTransport[,,DSBSTable[,"SBS"]], dim = 3.1, rel = DSBSTable, from = "SBS", to = ".te")
+  
+  TECHCapacity <- dplyr::filter(TECH, i %in% getItems(V01CapacityTransport,3.2))
+  V01CapacityTransport <- toolAggregate(V01CapacityTransport, dim = 3.2, rel = TECHCapacity, from = "i", to = ".te")
+  
+  # Replace sep in dimensions and prepend the sector
+  name <- gsub("\\.", "|", getItems(V01CapacityTransport, dim = 3)) # e.g., IS.HCL --> IS|HCL
+  
+  getItems(V01CapacityTransport, 3) <- paste0("Capacity|", name)
+  V01CapacityTransport <- helperAggregateLevel(V01CapacityTransport, level = 2, recursive = TRUE)
+  
+  V01CapacityTransport <- add_dimension(V01CapacityTransport, dim = 3.2, add = "unit")
+  
+  # Extract transport category from dimension 3.1
+  transport_category <- sub(
+    "^Capacity\\|([^|.]+).*",
+    "\\1",
+    getItems(V01CapacityTransport, 3.1)
+  )
+  
+  getItems(V01CapacityTransport, 3.2) <- unname(actv_units[transport_category])
+  
+  ############################ 
   
   capacityAdditionsSte <- helperAggregateLevel(capacityAdditionsSte, level = 2, recursive = TRUE)
   capacityAdditionsSte <- add_dimension(capacityAdditionsSte, dim = 3.2, add = "unit", nm = "Mtoe/yr")
   
-  magpie_object <- mbind(capacityAdditionselec, capacityAdditionsSte, investmentHEAT)
+  magpie_object <- mbind(capacityAdditionselec, capacityAdditionsSte, investmentHEAT,
+                         capacityAdditionsTRNS, V01CapacityTransport)
   return(magpie_object)
 }
 

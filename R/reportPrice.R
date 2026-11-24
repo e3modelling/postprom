@@ -25,10 +25,10 @@ reportPrice <- function(path, regions, years, weightsForreportPrice) {
   pricesPrimary <- readGDX(path, "V08PricePrimary", field = "l")[regions, years, PRIM_PRICES]
   # --------------------------------------------------------------
   DSBS <- rgdx.set(path, "DSBS", te = FALSE) %>%
-    filter(!(SBS %in% c("BAV", "BMAR"))) %>%
+    # filter(!(SBS %in% c("BAV", "BMAR"))) %>%
     rbind(data.frame(SBS = "BU"))
   DSBSTable <- rgdx.set(path, "DSBS", te = TRUE) %>%
-    filter(!(SBS %in% c("BAV", "BMAR"))) %>%
+    # filter(!(SBS %in% c("BAV", "BMAR"))) %>%
     rbind(data.frame(SBS = "BU", .te = "Bunkers"))
   EFSTable <- rgdx.set(path, "EFS", te = TRUE)
   #---------- Create a DSBS TO SBS mapping (e.g., Iron & Steel -> Industry)
@@ -39,6 +39,11 @@ reportPrice <- function(path, regions, years, weightsForreportPrice) {
     as.data.frame() %>%
     filter(!. %in% c("BAV", "BMAR")) %>%
     mutate(SBS = "Transportation")
+  Bunkers <- data.frame(
+    . = c("BAV", "BMAR"),
+    SBS = c("Bunkers", "Bunkers")
+  )
+  DSBS_Transport <- rbind(DSBS_Transport, Bunkers)
   DSBS_NonEnergy <- readGDX(path, "NENSE") %>%
     as.data.frame() %>%
     filter(. != "BU") %>%
@@ -63,22 +68,8 @@ reportPrice <- function(path, regions, years, weightsForreportPrice) {
   SECtoEF <- rgdx.set(path, "SECtoEF", te = FALSE) %>%
     filter(SBS %in% rgdx.set(path, "DSBS", te = FALSE)$SBS)
   # -------------------------- Prepare data --------------------------------------
-  finalEnergy <- readGDX(path, "VmFinalEnergy", field = "l")[regions, years, c(paste(SECtoEF$SBS, SECtoEF$EF, sep = "."))]
-  finalEnergy[, , ] <- finalEnergy[, , ] + 1e-6
   pricesFinal <- readGDX(path, "VmPriceFinal", field = "l")[regions, years, c(paste(SECtoEF$SBS, SECtoEF$EF, sep = "."))]
   units <- sub(".*\\((.*)\\).*", "\\1", pricesFinal@description)
-  tableBU <- data.frame(
-    GRAN = getItems(pricesFinal, dim = 3.1),
-    AGGR = getItems(pricesFinal, dim = 3.1),
-    stringsAsFactors = FALSE
-  ) %>%
-    mutate(AGGR = ifelse(AGGR %in% c("BAV", "BMAR"), "BU", AGGR))
-
-  pricesFinal <- toolAggregate(pricesFinal,
-    dim = 3.1, rel = tableBU,
-    from = "GRAN", to = "AGGR",
-    partrel = TRUE, weight = finalEnergy
-  )
   # -------------------------- Rename Variables -------------------------------
   getItems(pricesFinal, 3.1) <- DSBSTable$.te[match(getItems(pricesFinal, 3.1), DSBSTable$SBS)]
   getItems(pricesFinal, 3.2) <- EFSTable$.te[match(getItems(pricesFinal, 3.2), EFSTable$EF)]

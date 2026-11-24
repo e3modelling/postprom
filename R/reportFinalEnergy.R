@@ -23,7 +23,6 @@ reportFinalEnergy <- function(path, regions, years) {
   EFSTable <- rgdx.set(path, "EFS", te = TRUE)
   EFSTable$.te <- gsub("\\s*\\([^)]*\\)", "", EFSTable$.te)
   DSBSTable <- rgdx.set(path, "DSBS", te = TRUE) %>%
-    filter(!(SBS %in% c("BAV", "BMAR"))) %>%
     rbind(data.frame(SBS = "BU", .te = "Bunkers"))
 
   #---------- Create a DSBS TO SBS mapping (e.g., Iron & Steel -> Industry)
@@ -32,7 +31,6 @@ reportFinalEnergy <- function(path, regions, years) {
     mutate(SBS = "Industry")
   DSBS_Transport <- readGDX(path, "TRANSE") %>%
     as.data.frame() %>%
-    filter(!. %in% c("BAV", "BMAR")) %>%
     mutate(SBS = "Transportation")
   DSBS_NonEnergy <- readGDX(path, "NENSE") %>%
     as.data.frame() %>%
@@ -55,6 +53,7 @@ reportFinalEnergy <- function(path, regions, years) {
   lookup <- setNames(DSBS_SBS$SBS, DSBS_SBS$DSBS)
   # -------------------------- Prepare data --------------------------------------
   fuel <- readGDX(path, "VmFinalEnergy", field = "l")[regions, years, ]
+  BAV_BMAR <- fuel[,,c("BAV","BMAR")]
   units <- sub(".*\\((.*)\\).*", "\\1", fuel@description)
   tableBU <- data.frame(
     GRAN = getItems(fuel, dim = 3.1),
@@ -99,6 +98,9 @@ reportFinalEnergy <- function(path, regions, years) {
   getItems(finalPerFuel, 3.1) <- paste0("Final Energy|", EFSTable$.te[match(getItems(finalPerFuel, 3.1), EFSTable$EF)])
   getItems(fuelWOBunkers, 3.1) <- paste0("Final Energy w/o bunkers", getItems(fuelWOBunkers, 3.1))
   getItems(finalPerFuelAggregated, 3.1) <- paste0("Final Energy|", getItems(finalPerFuelAggregated, 3.1))
+
+  getItems(BAV_BMAR, 3.1) <- DSBSTable$.te[match(getItems(BAV_BMAR, 3.1), DSBSTable$SBS)]
+  getItems(BAV_BMAR, 3.2) <- EFSTable$.te[match(getItems(BAV_BMAR, 3.2), EFSTable$EF)]
   # ---------------------------------------------------------------------------
   # Replace sep in dimensions and prepend the sector
   name <- gsub("\\.", "|", getItems(fuel, dim = 3)) # e.g., IS.HCL --> IS|HCL
@@ -112,7 +114,11 @@ reportFinalEnergy <- function(path, regions, years) {
   ) # prepend SBS (e.g., IS|HCL -> Industry|IS|HCL)
 
   getItems(fuel, 3) <- paste0("Final Energy|", name)
-
+  # ------------------Bunkers---------
+  # Replace sep in dimensions and prepend the sector
+  name <- gsub("\\.", "|", getItems(BAV_BMAR, dim = 3)) # e.g., IS.HCL --> IS|HCL
+  
+  getItems(BAV_BMAR, 3) <- paste0("Final Energy|Bunkers|", name)
   # -------------------------- Data centers, Infrastructure --------------
   scenarioICT <- readGDX(path, "ICT")[[1]]
   getItems(fuel, 3) <- gsub(
@@ -130,6 +136,7 @@ reportFinalEnergy <- function(path, regions, years) {
   fuel[, years[years <= "y2023"], "Final Energy|Commercial|Data centers and Networks|Infrastructure", pmatch = TRUE] <- fuel[, years[years <= "y2023"], "Final Energy|Commercial|Data centers and Networks|Infrastructure", pmatch = TRUE] * (1 - 1 / (1 + 0.91))
   # ----------------------------------------------------------------------------
   fuel <- helperAggregateLevel(fuel, level = 1, recursive = TRUE)
+  BAV_BMAR <- helperAggregateLevel(BAV_BMAR, level = 3, recursive = TRUE)
   # =========================== Auxiliary variables ======================
   # --------------------------- Residential & Comercial ------------------
   resCom <- fuel[, , c("Final Energy|Residential", "Final Energy|Commercial")]
@@ -159,7 +166,7 @@ reportFinalEnergy <- function(path, regions, years) {
   # ============================ Add units ================================
   magpie_object <- mbind(
     fuel, finalPerFuel, fuelWOBunkers,
-    resCom, finalPerFuelAggregated, agriculture, Biofuels
+    resCom, finalPerFuelAggregated, agriculture, Biofuels, BAV_BMAR
   )
   magpie_object <- add_dimension(magpie_object, dim = 3.2, add = "unit", nm = units)
   return(magpie_object)

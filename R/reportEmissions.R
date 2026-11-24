@@ -47,6 +47,7 @@ reportEmissions <- function(path, regions, years) {
   CCS <- toolAggregate(CCS, dim = 3.2, rel = BALEF2EFS, from = "EFS", to = "BALEF")
 
   grossCO2Demand <- variables$V07GrossEmissCO2Demand[regions, years]
+  grossCO2Demand_BAV_BMAR <- grossCO2Demand[,,c("BAV", "BMAR")]
   grossCO2Demand <- toolAggregate(grossCO2Demand, dim = 3.1, rel = tableBU, from = "GRAN", to = "AGGR", partrel = TRUE)
   grossCO2Demand <- grossCO2Demand[c("NEN", "PCH"), invert = TRUE]
 
@@ -93,7 +94,6 @@ reportEmissions <- function(path, regions, years) {
   # =========================================================
   # ------------------------ Renamings --------------------------------
   DSBSTable <- rgdx.set(path, "DSBS", te = TRUE) %>%
-    filter(!(SBS %in% c("BAV", "BMAR"))) %>%
     rbind(data.frame(SBS = "BU", .te = "Bunkers"))
   SSBSTable <- rgdx.set(path, "SSBS", te = TRUE)
   TotalTable <- bind_rows(DSBSTable, SSBSTable)
@@ -104,7 +104,6 @@ reportEmissions <- function(path, regions, years) {
     mutate(SBS = "Industry")
   DSBS_Transport <- readGDX(path, "TRANSE") %>%
     as.data.frame() %>%
-    filter(!. %in% c("BAV", "BMAR")) %>%
     mutate(SBS = "Transportation")
   DSBS_COMM <- data.frame(
     "." = c("SE", "ICT"),
@@ -127,6 +126,10 @@ reportEmissions <- function(path, regions, years) {
   )
   getItems(grossCO2Demand, 3.1) <- paste0("Gross Emissions|CO2|Energy|Demand|", name)
   getItems(netCO2Demand, 3.1) <- paste0("Emissions|CO2|Energy|Demand|", name)
+  # ------------- --------------Bunkers ---------------------------------
+  name <- DSBSTable$.te[match(getItems(grossCO2Demand_BAV_BMAR, 3.1), DSBSTable$SBS)]
+  getItems(grossCO2Demand_BAV_BMAR, 3.1) <- paste0("Emissions|CO2|Energy|Demand|Bunkers|", name)
+  # ------------- -----------------------------------------------
   # ------------- --------------Supply ---------------------------------
   name <- SSBSTable$.te[match(getItems(grossCO2Supply, 3.1), SSBSTable$SBS)]
   getItems(grossCO2Supply, 3.1) <- paste0("Gross Emissions|CO2|Energy|Supply|", name)
@@ -365,12 +368,13 @@ reportEmissions <- function(path, regions, years) {
   emissionsCO2woBunkers <- add_dimension(emissionsCO2woBunkers, dim = 3.2, add = "unit", nm = unitsCO2)
   emissionsKyotowoBunkers <- add_dimension(emissionsKyotowoBunkers, dim = 3.2, add = "unit", nm =  "Mt CO2-equiv/yr")
   netCO2ETStotal <- add_dimension(netCO2ETStotal, dim = 3.2, add = "unit", nm = unitsCO2)
+  grossCO2Demand_BAV_BMAR <- add_dimension(grossCO2Demand_BAV_BMAR, dim = 3.2, add = "unit", nm = unitsCO2)
   
   magpie_object <- mbind(
     emissionsNonCO2, EmissionsCo2, kyotoGases,
     Cumulated, sumIPEnergy, resCom, captured,
     TRANP, TRANG, OtherFuelTransformation, HFCAgg, PFCAgg, FgasAgg,
-    emissionsCO2woBunkers, emissionsKyotowoBunkers, netCO2ETStotal
+    emissionsCO2woBunkers, emissionsKyotowoBunkers, netCO2ETStotal, grossCO2Demand_BAV_BMAR
   )
   # Add other emissions from magpie run if they are available
   if (!is.null(extraAFOLU)) {
