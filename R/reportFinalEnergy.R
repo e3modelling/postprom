@@ -64,7 +64,6 @@ reportFinalEnergy <- function(path, regions, years) {
     mutate(AGGR = ifelse(AGGR %in% c("BAV", "BMAR"), "BU", AGGR))
   fuel <- toolAggregate(fuel, dim = 3.1, rel = tableBU, from = "GRAN", to = "AGGR", partrel = TRUE)
   years <- getYears(fuel)
-  # fuel <- fuel[, , EFSTable$EF]
   # -------------------------- Fuel Aggregations ------------------------------
   BALEFtoEF <- read.csv(
     system.file("mappings", "BALEFtoEF.csv", package = "postprom")

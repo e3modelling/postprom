@@ -20,14 +20,31 @@
 #' @importFrom tools toTitleCase
 #' @export
 reportEnergyService <- function(path, regions, years) {
-  EnergyService <- readGDX(path, c("V12EnergyServices"), field = "l")[regions, years, ]
+  EnergyService <- readGDX(path, c("V12EnergyService", "V02EnergyService"), field = "l")
   if (is.null(EnergyService)) {
     return(NULL)
   }
+  agriculture <- EnergyService$V12EnergyService[regions, years, ]
+  names(dimnames(agriculture))[3] <- "sector"
+  getItems(agriculture, 3) <- paste0("Energy Service|AFOFI|", toTitleCase(gsub("_", " ", tolower(getItems(agriculture, 3)))))
 
-  getItems(EnergyService, 3) <- paste0("Energy Service|AFOFI|", toTitleCase(gsub("_", " ", tolower(getItems(EnergyService, 3)))))
+  # Iron and Steel
+  INDDOMtoServs <- rgdx.set(path, "INDDOMtoSERVS")
+  IND_SERVS <- rgdx.set(path, "IND_SERVS", te = TRUE)
+  IS <- EnergyService$V02EnergyService[regions, years, paste0(INDDOMtoServs$INDDOM, ".", INDDOMtoServs$IND_SERVS)]
+  IS <- collapseDim(
+    IS[, , "IS"],
+    dim = 3.1
+  )
+  names(dimnames(IS))[3] <- "sector"
+  getItems(IS, 3) <- paste0("Energy Service|Iron & Steel|", IND_SERVS$.te[match(getItems(IS, 3), IND_SERVS$i)])
 
-  units <- c("1e9 ha", "1e9 ha", "1e9 ha", "1e6 ha", "1e9 ha", "1e9 LU", "1e6 m^3", "1e6 tonnes")
-  EnergyService <- add_dimension(EnergyService, dim = 3.2, add = "unit", nm = units, expand = FALSE)
-  return(EnergyService)
+  # Units
+  ag_units <- c("1e9 ha", "1e9 ha", "1e9 ha", "1e6 ha", "1e9 ha", "1e9 LU", "1e6 m^3", "1e6 tonnes")
+  is_units <- c("Mtonnes", "Mtonnes")
+  agriculture <- add_dimension(agriculture, dim = 3.2, add = "unit", nm = ag_units, expand = FALSE)
+  IS <- add_dimension(IS, dim = 3.2, add = "unit", nm = is_units, expand = FALSE)
+
+  magpie_object <- mbind(IS, agriculture)
+  return(magpie_object)
 }
