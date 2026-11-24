@@ -20,7 +20,9 @@
 #' @export
 reportEquipmentCapacityShare <- function(path, regions, years) {
   V02EquipCapTechSubsec <- readGDX(path, "V02EquipCapTechSubsec", field = "l")[regions, years, ]
-  
+  if (is.null(V02EquipCapTechSubsec)) {
+    return(NULL)
+  }
   DSBSTable <- rgdx.set(path, "DSBS", te = TRUE)
   
   V02EquipCapTechSubsec <- toolAggregate(V02EquipCapTechSubsec,

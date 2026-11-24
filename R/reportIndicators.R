@@ -204,57 +204,72 @@ reportIndicators <- function(reports, path, regions, years, blabla_regions) {
   names(dimnames(CO2FEIntensityindicators))[3] <- "CO2FEIntensityindicators"
   CO2FEIntensityindicators <- add_dimension(CO2FEIntensityindicators, dim = 3.2, add = "unit", nm = "Mt CO2/Mtoe")
   # ============ CO2 intensity of INDUSTRY (Emissions/Useful Energy)============
-  CO2DemandIndustry <- reports[,,"Emissions|CO2|Energy|Demand|Industry.Mt CO2/yr"]
-  CO2DemandIndustry <- collapseDim(CO2DemandIndustry, dim = 3.2)
-  variables <- readGDX(
-    path,
-    c(
-      "V02DemSubUsefulSubsec", "V02UsefulElecNonSubIndTert"
-    ),
-    field = "l"
-  )
-  
-  V02DemSubUsefulSubsec <- variables$V02DemSubUsefulSubsec[blabla_regions, years,]
-  V02UsefulElecNonSubIndTert <- variables$V02UsefulElecNonSubIndTert[blabla_regions, years,]
-  
-  UsefulEnergy  <- V02DemSubUsefulSubsec + V02UsefulElecNonSubIndTert
-  DSBSIndustry <- readGDX(path, "INDSE")
-  UsefulEnergyIndustry <- UsefulEnergy[,,DSBSIndustry]
-  UsefulEnergyIndustry <- dimSums(UsefulEnergyIndustry, dim = 3)
-  
-  if ("World" %in% regions) {
-    # Calculate the sum, World
-    add_region_GLO <- dimSums(UsefulEnergyIndustry, 1, na.rm = TRUE)
-    getItems(add_region_GLO, 1) <- "World"
-    UsefulEnergyIndustry <- mbind(UsefulEnergyIndustry, add_region_GLO)
-  }
-  
-  if ("EU" %in% regions) {
-    # --- Calculate EU-27 Aggregation ---
-    regionMapping <- toolGetMapping(name = "EU28.csv", type = "regional", where = "mrprom")
-    regionsEu27 <- regionMapping$ISO3.Code[regionMapping$ISO3.Code != "GBR"]
-    regionsEu27 <- regionsEu27[regionsEu27 %in% blabla_regions] # Ensure only regions present in the data are included
-    
-    if (length(regionsEu27) != 0) {
-      add_region_EU <- dimSums(UsefulEnergyIndustry[regionsEu27,,], 1, na.rm = TRUE)
-      getItems(add_region_EU, 1) <- "EU"
-      UsefulEnergyIndustry <- mbind(UsefulEnergyIndustry, add_region_EU)
-    }
-  }
-  
-  CO2IntensityofIndustry <- CO2DemandIndustry / UsefulEnergyIndustry
-  getItems(CO2IntensityofIndustry, 3) <- "Carbon Intensity|Energy|Demand|Industry"
-  names(dimnames(CO2IntensityofIndustry))[3] <- "CO2IntensityofIndustry"
-  CO2IntensityofIndustry <- add_dimension(CO2IntensityofIndustry, dim = 3.2, add = "unit", nm = "Mt CO2/Mtoe")
-  
+  # CO2DemandIndustry <- reports[,,"Emissions|CO2|Energy|Demand|Industry.Mt CO2/yr"]
+  # CO2DemandIndustry <- collapseDim(CO2DemandIndustry, dim = 3.2)
+  # variables <- readGDX(
+  #   path,
+  #   c(
+  #     "V02DemSubUsefulSubsec", "V02UsefulElecNonSubIndTert"
+  #   ),
+  #   field = "l"
+  # )
+  # 
+  # V02DemSubUsefulSubsec <- variables$V02DemSubUsefulSubsec[blabla_regions, years,]
+  # V02UsefulElecNonSubIndTert <- variables$V02UsefulElecNonSubIndTert[blabla_regions, years,]
+  # 
+  # UsefulEnergy  <- V02DemSubUsefulSubsec + V02UsefulElecNonSubIndTert
+  # DSBSIndustry <- readGDX(path, "INDSE")
+  # UsefulEnergyIndustry <- UsefulEnergy[,,DSBSIndustry]
+  # UsefulEnergyIndustry <- dimSums(UsefulEnergyIndustry, dim = 3)
+  # 
+  # if ("World" %in% regions) {
+  #   # Calculate the sum, World
+  #   add_region_GLO <- dimSums(UsefulEnergyIndustry, 1, na.rm = TRUE)
+  #   getItems(add_region_GLO, 1) <- "World"
+  #   UsefulEnergyIndustry <- mbind(UsefulEnergyIndustry, add_region_GLO)
+  # }
+  # 
+  # if ("EU" %in% regions) {
+  #   # --- Calculate EU-27 Aggregation ---
+  #   regionMapping <- toolGetMapping(name = "EU28.csv", type = "regional", where = "mrprom")
+  #   regionsEu27 <- regionMapping$ISO3.Code[regionMapping$ISO3.Code != "GBR"]
+  #   regionsEu27 <- regionsEu27[regionsEu27 %in% blabla_regions] # Ensure only regions present in the data are included
+  #   
+  #   if (length(regionsEu27) != 0) {
+  #     add_region_EU <- dimSums(UsefulEnergyIndustry[regionsEu27,,], 1, na.rm = TRUE)
+  #     getItems(add_region_EU, 1) <- "EU"
+  #     UsefulEnergyIndustry <- mbind(UsefulEnergyIndustry, add_region_EU)
+  #   }
+  # }
+  # 
+  # CO2IntensityofIndustry <- CO2DemandIndustry / UsefulEnergyIndustry
+  # getItems(CO2IntensityofIndustry, 3) <- "Carbon Intensity|Energy|Demand|Industry"
+  # names(dimnames(CO2IntensityofIndustry))[3] <- "CO2IntensityofIndustry"
+  # CO2IntensityofIndustry <- add_dimension(CO2IntensityofIndustry, dim = 3.2, add = "unit", nm = "Mt CO2/Mtoe")
+  # 
   # ============Energy intensity of industry (TFC industry/Useful Energy)============
-  FEIndustry <- reports[,,"Final Energy|Industry.Mtoe"]
-  FEIndustry <- collapseDim(FEIndustry, dim = 3.2)
+  # FEIndustry <- reports[,,"Final Energy|Industry.Mtoe"]
+  # FEIndustry <- collapseDim(FEIndustry, dim = 3.2)
+  # 
+  # EnergyIntensityofIndustry <- FEIndustry / UsefulEnergyIndustry
+  # getItems(EnergyIntensityofIndustry, 3) <- "Energy Intensity|Industry"
+  # names(dimnames(EnergyIntensityofIndustry))[3] <- "EnergyIntensityofIndustry"
+  # EnergyIntensityofIndustry <- add_dimension(EnergyIntensityofIndustry, dim = 3.2, add = "unit", nm = "1")
   
-  EnergyIntensityofIndustry <- FEIndustry / UsefulEnergyIndustry
-  getItems(EnergyIntensityofIndustry, 3) <- "Energy Intensity|Industry"
-  names(dimnames(EnergyIntensityofIndustry))[3] <- "EnergyIntensityofIndustry"
-  EnergyIntensityofIndustry <- add_dimension(EnergyIntensityofIndustry, dim = 3.2, add = "unit", nm = "1")
+  # ============Carbon intensity of Energy Service|Iron & Steel 
+  # =========Emissions|CO2|Energy|Demand|Industry|Iron and Steel.Mt CO2/yr
+  # ========= devided by 
+  # ======Energy Service|Iron & Steel.Mtonnes============
+  CarbonIronandSteel <- reports[,,"Emissions|CO2|Energy|Demand|Industry|Iron and Steel.Mt CO2/yr"]
+  CarbonIronandSteel <- collapseDim(CarbonIronandSteel, dim = 3.2)
+  
+  EnergyServiceIronandSteel <- reports[,,"Energy Service|Iron & Steel.Mtonnes"]
+  EnergyServiceIronandSteel <- collapseDim(EnergyServiceIronandSteel, dim = 3.2)
+  
+  CarbonIntensityofIronandSteel <- CarbonIronandSteel / EnergyServiceIronandSteel
+  getItems(CarbonIntensityofIronandSteel, 3) <- "Carbon Intensity|Iron and Steel"
+  names(dimnames(CarbonIntensityofIronandSteel))[3] <- "CarbonIntensityofIronandSteel"
+  CarbonIntensityofIronandSteel <- add_dimension(CarbonIntensityofIronandSteel, dim = 3.2, add = "unit", nm = "Mt CO2/Mtonnes")
   
   # ============Energy intensity of Transportation============
   variablesACTVTransport <- readGDX(
@@ -369,15 +384,14 @@ reportIndicators <- function(reports, path, regions, years, blabla_regions) {
     EnergyCo2GdpIntensity,
     PrimaryEnergyFossilShare,
     CO2Intensityindicators,
-    CO2IntensityofIndustry,
-    EnergyIntensityofIndustry,
     FEACTV,
     ActivTrnsp,
     EmissionsIntensity,
     RESSecShare,
     ElectricityshareFE,
     CO2FEIntensityindicators,
-    TESEnergyIntensity
+    TESEnergyIntensity,
+    CarbonIntensityofIronandSteel
   )
   
   magpie_object[is.na(magpie_object) | is.infinite(magpie_object)] <- 0

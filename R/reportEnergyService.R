@@ -41,7 +41,10 @@ reportEnergyService <- function(path, regions, years) {
 
   # Units
   ag_units <- c("1e9 ha", "1e9 ha", "1e9 ha", "1e6 ha", "1e9 ha", "1e9 LU", "1e6 m^3", "1e6 tonnes")
-  is_units <- c("Mtonnes", "Mtonnes")
+  is_units <- c("Mtonnes", "Mtonnes", "Mtonnes")
+  
+  IS <- helperAggregateLevel(IS, level = 2, recursive = TRUE)
+  
   agriculture <- add_dimension(agriculture, dim = 3.2, add = "unit", nm = ag_units, expand = FALSE)
   IS <- add_dimension(IS, dim = 3.2, add = "unit", nm = is_units, expand = FALSE)
 
