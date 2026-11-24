@@ -128,7 +128,7 @@ reportEmissions <- function(path, regions, years) {
   getItems(netCO2Demand, 3.1) <- paste0("Emissions|CO2|Energy|Demand|", name)
   # ------------- --------------Bunkers ---------------------------------
   name <- DSBSTable$.te[match(getItems(grossCO2Demand_BAV_BMAR, 3.1), DSBSTable$SBS)]
-  getItems(grossCO2Demand_BAV_BMAR, 3.1) <- paste0("Emissions|CO2|Energy|Demand|", name)
+  getItems(grossCO2Demand_BAV_BMAR, 3.1) <- paste0("Emissions|CO2|Energy|Demand|Bunkers|", name)
   # ------------- -----------------------------------------------
   # ------------- --------------Supply ---------------------------------
   name <- SSBSTable$.te[match(getItems(grossCO2Supply, 3.1), SSBSTable$SBS)]
