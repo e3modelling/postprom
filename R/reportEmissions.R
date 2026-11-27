@@ -1034,16 +1034,19 @@ getIndustrialProcesses <- function(path, magpie_object) {
 
   fscenario <- readGDX(path, "fscenario")
 
-  # Filter REMIND_MAgPIE_SoCDR by scenario
-  # if (fscenario %in% c(0)) {
-  #   IndustrialProcesses <- IndustrialProcesses[, , "CurrentPolicies"]
-  # } else if (fscenario %in% c(1)) {
-  #   IndustrialProcesses <- IndustrialProcesses[, , "STEPS-LTT"]
-  # } else if (fscenario %in% c(2, 5, 6, 7, 8, 9)) {
-     IndustrialProcesses <- IndustrialProcesses[, , "NT-Zero2050"]
-  # } else if (fscenario == 3) {
-  #  IndustrialProcesses <- IndustrialProcesses[, , "STEPS-LTT"]
-  # }
+  # Select the industrial-process trajectory matching the OPEN-PROM scenario
+  # (fscenario: 0 no carbon price, 1 NPi_Default, 2 1.5C, 3 2C, 5-9 net-zero variants)
+  if (fscenario %in% c(0)) {
+    IndustrialProcesses <- IndustrialProcesses[, , "CurrentPolicies"]
+  } else if (fscenario %in% c(1, 3)) {
+    IndustrialProcesses <- IndustrialProcesses[, , "STEPS-LTT"]
+  } else if (fscenario %in% c(2, 5, 6, 7, 8, 9)) {
+    IndustrialProcesses <- IndustrialProcesses[, , "NT-Zero2050"]
+  } else {
+    message("getIndustrialProcesses: no trajectory defined for fscenario ", fscenario,
+            "; using NT-Zero2050")
+    IndustrialProcesses <- IndustrialProcesses[, , "NT-Zero2050"]
+  }
 
   # Check if 'RWO' exists as a region and then compute RWO as World - sum of countries
   if ("RWO" %in% getItems(magpie_object, 1)) {
