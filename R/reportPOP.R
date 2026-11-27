@@ -17,8 +17,9 @@
 #' @export
 reportPOP <- function(path, regions, years) {
   iPop <- readGDX(path, "i01Pop")[regions, years,]
+  iPop <- iPop * 1000
   getItems(iPop, 3) <- "Population"
 
-  iPop <- add_dimension(iPop, dim = 3.2, add = "unit", nm = "billion")
+  iPop <- add_dimension(iPop, dim = 3.2, add = "unit", nm = "million")
   return(iPop)
 }

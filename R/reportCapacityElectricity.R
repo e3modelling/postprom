@@ -109,6 +109,18 @@ reportCapacityElectricity <- function(path, regions, years) {
   getItems(capacity, 3) <- paste0("Capacity|Electricity|", getItems(capacity, 3))
 
   capacity <- helperAggregateLevel(capacity, level = 1, recursive = TRUE)
+  # =======================Renewables 
+  Renewables <- dimSums(capacity[,,c("Capacity|Electricity|Wind",
+                                     "Capacity|Electricity|Solar",
+                                     "Capacity|Electricity|Hydro",
+                                     "Capacity|Electricity|Nuclear",
+                                     "Capacity|Electricity|Hydrogen",
+                                     "Capacity|Electricity|Geothermal and other renewable sources",
+                                     "Capacity|Electricity|Biofuels")],3)
+  getItems(Renewables, 3) <- "Capacity|Electricity|Renewables"
+  capacity <- mbind(capacity, Renewables)
+  # =============================
+  
   capacity <- add_dimension(capacity, dim = 3.2, add = "unit", nm = units)
   return(capacity)
 }

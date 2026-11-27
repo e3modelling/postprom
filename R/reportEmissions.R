@@ -35,14 +35,23 @@ reportEmissions <- function(path, regions, years) {
     field = "l"
   )
 
+  CCS <- variables$V06CO2CaptureCCS[regions, years]
+  tableBU <- data.frame(
+    GRAN = getItems(CCS, dim = 3.1),
+    AGGR = getItems(CCS, dim = 3.1),
+    stringsAsFactors = FALSE
+  ) %>%
+    mutate(AGGR = ifelse(AGGR %in% c("BAV", "BMAR"), "BU", AGGR))
+  CCS <- toolAggregate(CCS, dim = 3.1, rel = tableBU, from = "GRAN", to = "AGGR", partrel = TRUE)
+  CCS <- CCS[, , BALEF2EFS$EF]
+  CCS <- toolAggregate(CCS, dim = 3.2, rel = BALEF2EFS, from = "EFS", to = "BALEF")
+
   grossCO2Demand <- variables$V07GrossEmissCO2Demand[regions, years]
+  grossCO2Demand_BAV_BMAR <- grossCO2Demand[,,c("BAV", "BMAR")]
+  grossCO2Demand <- toolAggregate(grossCO2Demand, dim = 3.1, rel = tableBU, from = "GRAN", to = "AGGR", partrel = TRUE)
   grossCO2Demand <- grossCO2Demand[c("NEN", "PCH"), invert = TRUE]
 
   grossCO2Supply <- variables$V07GrossEmissCO2Supply[regions, years, ]
-
-  CCS <- variables$V06CO2CaptureCCS[regions, years]
-  CCS <- CCS[, , BALEF2EFS$EF]
-  CCS <- toolAggregate(CCS, dim = 3.2, rel = BALEF2EFS, from = "EFS", to = "BALEF")
 
   CDR <- new.magpie(
     getRegions(CCS),
@@ -56,10 +65,36 @@ reportEmissions <- function(path, regions, years) {
   CDR[, , "EW"] <- dimSums(variables$V06CapCDR[regions, years][, , "TEW"], 3.1) * 1e-6
 
   temp <- dimSums(CCS, 3.2) + CDR
+  
   netCO2Demand <- grossCO2Demand - temp[, , getItems(grossCO2Demand, 3.1)]
   netCO2Supply <- grossCO2Supply - temp[, , getItems(grossCO2Supply, 3.1)]
+  # =============================== CO2 ETS ============================
+  ETS <- toolGetMapping("ets-sbs-mapping.csv",
+                        type = "sectoral",
+                        where = "postprom")
+  ETS1 <- filter(ETS, ets == "ETS1")
+  ETS2 <- filter(ETS, ets == "ETS2")
+  netCO2ETS <- mbind(netCO2Demand, netCO2Supply)
+  netCO2ETS1 <- netCO2ETS[,,ETS1[,"sbs"]]
+  netCO2ETS2 <- netCO2ETS[,,ETS2[,"sbs"]]
+  netCO2ETS1 <- dimSums(netCO2ETS1, 3)
+  netCO2ETS2 <- dimSums(netCO2ETS2, 3)
+  getItems(netCO2ETS1, 3.1) <- "Emissions|CO2|ETS1"
+  getItems(netCO2ETS2, 3.1) <- "Emissions|CO2|ETS2"
+  netCO2ETStotal <- mbind(netCO2ETS1, netCO2ETS2)
+  
+  regionMapping <- toolGetMapping(name = "EU28.csv", type = "regional", where = "mrprom")
+  regionsEu27 <- regionMapping$ISO3.Code[regionMapping$ISO3.Code != "GBR"]
+  
+  nonEu27 <- setdiff(getItems(netCO2ETStotal, 1), regionsEu27)
+  
+  if (length(nonEu27) > 0) {
+    netCO2ETStotal[nonEu27, , ] <- NA
+  }
+  # =========================================================
   # ------------------------ Renamings --------------------------------
-  DSBSTable <- rgdx.set(path, "DSBS", te = TRUE)
+  DSBSTable <- rgdx.set(path, "DSBS", te = TRUE) %>%
+    rbind(data.frame(SBS = "BU", .te = "Bunkers"))
   SSBSTable <- rgdx.set(path, "SSBS", te = TRUE)
   TotalTable <- bind_rows(DSBSTable, SSBSTable)
 
@@ -91,6 +126,10 @@ reportEmissions <- function(path, regions, years) {
   )
   getItems(grossCO2Demand, 3.1) <- paste0("Gross Emissions|CO2|Energy|Demand|", name)
   getItems(netCO2Demand, 3.1) <- paste0("Emissions|CO2|Energy|Demand|", name)
+  # ------------- --------------Bunkers ---------------------------------
+  name <- DSBSTable$.te[match(getItems(grossCO2Demand_BAV_BMAR, 3.1), DSBSTable$SBS)]
+  getItems(grossCO2Demand_BAV_BMAR, 3.1) <- paste0("Emissions|CO2|Energy|Demand|Bunkers|", name)
+  # ------------- -----------------------------------------------
   # ------------- --------------Supply ---------------------------------
   name <- SSBSTable$.te[match(getItems(grossCO2Supply, 3.1), SSBSTable$SBS)]
   getItems(grossCO2Supply, 3.1) <- paste0("Gross Emissions|CO2|Energy|Supply|", name)
@@ -109,7 +148,7 @@ reportEmissions <- function(path, regions, years) {
   landEmiMode <- if (!is.null(landEmiMode) && length(landEmiMode))
     as.character(landEmiMode)[1]
   else if (file.exists(iEmissions_magpie)) "softmif" else "exo"  # fallback for pre-tag gdx
-
+  
   AFOLUCh4N2o <- NULL; extraAFOLU <- NULL; kyotoAfolu <- NULL
 
   if (landEmiMode == "softmif") {
@@ -182,8 +221,23 @@ reportEmissions <- function(path, regions, years) {
   
   CDR[, , "Carbon Removal|Geological Storage|Biomass"] <- dimSums(CCS[, , getItems(CCS, 3)[grepl("\\|Biofuels$", getItems(CCS, 3))]], 3.1)
   
+  # ------------ Carbon Capture|Geological Storage|Direct Air Capture -------
+  captureGeoStorage <- CDR[, , grepl("Geological Storage", getItems(CDR, dim = 3))]
+  
+  getItems(captureGeoStorage, dim = 3) <- gsub("Carbon Removal", "Carbon Capture", getItems(captureGeoStorage, dim = 3))
+  
+  captureGeoStorage <- add_columns(captureGeoStorage, addnm = "Carbon Capture|Geological Storage|Fossil", dim = 3, fill = 0)
+  
+  captureGeoStorage[, , "Carbon Capture|Geological Storage|Fossil"] <- dimSums(CCS[, , getItems(CCS, 3)[grepl("\\|Fossil$", getItems(CCS, 3))]], 3.1)
+  captureGeoStorage <- helperAggregateLevel(captureGeoStorage, level = 1, recursive = TRUE)
+  
   captured <- mbind(CDR, CCS, CDRCO2)
   captured <- helperAggregateLevel(captured, level = 1, recursive = TRUE)
+  captured <- mbind(captured, captureGeoStorage[,,setdiff(getItems(captureGeoStorage,3),getItems(captured,3))])
+  # =============================== Gross Removals|CO2 equal with Carbon Removal
+  captured <- add_columns(captured, addnm = "Gross Removals|CO2", dim = 3, fill = 0)
+  captured[,,"Gross Removals|CO2"] <- captured[,,"Carbon Removal"]
+  # ==============================================================
   # =============================== Non-CO2===================================
   emissionsNonCO2 <- readGDX(path, "V07EmiActBySrcRegTim", field = "l")[regions, years, ]
   if (is.null(emissionsNonCO2)) {
@@ -250,9 +304,6 @@ reportEmissions <- function(path, regions, years) {
   resCom <- EmissionsCo2[, , c("Emissions|CO2|Energy|Demand|Residential", "Emissions|CO2|Energy|Demand|Commercial", "Emissions|CO2|Energy|Demand|Agriculture, Fishing, Forestry")]
   resCom <- dimSums(resCom, 3)
   getItems(resCom, 3.1) <- "Emissions|CO2|Energy|Demand|Residential and Commercial"
-  # ------------ Carbon Capture|Geological Storage|Direct Air Capture -------
-  captureGeoStorage <- captured[, , grepl("Geological Storage", getItems(captured, dim = 3))]
-  getItems(captureGeoStorage, dim = 3) <- gsub("Carbon Removal", "Carbon Capture", getItems(captureGeoStorage, dim = 3))
   # -------------------------- Transport Passenger -------
   TRANP <- EmissionsCo2[, , c("Emissions|CO2|Energy|Demand|Transportation|Passenger Transport - Cars",
                               "Emissions|CO2|Energy|Demand|Transportation|Passenger Transport - Busses",
@@ -332,8 +383,7 @@ reportEmissions <- function(path, regions, years) {
   kyotoGases <- add_dimension(kyotoGases, dim = 3.2, add = "unit", nm = "Mt CO2-equiv/yr")
   Cumulated <- add_dimension(Cumulated, dim = 3.2, add = "unit", nm = "Gt CO2")
   sumIPEnergy <- add_dimension(sumIPEnergy, dim = 3.2, add = "unit", nm = unitsCO2)
-  resCom <- add_dimension(resCom, dim = 3.2, add = "unit", nm = unitsCO2)
-  captureGeoStorage <- add_dimension(captureGeoStorage, dim = 3.2, add = "unit", nm = unitsCO2)  
+  resCom <- add_dimension(resCom, dim = 3.2, add = "unit", nm = unitsCO2) 
   TRANP <- add_dimension(TRANP, dim = 3.2, add = "unit", nm = unitsCO2)
   TRANG <- add_dimension(TRANG, dim = 3.2, add = "unit", nm = unitsCO2)
   OtherFuelTransformation <- add_dimension(OtherFuelTransformation, dim = 3.2, add = "unit", nm = unitsCO2)
@@ -345,13 +395,14 @@ reportEmissions <- function(path, regions, years) {
   FgasAgg <- add_dimension(FgasAgg, dim = 3.2, add = "unit", nm = "Mt CO2-equiv/yr")
   emissionsCO2woBunkers <- add_dimension(emissionsCO2woBunkers, dim = 3.2, add = "unit", nm = unitsCO2)
   emissionsKyotowoBunkers <- add_dimension(emissionsKyotowoBunkers, dim = 3.2, add = "unit", nm =  "Mt CO2-equiv/yr")
-
+  netCO2ETStotal <- add_dimension(netCO2ETStotal, dim = 3.2, add = "unit", nm = unitsCO2)
+  grossCO2Demand_BAV_BMAR <- add_dimension(grossCO2Demand_BAV_BMAR, dim = 3.2, add = "unit", nm = unitsCO2)
+  
   magpie_object <- mbind(
     emissionsNonCO2, EmissionsCo2, kyotoGases,
-    Cumulated, sumIPEnergy, resCom, captured, captureGeoStorage,
+    Cumulated, sumIPEnergy, resCom, captured,
     TRANP, TRANG, OtherFuelTransformation, HFCAgg, PFCAgg, FgasAgg,
-    elecIAMC, heatIAMC, elecHeatIAMC,
-    emissionsCO2woBunkers, emissionsKyotowoBunkers
+    emissionsCO2woBunkers, emissionsKyotowoBunkers, netCO2ETStotal, grossCO2Demand_BAV_BMAR
   )
   # Add other emissions from magpie run if they are available
   if (!is.null(extraAFOLU)) {
