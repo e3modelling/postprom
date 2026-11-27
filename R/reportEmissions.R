@@ -408,7 +408,8 @@ reportEmissions <- function(path, regions, years) {
   magpie_object <- mbind(
     emissionsNonCO2, EmissionsCo2, kyotoGases,
     Cumulated, sumIPEnergy, resCom, captured,
-    TRANP, TRANG, OtherFuelTransformation, HFCAgg, PFCAgg, FgasAgg,
+    TRANP, TRANG, OtherFuelTransformation, elecIAMC, heatIAMC, elecHeatIAMC,
+    HFCAgg, PFCAgg, FgasAgg,
     emissionsCO2woBunkers, emissionsKyotowoBunkers, netCO2ETStotal, grossCO2Demand_BAV_BMAR
   )
   # Add other emissions from magpie run if they are available
@@ -789,19 +790,14 @@ extractAggregatedData <- function(scenario, x, years, ...) {
 
 # getMAGPIE function to generate AFOLU and Land_CDR
 getMAGPIE <- function(path, magpie_object) {
-  fscenario <- readGDX(path, "fscenario")
+  tier <- getPolicyTier(path, getItems(magpie_object, 1))
 
   # Add MAGPIE run
   MAGPIE_runs <- readSource("MAGPIE_runs")
 
-  # Filter MAGPIE by scenario
-  if (fscenario %in% c(0, 1)) {
-    MAGPIE_runs <- MAGPIE_runs[, , "MAGPIE_NPI"]
-  } else if (fscenario %in% c(2, 5, 6)) {
-    MAGPIE_runs <- MAGPIE_runs[, , "MAGPIE_1P5C"]
-  } else if (fscenario == 3) {
-    MAGPIE_runs <- MAGPIE_runs[, , "MAGPIE_2C"]
-  }
+  # Filter MAGPIE by policy tier
+  scenario <- c(noPolicy = "MAGPIE_NPI", NPi = "MAGPIE_NPI", "2C" = "MAGPIE_2C", "1.5C" = "MAGPIE_1P5C")
+  MAGPIE_runs <- MAGPIE_runs[, , scenario[[tier]]]
 
   # Filter with variables
   MAGPIE_runs <- MAGPIE_runs[, , c(
@@ -925,19 +921,17 @@ getGLOBIOMEU <- function(path, magpie_object) {
 
 # getREMIND_MAgPIE_SoCDR function to generate AFOLU and Land_CDR from REMIND_MAgPIE_SoCDR
 getREMIND_MAgPIE_SoCDR <- function(path, magpie_object) {
-  fscenario <- readGDX(path, "fscenario")
+  tier <- getPolicyTier(path, getItems(magpie_object, 1))
 
   # Add REMIND_MAgPIE_SoCDR run
   REMIND_MAgPIE_SoCDR <- readSource("REMIND_MAgPIE_SoCDR")
 
-  # Filter REMIND_MAgPIE_SoCDR by scenario
-  if (fscenario %in% c(0, 1)) {
-    REMIND_MAgPIE_SoCDR <- REMIND_MAgPIE_SoCDR[, , "SoCDR_Ed3_CurrentTargets"]
-  } else if (fscenario %in% c(2, 5, 6)) {
-    REMIND_MAgPIE_SoCDR <- REMIND_MAgPIE_SoCDR[, , "SoCDR_Ed3_HighestAmbition"]
-  } else if (fscenario == 3) {
-    REMIND_MAgPIE_SoCDR <- REMIND_MAgPIE_SoCDR[, , "SoCDR_Ed3_DelayedAction"]
-  }
+  # Filter REMIND_MAgPIE_SoCDR by policy tier
+  scenario <- c(
+    noPolicy = "SoCDR_Ed3_CurrentTargets", NPi = "SoCDR_Ed3_CurrentTargets",
+    "2C" = "SoCDR_Ed3_DelayedAction", "1.5C" = "SoCDR_Ed3_HighestAmbition"
+  )
+  REMIND_MAgPIE_SoCDR <- REMIND_MAgPIE_SoCDR[, , scenario[[tier]]]
 
   # Check if 'RWO' exists as a region and then compute RWO as World - sum of countries
   if ("RWO" %in% getItems(magpie_object, 1)) {
@@ -983,19 +977,17 @@ getREMIND_MAgPIE_SoCDR <- function(path, magpie_object) {
 
 # getREMIND_MAgPIE_PRISMA function to generate AFOLU and Land_CDR from REMIND_MAgPIE_PRISMA
 getREMIND_MAgPIE_PRISMA <- function(path, magpie_object) {
-  fscenario <- readGDX(path, "fscenario")
+  tier <- getPolicyTier(path, getItems(magpie_object, 1))
 
   # Add REMIND_MAgPIE_PRISMA run
   REMIND_MAgPIE_PRISMA <- readSource("REMIND_MAgPIE_PRISMA")
 
-  # Filter REMIND_MAgPIE_PRISMA by scenario — same fscenario codes as SoCDR
-  if (fscenario %in% c(0, 1)) {
-    REMIND_MAgPIE_PRISMA <- REMIND_MAgPIE_PRISMA[, , "SSP2_Meet_Aspirations"]
-  } else if (fscenario == 2) {
-    REMIND_MAgPIE_PRISMA <- REMIND_MAgPIE_PRISMA[, , "SSP2_Asymmetric_Roll_Back"]
-  } else if (fscenario == 3) {
-    REMIND_MAgPIE_PRISMA <- REMIND_MAgPIE_PRISMA[, , "SSP2_Late_Reawakening"]
-  }
+  # Filter REMIND_MAgPIE_PRISMA by policy tier
+  scenario <- c(
+    noPolicy = "SSP2_Meet_Aspirations", NPi = "SSP2_Meet_Aspirations",
+    "2C" = "SSP2_Late_Reawakening", "1.5C" = "SSP2_Asymmetric_Roll_Back"
+  )
+  REMIND_MAgPIE_PRISMA <- REMIND_MAgPIE_PRISMA[, , scenario[[tier]]]
 
   # interpolate years
   REMIND_MAgPIE_PRISMA <- as.quitte(REMIND_MAgPIE_PRISMA) %>%
@@ -1032,21 +1024,14 @@ getIndustrialProcesses <- function(path, magpie_object) {
   # Add IndustrialProcesses
   IndustrialProcesses <- readSource("IndustrialProcessesEmissionsIEAPrimes")
 
-  fscenario <- readGDX(path, "fscenario")
+  tier <- getPolicyTier(path, getItems(magpie_object, 1))
 
-  # Select the industrial-process trajectory matching the OPEN-PROM scenario
-  # (fscenario: 0 no carbon price, 1 NPi_Default, 2 1.5C, 3 2C, 5-9 net-zero variants)
-  if (fscenario %in% c(0)) {
-    IndustrialProcesses <- IndustrialProcesses[, , "CurrentPolicies"]
-  } else if (fscenario %in% c(1, 3)) {
-    IndustrialProcesses <- IndustrialProcesses[, , "STEPS-LTT"]
-  } else if (fscenario %in% c(2, 5, 6, 7, 8, 9)) {
-    IndustrialProcesses <- IndustrialProcesses[, , "NT-Zero2050"]
-  } else {
-    message("getIndustrialProcesses: no trajectory defined for fscenario ", fscenario,
-            "; using NT-Zero2050")
-    IndustrialProcesses <- IndustrialProcesses[, , "NT-Zero2050"]
-  }
+  # Select the industrial-process trajectory matching the run's policy tier
+  scenario <- c(
+    noPolicy = "CurrentPolicies", NPi = "STEPS-LTT",
+    "2C" = "STEPS-LTT", "1.5C" = "NT-Zero2050"
+  )
+  IndustrialProcesses <- IndustrialProcesses[, , scenario[[tier]]]
 
   # Check if 'RWO' exists as a region and then compute RWO as World - sum of countries
   if ("RWO" %in% getItems(magpie_object, 1)) {

@@ -10,6 +10,57 @@ dacTechnologyLabels <- c(
   LTDAC = "Solid Sorbent"
 )
 
+#' Climate-policy tier of an OPEN-PROM run
+#'
+#' Used to pick the matching scenario of external datasets (industrial-process
+#' emissions, MAgPIE / REMIND-MAgPIE land data). OPEN-PROM's named scenarios
+#' are fixed by `fscenario` code. Any other code (UPT carbon-price levels,
+#' target-forcing runs, branch-specific or future codes) is classified by the
+#' run's own 2050 carbon price against OPEN-PROM's reference trajectories
+#' (`exogCV_NPi`, `exogCV_2C`, `exogCV_1_5C` in `iEnvPolicies`); the tier
+#' boundaries are the midpoints between neighbouring references.
+#'
+#' @param path Path to the GDX file.
+#' @param regions Regions whose median carbon price is used.
+#' @return One of "noPolicy", "NPi", "2C", "1.5C".
+#' @noRd
+getPolicyTier <- function(path, regions) {
+  fscenario <- as.character(readGDX(path, "fscenario"))[1]
+  fixed <- c("0" = "noPolicy", "1" = "NPi", "4" = "NPi", "3" = "2C", "2" = "1.5C")
+  if (fscenario %in% names(fixed)) return(unname(fixed[fscenario]))
+
+  price <- readGDX(path, "VmCarVal", field = "l", react = "silent")
+  if (is.null(price)) {
+    stop("getPolicyTier: fscenario ", fscenario, " has no fixed tier and VmCarVal is missing")
+  }
+  years <- getYears(price, as.integer = TRUE)
+  year <- paste0("y", max(years[years <= 2050]))
+  regions <- intersect(regions, getItems(price, 1))
+  runPrice <- median(as.numeric(price[regions, year, "TRADE"]), na.rm = TRUE)
+
+  # Reference 2050 prices (US$2015/t CO2) in case iEnvPolicies is not in the GDX
+  reference <- c(NPi = 81, "2C" = 118, "1.5C" = 374)
+  policies <- readGDX(path, "iEnvPolicies", react = "silent")
+  refItems <- c(NPi = "exogCV_NPi", "2C" = "exogCV_2C", "1.5C" = "exogCV_1_5C")
+  if (!is.null(policies) && all(refItems %in% getItems(policies, 3)) &&
+      year %in% getYears(policies)) {
+    fromGdx <- vapply(refItems, function(p) {
+      median(as.numeric(policies[intersect(regions, getItems(policies, 1)), year, p]), na.rm = TRUE)
+    }, numeric(1))
+    if (all(is.finite(fromGdx))) reference <- setNames(fromGdx, names(refItems))
+  }
+
+  bounds <- c((reference[["NPi"]] + reference[["2C"]]) / 2,
+              (reference[["2C"]] + reference[["1.5C"]]) / 2)
+  tier <- if (runPrice < 1) "noPolicy" else if (runPrice < bounds[1]) "NPi" else
+    if (runPrice < bounds[2]) "2C" else "1.5C"
+  message(sprintf(
+    "getPolicyTier: fscenario %s, median %s carbon price %.0f US$/t -> tier %s (bounds %.0f / %.0f)",
+    fscenario, sub("y", "", year), runPrice, tier, bounds[1], bounds[2]
+  ))
+  tier
+}
+
 #' @export
 helperRenameItems <- function(magpie, mapping, prefix, dim = 3.1) {
   # Rename magpie from OPEN-PROM Efs to labels (e.g. Gas -> Secondary Energy|Electricity|)

@@ -230,15 +230,18 @@ reportHeatingFuel <- function(path, regions, years, subsectorLabels, sectorMap) 
   paths <- ifelse(subsectors == "HOU", sectorNames, paste(sectorNames, labels, sep = "|"))
   specs <- data.frame(
     tech = c("THEATPUMP", "TELC"),
-    label = c("Heat Pump|Electricity", "Electric Heating|Electricity")
+    label = c("Heat Pump|Electricity", "Electric Heating|Electricity"),
+    buildingsOnly = c(TRUE, FALSE)
   )
 
   details <- NULL
   for (i in seq_len(nrow(specs))) {
     spec <- specs[i, ]
+    # OPEN-PROM has no industrial heat pumps, only zero-valued placeholders
+    inScope <- !spec$buildingsOnly | subsectors %in% c("HOU", "SE")
     items <- paste(subsectors, spec$tech, sep = ".")
     shareItems <- paste(items, "ELC", sep = ".")
-    available <- items %in% getItems(equipment, 3) &
+    available <- inScope & items %in% getItems(equipment, 3) &
       items %in% getItems(utilisation, 3) & shareItems %in% getItems(fuelShares, 3)
     if (!any(available)) next
 
