@@ -1,5 +1,15 @@
 # Helpers functions -------------------------------------------------
 
+# OPEN-PROM DAC technologies (CDRTECH without TEW) and their reporting labels:
+# HTDAC high-temperature solvent heated by natural gas (NGS + ELC),
+# H2DAC high-temperature solvent heated by hydrogen (H2F + ELC),
+# LTDAC low-temperature solid sorbent, electricity only (ELC).
+dacTechnologyLabels <- c(
+  HTDAC = "Gas-heated Solvent",
+  H2DAC = "Hydrogen-heated Solvent",
+  LTDAC = "Solid Sorbent"
+)
+
 #' @export
 helperRenameItems <- function(magpie, mapping, prefix, dim = 3.1) {
   # Rename magpie from OPEN-PROM Efs to labels (e.g. Gas -> Secondary Energy|Electricity|)

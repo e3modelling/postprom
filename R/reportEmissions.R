@@ -59,9 +59,8 @@ reportEmissions <- function(path, regions, years) {
     names = getItems(CCS, 3.1),
     fill = 0
   )
-  CDR[, , "DAC"] <- dimSums(
-    variables$V06CapCDR[regions, years][, , "TEW", invert = TRUE], 3.1
-  ) * 1e-6
+  dac <- variables$V06CapCDR[regions, years][, , "TEW", invert = TRUE] * 1e-6
+  CDR[, , "DAC"] <- dimSums(dac, 3.1)
   CDR[, , "EW"] <- dimSums(variables$V06CapCDR[regions, years][, , "TEW"], 3.1) * 1e-6
 
   temp <- dimSums(CCS, 3.2) + CDR
@@ -237,6 +236,15 @@ reportEmissions <- function(path, regions, years) {
   # =============================== Gross Removals|CO2 equal with Carbon Removal
   captured <- add_columns(captured, addnm = "Gross Removals|CO2", dim = 3, fill = 0)
   captured[,,"Gross Removals|CO2"] <- captured[,,"Carbon Removal"]
+  dacTechnologies <- intersect(getItems(dac, 3.1), names(dacTechnologyLabels))
+  if (length(dacTechnologies)) {
+    dac <- dac[, , dacTechnologies]
+    getItems(dac, 3) <- paste0(
+      "Carbon Removal|Geological Storage|Direct Air Capture|",
+      dacTechnologyLabels[dacTechnologies]
+    )
+    captured <- mbind(captured, dac)
+  }
   # ==============================================================
   # =============================== Non-CO2===================================
   emissionsNonCO2 <- readGDX(path, "V07EmiActBySrcRegTim", field = "l")[regions, years, ]

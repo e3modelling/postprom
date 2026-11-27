@@ -31,7 +31,9 @@ reportSE <- function(path, regions, years) {
   prodElec <- readGDX(path, "VmProdElec", field = "l")[regions, years, ]
   units <- sub(".*\\((.*)\\).*", "\\1", prodElec@description)
   sharesTech <- shares$i04ShareFuels[regions, , ]
-  prodElec <- getSecondaryEnergy(TECHtoEF, prodElec, CCS, NOCCS, sharesTech)
+  prodElec <- getSecondaryEnergy(TECHtoEF, prodElec, CCS, NOCCS, sharesTech,
+    generationDetail = TRUE
+  )
   prodElec <- add_columns(prodElec, addnm = "Heat", fill = 0)
   # ---------------------- CHP --------------------------------
   prodElecCHP <- readGDX(path,
@@ -44,7 +46,9 @@ reportSE <- function(path, regions, years) {
   CCS <- c("")
   NOCCS <- c("TSTE1AD", "TSTE1AL", "TSTE1AG", "TSTE1AH", "TSTE1AB")
   sharesTech <- shares$i09ShareFuel[regions, years, ]
-  prodElecCHP <- getSecondaryEnergy(TECHtoEF, prodElecCHP, CCS, NOCCS, sharesTech)
+  prodElecCHP <- getSecondaryEnergy(TECHtoEF, prodElecCHP, CCS, NOCCS, sharesTech,
+    generationDetail = TRUE
+  )
   # ------------------------------ Electricity ------------------------------
   prodElecAll <- add_columns(prodElec,
     setdiff(getItems(prodElecCHP, 3), getItems(prodElec, 3)),
@@ -122,7 +126,8 @@ reportSE <- function(path, regions, years) {
 }
 
 # Helpers -----------------------------------------------------------------------
-getSecondaryEnergy <- function(TECHtoEF, prod, CCS, NOCCS, sharesTech = NULL) {
+getSecondaryEnergy <- function(TECHtoEF, prod, CCS, NOCCS, sharesTech = NULL,
+                               generationDetail = FALSE) {
   BALEFtoEF <- read.csv(
     system.file("mappings", "BALEFtoEF.csv", package = "postprom")
   ) %>%
@@ -147,6 +152,19 @@ getSecondaryEnergy <- function(TECHtoEF, prod, CCS, NOCCS, sharesTech = NULL) {
     prefix %in% NOCCS ~ "w/o CCS",
     TRUE ~ ""
   )
+
+  if (generationDetail) {
+    fuel <- sub("^[^.]*[.]", "", getItems(prod, 3))
+    withCCS <- case_when(
+      prefix == "PGSOL" & fuel == "SOL" ~ "PV",
+      prefix == "PGCSP" & fuel == "SOL" ~ "CSP",
+      prefix == "PGAWND" & fuel == "WND" ~ "Onshore",
+      prefix == "PGAWNO" & fuel == "WND" ~ "Offshore",
+      prefix == "ATHOIL" & fuel %in% BALEFtoEF$EF[BALEFtoEF$BALEF == "Oil"] ~ "w/o CCS|Gas Turbine",
+      prefix == "TSTE1AD" & fuel %in% BALEFtoEF$EF[BALEFtoEF$BALEF == "Oil"] ~ "w/o CCS|CHP",
+      TRUE ~ withCCS
+    )
+  }
 
   prod <- add_dimension(prod, dim = 3.3, add = "CCS", nm = withCCS, expand = FALSE)
   getItems(prod, 3.2) <- BALEFtoEF$BALEF[match(getItems(prod, 3.2), BALEFtoEF$EF)]
