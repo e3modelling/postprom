@@ -59,9 +59,8 @@ reportEmissions <- function(path, regions, years) {
     names = getItems(CCS, 3.1),
     fill = 0
   )
-  CDR[, , "DAC"] <- dimSums(
-    variables$V06CapCDR[regions, years][, , "TEW", invert = TRUE], 3.1
-  ) * 1e-6
+  dac <- variables$V06CapCDR[regions, years][, , "TEW", invert = TRUE] * 1e-6
+  CDR[, , "DAC"] <- dimSums(dac, 3.1)
   CDR[, , "EW"] <- dimSums(variables$V06CapCDR[regions, years][, , "TEW"], 3.1) * 1e-6
 
   temp <- dimSums(CCS, 3.2) + CDR
@@ -143,6 +142,7 @@ reportEmissions <- function(path, regions, years) {
   #   exo     = external default sources (legacy compatibility)
   iEmissions_magpie <- file.path(dirname(path), "iEmissions_magpie.mif")
   landEmiMode <- readGDX(path, "sLandEmiMode", react = "silent")
+
   landEmiMode <- if (!is.null(landEmiMode) && length(landEmiMode))
     as.character(landEmiMode)[1]
   else if (file.exists(iEmissions_magpie)) "softmif" else "exo"  # fallback for pre-tag gdx
@@ -235,6 +235,15 @@ reportEmissions <- function(path, regions, years) {
   # =============================== Gross Removals|CO2 equal with Carbon Removal
   captured <- add_columns(captured, addnm = "Gross Removals|CO2", dim = 3, fill = 0)
   captured[,,"Gross Removals|CO2"] <- captured[,,"Carbon Removal"]
+  dacTechnologies <- intersect(getItems(dac, 3.1), names(dacTechnologyLabels))
+  if (length(dacTechnologies)) {
+    dac <- dac[, , dacTechnologies]
+    getItems(dac, 3) <- paste0(
+      "Carbon Removal|Geological Storage|Direct Air Capture|",
+      dacTechnologyLabels[dacTechnologies]
+    )
+    captured <- mbind(captured, dac)
+  }
   # ==============================================================
   # =============================== Non-CO2===================================
   emissionsNonCO2 <- readGDX(path, "V07EmiActBySrcRegTim", field = "l")[regions, years, ]
@@ -322,6 +331,29 @@ reportEmissions <- function(path, regions, years) {
                                        "Emissions|CO2|Energy|Supply|Gases")]
   OtherFuelTransformation <- dimSums(OtherFuelTransformation, dim = 3, na.rm = TRUE)
   getItems(OtherFuelTransformation, 3) <- "Emissions|CO2|Energy|Supply|Other Fuel Transformation"
+  # ---------------- IAMC Electricity & Heat (CHP allocated by output) ----------
+  # SSBS carries CHP as its own subsector, so the raw "Supply|Electricity" leaf is
+  # PG-only and "Supply|Heat" is district heat only. IAMC expects CHP fuel
+  # emissions to be shared between the two products it actually delivers.
+  # reportSE already folds CHP electricity into Secondary Energy|Electricity, so
+  # reporting PG-only here made the two sides of the same run inconsistent.
+  # Split on delivered output (elec TWh vs steam Mtoe->TWh) rather than on
+  # i09EffSteElc / i09EffSteThrm, because i09EffSteThrm carries an unexplained
+  # /4 scaling (09_Heat/heat/input.gms:183, flagged by an open FIXME) and so is
+  # not a reliable thermal efficiency.
+  chpElecShare <- getChpElecShare(path, regions, years)
+  chpEmi <- EmissionsCo2[, , "Emissions|CO2|Energy|Supply|Combined Heat and Power"]
+
+  elecIAMC <- EmissionsCo2[, , "Emissions|CO2|Energy|Supply|Electricity"] +
+    magclass::setNames(chpEmi * chpElecShare, NULL)
+  getItems(elecIAMC, 3.1) <- "Emissions|CO2|Energy|Supply|Electricity and Heat|Electricity"
+
+  heatIAMC <- EmissionsCo2[, , "Emissions|CO2|Energy|Supply|Heat"] +
+    magclass::setNames(chpEmi * (1 - chpElecShare), NULL)
+  getItems(heatIAMC, 3.1) <- "Emissions|CO2|Energy|Supply|Electricity and Heat|Heat"
+
+  elecHeatIAMC <- dimSums(mbind(elecIAMC, heatIAMC), dim = 3, na.rm = TRUE)
+  getItems(elecHeatIAMC, 3) <- "Emissions|CO2|Energy|Supply|Electricity and Heat"
   # ------------ Emissions|HFC (all HFCs aggregated in HFC134a-equiv with GWP (1430/1000 = 1.43)) -------
   allHfcVars <- grep("Emissions\\|HFC", getNames(emissionsCO2eq), value = TRUE)
   HFCAgg <- emissionsCO2eq[, , allHfcVars] / 1.43
@@ -362,6 +394,9 @@ reportEmissions <- function(path, regions, years) {
   TRANP <- add_dimension(TRANP, dim = 3.2, add = "unit", nm = unitsCO2)
   TRANG <- add_dimension(TRANG, dim = 3.2, add = "unit", nm = unitsCO2)
   OtherFuelTransformation <- add_dimension(OtherFuelTransformation, dim = 3.2, add = "unit", nm = unitsCO2)
+  elecIAMC <- add_dimension(elecIAMC, dim = 3.2, add = "unit", nm = unitsCO2)
+  heatIAMC <- add_dimension(heatIAMC, dim = 3.2, add = "unit", nm = unitsCO2)
+  elecHeatIAMC <- add_dimension(elecHeatIAMC, dim = 3.2, add = "unit", nm = unitsCO2)
   HFCAgg <- add_dimension(HFCAgg, dim = 3.2, add = "unit", nm = "kt HFC134a-equiv/yr")
   PFCAgg <- add_dimension(PFCAgg, dim = 3.2, add = "unit", nm = "kt CF4-equiv/yr")
   FgasAgg <- add_dimension(FgasAgg, dim = 3.2, add = "unit", nm = "Mt CO2-equiv/yr")
@@ -373,7 +408,8 @@ reportEmissions <- function(path, regions, years) {
   magpie_object <- mbind(
     emissionsNonCO2, EmissionsCo2, kyotoGases,
     Cumulated, sumIPEnergy, resCom, captured,
-    TRANP, TRANG, OtherFuelTransformation, HFCAgg, PFCAgg, FgasAgg,
+    TRANP, TRANG, OtherFuelTransformation, elecIAMC, heatIAMC, elecHeatIAMC,
+    HFCAgg, PFCAgg, FgasAgg,
     emissionsCO2woBunkers, emissionsKyotowoBunkers, netCO2ETStotal, grossCO2Demand_BAV_BMAR
   )
   # Add other emissions from magpie run if they are available
@@ -626,7 +662,7 @@ prepareMagpieAfolu <- function(iEmissions_magpie) {
     stop("MAgPIE formal Land CO2 validation contains missing or non-finite values")
   }
   # iEmissions_magpie.mif stores four decimal places. Independent rounding of
-  # the 33 LUC leaves and their parent can create a sub-0.002 Mt CO2/yr residual.
+  # the 35 LUC leaves and their parent can create a sub-0.002 Mt CO2/yr residual.
   lucTolerance <- 2e-3
   if (max(abs(lucResidual)) > lucTolerance) {
     stop(
@@ -754,19 +790,14 @@ extractAggregatedData <- function(scenario, x, years, ...) {
 
 # getMAGPIE function to generate AFOLU and Land_CDR
 getMAGPIE <- function(path, magpie_object) {
-  fscenario <- readGDX(path, "fscenario")
+  tier <- getPolicyTier(path, getItems(magpie_object, 1))
 
   # Add MAGPIE run
   MAGPIE_runs <- readSource("MAGPIE_runs")
 
-  # Filter MAGPIE by scenario
-  if (fscenario %in% c(0, 1)) {
-    MAGPIE_runs <- MAGPIE_runs[, , "MAGPIE_NPI"]
-  } else if (fscenario %in% c(2, 5, 6)) {
-    MAGPIE_runs <- MAGPIE_runs[, , "MAGPIE_1P5C"]
-  } else if (fscenario == 3) {
-    MAGPIE_runs <- MAGPIE_runs[, , "MAGPIE_2C"]
-  }
+  # Filter MAGPIE by policy tier
+  scenario <- c(noPolicy = "MAGPIE_NPI", NPi = "MAGPIE_NPI", "2C" = "MAGPIE_2C", "1.5C" = "MAGPIE_1P5C")
+  MAGPIE_runs <- MAGPIE_runs[, , scenario[[tier]]]
 
   # Filter with variables
   MAGPIE_runs <- MAGPIE_runs[, , c(
@@ -890,19 +921,17 @@ getGLOBIOMEU <- function(path, magpie_object) {
 
 # getREMIND_MAgPIE_SoCDR function to generate AFOLU and Land_CDR from REMIND_MAgPIE_SoCDR
 getREMIND_MAgPIE_SoCDR <- function(path, magpie_object) {
-  fscenario <- readGDX(path, "fscenario")
+  tier <- getPolicyTier(path, getItems(magpie_object, 1))
 
   # Add REMIND_MAgPIE_SoCDR run
   REMIND_MAgPIE_SoCDR <- readSource("REMIND_MAgPIE_SoCDR")
 
-  # Filter REMIND_MAgPIE_SoCDR by scenario
-  if (fscenario %in% c(0, 1)) {
-    REMIND_MAgPIE_SoCDR <- REMIND_MAgPIE_SoCDR[, , "SoCDR_Ed3_CurrentTargets"]
-  } else if (fscenario %in% c(2, 5, 6)) {
-    REMIND_MAgPIE_SoCDR <- REMIND_MAgPIE_SoCDR[, , "SoCDR_Ed3_HighestAmbition"]
-  } else if (fscenario == 3) {
-    REMIND_MAgPIE_SoCDR <- REMIND_MAgPIE_SoCDR[, , "SoCDR_Ed3_DelayedAction"]
-  }
+  # Filter REMIND_MAgPIE_SoCDR by policy tier
+  scenario <- c(
+    noPolicy = "SoCDR_Ed3_CurrentTargets", NPi = "SoCDR_Ed3_CurrentTargets",
+    "2C" = "SoCDR_Ed3_DelayedAction", "1.5C" = "SoCDR_Ed3_HighestAmbition"
+  )
+  REMIND_MAgPIE_SoCDR <- REMIND_MAgPIE_SoCDR[, , scenario[[tier]]]
 
   # Check if 'RWO' exists as a region and then compute RWO as World - sum of countries
   if ("RWO" %in% getItems(magpie_object, 1)) {
@@ -948,19 +977,17 @@ getREMIND_MAgPIE_SoCDR <- function(path, magpie_object) {
 
 # getREMIND_MAgPIE_PRISMA function to generate AFOLU and Land_CDR from REMIND_MAgPIE_PRISMA
 getREMIND_MAgPIE_PRISMA <- function(path, magpie_object) {
-  fscenario <- readGDX(path, "fscenario")
+  tier <- getPolicyTier(path, getItems(magpie_object, 1))
 
   # Add REMIND_MAgPIE_PRISMA run
   REMIND_MAgPIE_PRISMA <- readSource("REMIND_MAgPIE_PRISMA")
 
-  # Filter REMIND_MAgPIE_PRISMA by scenario — same fscenario codes as SoCDR
-  if (fscenario %in% c(0, 1)) {
-    REMIND_MAgPIE_PRISMA <- REMIND_MAgPIE_PRISMA[, , "SSP2_Meet_Aspirations"]
-  } else if (fscenario == 2) {
-    REMIND_MAgPIE_PRISMA <- REMIND_MAgPIE_PRISMA[, , "SSP2_Asymmetric_Roll_Back"]
-  } else if (fscenario == 3) {
-    REMIND_MAgPIE_PRISMA <- REMIND_MAgPIE_PRISMA[, , "SSP2_Late_Reawakening"]
-  }
+  # Filter REMIND_MAgPIE_PRISMA by policy tier
+  scenario <- c(
+    noPolicy = "SSP2_Meet_Aspirations", NPi = "SSP2_Meet_Aspirations",
+    "2C" = "SSP2_Late_Reawakening", "1.5C" = "SSP2_Asymmetric_Roll_Back"
+  )
+  REMIND_MAgPIE_PRISMA <- REMIND_MAgPIE_PRISMA[, , scenario[[tier]]]
 
   # interpolate years
   REMIND_MAgPIE_PRISMA <- as.quitte(REMIND_MAgPIE_PRISMA) %>%
@@ -997,18 +1024,14 @@ getIndustrialProcesses <- function(path, magpie_object) {
   # Add IndustrialProcesses
   IndustrialProcesses <- readSource("IndustrialProcessesEmissionsIEAPrimes")
 
-  fscenario <- readGDX(path, "fscenario")
+  tier <- getPolicyTier(path, getItems(magpie_object, 1))
 
-  # Filter REMIND_MAgPIE_SoCDR by scenario
-  if (fscenario %in% c(0)) {
-    IndustrialProcesses <- IndustrialProcesses[, , "CurrentPolicies"]
-  } else if (fscenario %in% c(1)) {
-    IndustrialProcesses <- IndustrialProcesses[, , "STEPS-LTT"]
-  } else if (fscenario %in% c(2, 5, 6)) {
-    IndustrialProcesses <- IndustrialProcesses[, , "NT-Zero2050"]
-  } else if (fscenario == 3) {
-    IndustrialProcesses <- IndustrialProcesses[, , "STEPS-LTT"]
-  }
+  # Select the industrial-process trajectory matching the run's policy tier
+  scenario <- c(
+    noPolicy = "CurrentPolicies", NPi = "STEPS-LTT",
+    "2C" = "STEPS-LTT", "1.5C" = "NT-Zero2050"
+  )
+  IndustrialProcesses <- IndustrialProcesses[, , scenario[[tier]]]
 
   # Check if 'RWO' exists as a region and then compute RWO as World - sum of countries
   if ("RWO" %in% getItems(magpie_object, 1)) {
@@ -1029,4 +1052,57 @@ getIndustrialProcesses <- function(path, magpie_object) {
     as.magpie()
 
   return(IndustrialProcesses)
+}
+
+#' Share of CHP fuel emissions attributable to electricity
+#'
+#' CHP plants deliver both electricity and steam from one fuel input, but
+#' OPEN-PROM books their emissions to a single `CHP` supply subsector. IAMC
+#' reporting wants them split across `Supply|Electricity` and `Supply|Heat`.
+#' This returns the electricity share, computed from delivered output so that
+#' the split follows what the plants actually produced in each region and year.
+#'
+#' Output is used in preference to the efficiency parameters: `i09EffSteThrm`
+#' is divided by 4 in `09_Heat/heat/input.gms` for reasons an open FIXME in that
+#' file leaves unexplained, so it is not a usable thermal efficiency.
+#'
+#' CHP technologies are the `TCHP` subset of `TSTEAM` (`TSTE1*`); the `TDHP`
+#' (`TSTE2*`) plants are district-heat-only and already report under
+#' `Supply|Heat`, so they are excluded.
+#'
+#' @param path Path to the GDX file.
+#' @param regions Regions to filter.
+#' @param years Years to filter.
+#' @return A magpie object of the electricity share, in [0, 1].
+#' @noRd
+getChpElecShare <- function(path, regions, years) {
+  MtoeToTWh <- 11630 * 1e-3
+  fallback <- 0.5
+
+  prodElecCHP <- readGDX(path, c("V04ProdElecEstCHP", "V04ProdElecCHP"),
+    field = "l", format = "first_found", react = "silent"
+  )
+  prodSte <- readGDX(path, "VmProdSte", field = "l", react = "silent")
+  TCHP <- readGDX(path, "TCHP", react = "silent")
+
+  if (is.null(prodElecCHP) || is.null(prodSte) || is.null(TCHP)) {
+    message(
+      "getChpElecShare: CHP output not found in gdx - ",
+      "falling back to a flat ", fallback, " electricity share."
+    )
+    return(new.magpie(regions, years, NULL, fill = fallback))
+  }
+
+  # V04ProdElecEstCHP is already in TWh (reportSE mbinds it with VmProdElec
+  # without conversion); VmProdSte is Mtoe and needs converting.
+  elec <- dimSums(prodElecCHP[regions, years, ], dim = 3)
+  heat <- dimSums(prodSte[regions, years, ][, , TCHP], dim = 3) * MtoeToTWh
+
+  total <- elec + heat
+  share <- elec / total
+  # Regions/years with no CHP output at all give 0/0; the emissions they scale
+  # are zero too, so the value only has to be finite.
+  share[!is.finite(share)] <- fallback
+  share[total <= 0] <- fallback
+  share
 }
